@@ -1,0 +1,97 @@
+/* General reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Background styling */
+body {
+  background: linear-gradient(120deg, #2980b9, #6dd5fa, #ffffff);
+  background-size: 300% 300%;
+  animation: gradientBG 10s ease infinite;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Gradient animation */
+@keyframes gradientBG {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Form container */
+form {
+  background-color: #ffffff;
+  padding: 40px 30px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Login heading */
+.login-text {
+  font-size: 28px;
+  font-weight: 600;
+  text-align: center;
+  color: #2c3e50;
+}
+
+/* Input fields */
+.login-form,
+.pass-form {
+  padding: 12px 16px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  outline: none;
+  font-size: 16px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.login-form:focus,
+.pass-form:focus {
+  border-color: #2980b9;
+  box-shadow: 0 0 5px rgba(41, 128, 185, 0.4);
+}
+
+/* Login button */
+.login-btn {
+  background-color: #2980b9;
+  color: white;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.login-btn:hover {
+  background-color: #2471a3;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  form {
+    padding: 30px 20px;
+  }
+
+  .login-text {
+    font-size: 24px;
+  }
+}

@@ -1,0 +1,43 @@
+/* dashboard.css */
+
+.dashboard-container {
+  min-height: 100vh;
+  background-color: #f3f4f6;
+  padding: 2rem;
+}
+
+.welcome-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.welcome-header p {
+  color: #4b5563;
+}
+
+.logout-btn {
+  background-color: #dc2626;
+  color: white;
+  padding: 0.5rem 1rem;
+  font-weight: bold;
+  border-radius: 0.5rem;
+  transition: background-color 0.3s ease;
+}
+
+.logout-btn:hover {
+  background-color: #b91c1c;
+}
+
+.add-person-btn {
+  background-color: #16a34a;
+  color: white;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+}
+
+.add-person-btn:hover {
+  background-color: #15803d;
+}
