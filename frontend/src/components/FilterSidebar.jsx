@@ -1,5 +1,6 @@
 // src/components/FilterSidebar.jsx
 import React, { useState } from "react";
+import "../styles/FilterSidebar.css";
 
 const dropdownOptions = {
   age: ["18-25", "26-30", "31-35", "36-40", "41+", "Other"],
@@ -40,22 +41,19 @@ const FilterSidebar = ({ onFilter }) => {
   };
 
   return (
-    <div className="bg-white p-4 rounded shadow">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-bold">Filter People</h3>
-        <button
-          className="text-sm text-red-600 hover:underline"
-          onClick={handleClearFilters}
-        >
+    <div className="filter-sidebar">
+      <div className="filter-header">
+        <h3 className="filter-title">Filter People</h3>
+        <button className="clear-btn" onClick={handleClearFilters}>
           Clear Filters
         </button>
       </div>
 
       {Object.entries(dropdownOptions).map(([field, options]) => (
-        <div className="mb-4" key={field}>
-          <label className="block text-sm font-medium mb-1 capitalize">{field}</label>
+        <div className="filter-group" key={field}>
+          <label className="filter-label">{field}</label>
           <select
-            className="w-full p-2 border rounded"
+            className="filter-select"
             value={filters[field] || ""}
             onChange={(e) => handleChange(field, e.target.value)}
           >
@@ -67,7 +65,7 @@ const FilterSidebar = ({ onFilter }) => {
           {filters[field] === "Other" && (
             <input
               type="text"
-              className="w-full mt-2 p-2 border rounded"
+              className="filter-input"
               placeholder={`Enter custom ${field}`}
               value={customInputs[field] || ""}
               onChange={(e) => handleOtherChange(field, e.target.value)}

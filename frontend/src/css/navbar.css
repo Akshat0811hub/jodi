@@ -1,0 +1,35 @@
+/* src/css/navbar.css */
+
+.navbar {
+  width: 100vw;               /* Full viewport width */
+  background-color: #2d2d2d;
+  color: white;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-sizing: border-box;     /* Ensure padding doesn't overflow */
+  position: relative;         /* Prevent layout bugs */
+}
+
+.navbar-title {
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.navbar-buttons button {
+  background-color: transparent;
+  border: none;
+  color: white;
+  margin-left: 16px;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.navbar-buttons button:hover {
+  background-color: #444;
+}

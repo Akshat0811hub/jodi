@@ -1,43 +1,81 @@
-/* dashboard.css */
+/* src/css/dashboard.css */
 
 .dashboard-container {
   min-height: 100vh;
-  background-color: #f3f4f6;
-  padding: 2rem;
+  background-color: #f4f4f4;
+  font-family: Arial, sans-serif;
 }
 
-.welcome-header h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1f2937;
+.dashboard-content {
+  padding: 20px;
 }
 
-.welcome-header p {
-  color: #4b5563;
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
 }
 
-.logout-btn {
-  background-color: #dc2626;
-  color: white;
-  padding: 0.5rem 1rem;
+.welcome-box h2 {
+  font-size: 24px;
   font-weight: bold;
-  border-radius: 0.5rem;
-  transition: background-color 0.3s ease;
+  color: #333;
 }
 
-.logout-btn:hover {
-  background-color: #b91c1c;
+.welcome-box p {
+  color: #555;
 }
 
-.add-person-btn {
-  background-color: #16a34a;
+.logout-button {
+  background-color: #e74c3c;
   color: white;
-  padding: 0.5rem;
-  border-radius: 0.5rem;
-  font-weight: 600;
-  transition: background-color 0.3s ease;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
 }
 
-.add-person-btn:hover {
-  background-color: #15803d;
+.logout-button:hover {
+  background-color: #c0392b;
+  transform: scale(1.05);
+}
+
+.dashboard-main {
+  display: flex;
+}
+
+.sidebar-section {
+  width: 25%;
+  margin-right: 20px;
+}
+
+.add-person-button {
+  width: 100%;
+  background-color: #27ae60;
+  color: white;
+  padding: 12px 0;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 16px;
+}
+
+.add-person-button:hover {
+  background-color: #1e8449;
+  transform: scale(1.02);
+}
+
+.content-section {
+  width: 100%;
+}
+
+.content-with-sidebar {
+  width: 75%;
 }

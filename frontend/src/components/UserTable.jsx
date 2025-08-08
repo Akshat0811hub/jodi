@@ -1,6 +1,7 @@
 // src/components/UserTable.jsx
 import React, { useEffect, useState } from "react";
 import api from "../api";
+import "../css/userTable.css";
 
 const UserTable = () => {
   const [users, setUsers] = useState([]);
@@ -43,31 +44,30 @@ const UserTable = () => {
     }
   };
 
-  // 🔍 Filtered user list (client-side filtering)
   const filteredUsers = users.filter((u) =>
     u.name.toLowerCase().includes(search.toLowerCase()) ||
     u.email.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
-    <div>
-      <h2 className="text-lg font-bold mb-2">All Users</h2>
+    <div className="user-table-container">
+      <h2 className="user-table-title">All Users</h2>
       <input
         type="text"
         placeholder="Search by name or email"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="border px-2 py-1 mb-4 w-full"
+        className="user-search-input"
       />
       {filteredUsers.length === 0 ? (
-        <p>No users found.</p>
+        <p className="no-users">No users found.</p>
       ) : (
-        <ul>
+        <ul className="user-list">
           {filteredUsers.map((u) => (
-            <li key={u._id} className="mb-2">
+            <li key={u._id} className="user-list-item">
               <strong>{u.name}</strong> ({u.email})
-              <button onClick={() => handleEdit(u)} className="ml-2 text-blue-500">✏️ Edit</button>
-              <button onClick={() => handleDelete(u._id)} className="ml-2 text-red-500">🗑️ Delete</button>
+              <button onClick={() => handleEdit(u)} className="edit-btn">✏️ Edit</button>
+              <button onClick={() => handleDelete(u._id)} className="delete-btn">🗑️ Delete</button>
             </li>
           ))}
         </ul>

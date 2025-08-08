@@ -6,11 +6,11 @@ import UserTable from "../components/UserTable";
 import PeopleList from "../components/PeopleList";
 import FilterSidebar from "../components/FilterSidebar";
 import AddPersonForm from "../components/AddPersonForm";
-import "../css/dashboard.css";
+import "../css/dashboard.css"; // ✅ CSS file import
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
-  const [activeTab, setActiveTab] = useState(""); // No default view
+  const [activeTab, setActiveTab] = useState("");
   const [filters, setFilters] = useState({});
   const [showAddModal, setShowAddModal] = useState(false);
   const [personRefresh, setPersonRefresh] = useState(0);
@@ -33,50 +33,43 @@ const Dashboard = () => {
   if (!user) return <p>Loading...</p>;
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="dashboard-container">
       <Navbar onSelect={setActiveTab} />
-      <div className="p-4">
-        <div className="flex justify-between mb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">
-              Welcome, {user.name}
-            </h2>
-            <p className="text-gray-600">
-              {user.email} –{" "}
-              <span
-                className={
-                  user.isAdmin
-                    ? "text-green-600 font-semibold"
-                    : "text-blue-600"
-                }
-              >
-                {user.isAdmin ? "Admin" : "User"}
-              </span>
+
+      <div className="dashboard-content">
+        <div className="dashboard-header">
+          <div className="welcome-box">
+            <h2>Welcome, {user.name}</h2>
+            <p>
+              {user.email} – {user.isAdmin ? "Admin" : "User"}
             </p>
           </div>
-          <button
-            onClick={handleLogout}
-            className="bg-red-500 text-white px-4 py-2 rounded"
-          >
+          <button onClick={handleLogout} className="logout-button">
             Logout
           </button>
         </div>
 
         {user.isAdmin && activeTab && (
-          <div className="flex">
+          <div className="dashboard-main">
             {activeTab === "people" && (
-              <div className="w-1/4 mr-4 space-y-4">
+              <div className="sidebar-section">
                 <FilterSidebar onFilter={setFilters} />
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="w-full bg-green-600 text-white py-2 rounded"
+                  className="add-person-button"
                 >
                   ➕ Add Person
                 </button>
               </div>
             )}
 
-            <div className={activeTab === "people" ? "w-3/4" : "w-full"}>
+            <div
+              className={
+                activeTab === "people"
+                  ? "content-section content-with-sidebar"
+                  : "content-section"
+              }
+            >
               {activeTab === "users" && <UserTable />}
               {activeTab === "people" && (
                 <PeopleList filters={filters} key={personRefresh} />

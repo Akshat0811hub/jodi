@@ -1,30 +1,17 @@
 // src/components/Navbar.jsx
 import React from "react";
+import "../css/navbar.css"; // Make sure this path is correct
 
 const Navbar = ({ onSelect }) => {
   return (
-    <nav className="bg-gray-800 text-white px-6 py-4 flex justify-between items-center">
-      {/* 🔄 Clickable title resets dashboard */}
-      <h1
-        className="text-xl font-bold cursor-pointer"
-        onClick={() => onSelect("")}
-      >
+    <nav className="navbar">
+      <h1 className="navbar-title" onClick={() => onSelect("")}>
         Admin Dashboard
       </h1>
 
-      <div className="space-x-4">
-        <button
-          onClick={() => onSelect("users")}
-          className="hover:bg-gray-700 px-4 py-2 rounded"
-        >
-          Users
-        </button>
-        <button
-          onClick={() => onSelect("people")}
-          className="hover:bg-gray-700 px-4 py-2 rounded"
-        >
-          People
-        </button>
+      <div className="navbar-buttons">
+        <button onClick={() => onSelect("users")}>Users</button>
+        <button onClick={() => onSelect("people")}>People</button>
       </div>
     </nav>
   );
