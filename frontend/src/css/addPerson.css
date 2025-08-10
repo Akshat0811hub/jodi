@@ -1,0 +1,57 @@
+.addperson-container {
+  width: 350px;
+  padding: 20px;
+  background-color: #ffffff;
+  border-left: 1px solid #ccc;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.form-title {
+  font-size: 22px;
+  font-weight: bold;
+  margin-bottom: 16px;
+}
+
+.error-text {
+  color: red;
+  margin-bottom: 10px;
+}
+
+.person-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.person-form input,
+.person-form select {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.form-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.cancel-btn,
+.submit-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.cancel-btn {
+  background-color: #777;
+  color: white;
+}
+
+.submit-btn {
+  background-color: #007bff;
+  color: white;
+}

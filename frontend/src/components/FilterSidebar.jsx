@@ -1,6 +1,6 @@
 // src/components/FilterSidebar.jsx
 import React, { useState } from "react";
-import "../styles/FilterSidebar.css";
+import "../css/filterSidebar.css";
 
 const dropdownOptions = {
   age: ["18-25", "26-30", "31-35", "36-40", "41+", "Other"],
@@ -24,20 +24,22 @@ const FilterSidebar = ({ onFilter }) => {
       [field]: value === "Other" ? customInputs[field] || "" : value,
     };
     setFilters(updated);
-    onFilter(updated);
   };
 
   const handleOtherChange = (field, value) => {
     setCustomInputs({ ...customInputs, [field]: value });
     const updated = { ...filters, [field]: value };
     setFilters(updated);
-    onFilter(updated);
   };
 
   const handleClearFilters = () => {
     setFilters({});
     setCustomInputs({});
     onFilter({});
+  };
+
+  const handleSubmit = () => {
+    onFilter(filters);
   };
 
   return (
@@ -59,7 +61,9 @@ const FilterSidebar = ({ onFilter }) => {
           >
             <option value="">-- Select --</option>
             {options.map((opt) => (
-              <option key={opt} value={opt}>{opt}</option>
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
             ))}
           </select>
           {filters[field] === "Other" && (
@@ -73,6 +77,10 @@ const FilterSidebar = ({ onFilter }) => {
           )}
         </div>
       ))}
+
+      <button className="submit-btn" onClick={handleSubmit}>
+        Show Results
+      </button>
     </div>
   );
 };

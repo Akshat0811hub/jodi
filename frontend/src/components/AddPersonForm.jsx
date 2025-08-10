@@ -1,6 +1,7 @@
 // src/components/AddPersonForm.jsx
 import React, { useState } from "react";
 import api from "../api";
+import "../css/addPerson.css";
 
 const AddPersonForm = ({ onClose, onPersonAdded }) => {
   const [formData, setFormData] = useState({
@@ -67,100 +68,86 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg w-full max-w-xl">
-        <h2 className="text-xl font-bold mb-4">Add New Person</h2>
-        {error && <p className="text-red-600 mb-2">{error}</p>}
+    <div className="addperson-container">
+      <h2 className="form-title">Add New Person</h2>
+      {error && <p className="error-text">{error}</p>}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="text"
-            name="name"
-            placeholder="Name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-            className="w-full border p-2"
-          />
+      <form onSubmit={handleSubmit} className="person-form">
+        <input
+          type="text"
+          name="name"
+          placeholder="Name"
+          value={formData.name}
+          onChange={handleChange}
+          required
+        />
 
-          <input
-            type="number"
-            name="age"
-            placeholder="Age"
-            value={formData.age}
-            onChange={handleChange}
-            className="w-full border p-2"
-          />
+        <input
+          type="number"
+          name="age"
+          placeholder="Age"
+          value={formData.age}
+          onChange={handleChange}
+        />
 
-          <input
-            type="number"
-            name="height"
-            placeholder="Height (cm)"
-            value={formData.height}
-            onChange={handleChange}
-            className="w-full border p-2"
-          />
+        <input
+          type="number"
+          name="height"
+          placeholder="Height (cm)"
+          value={formData.height}
+          onChange={handleChange}
+        />
 
-          {Object.keys(predefinedOptions).map((field) => (
-            <div key={field}>
-              <select
-                name={field}
+        {Object.keys(predefinedOptions).map((field) => (
+          <div key={field}>
+            <select
+              name={field}
+              value={formData[field]}
+              onChange={handleChange}
+            >
+              <option value="">Select {field}</option>
+              {predefinedOptions[field].map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+              <option value="Other">Other</option>
+            </select>
+            {showOther[field] && (
+              <input
+                type="text"
+                placeholder={`Enter ${field}`}
                 value={formData[field]}
-                onChange={handleChange}
-                className="w-full border p-2"
-              >
-                <option value="">Select {field}</option>
-                {predefinedOptions[field].map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-                <option value="Other">Other</option>
-              </select>
-              {showOther[field] && (
-                <input
-                  type="text"
-                  placeholder={`Enter ${field}`}
-                  value={formData[field]}
-                  onChange={(e) => handleOtherChange(field, e.target.value)}
-                  className="w-full border p-2 mt-1"
-                />
-              )}
-            </div>
-          ))}
-
-          <input
-            type="text"
-            name="area"
-            placeholder="Area"
-            value={formData.area}
-            onChange={handleChange}
-            className="w-full border p-2"
-          />
-
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={(e) => setPhotos(Array.from(e.target.files))}
-            className="w-full border p-2"
-          />
-
-          <div className="flex justify-end space-x-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="bg-gray-500 text-white px-4 py-2 rounded"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="bg-blue-600 text-white px-4 py-2 rounded"
-            >
-              Submit
-            </button>
+                onChange={(e) => handleOtherChange(field, e.target.value)}
+              />
+            )}
           </div>
-        </form>
-      </div>
+        ))}
+
+        <input
+          type="text"
+          name="area"
+          placeholder="Area"
+          value={formData.area}
+          onChange={handleChange}
+        />
+
+        <input
+          type="file"
+          multiple
+          accept="image/*"
+          onChange={(e) => setPhotos(Array.from(e.target.files))}
+        />
+
+        <div className="form-buttons">
+          <button type="button" onClick={onClose} className="cancel-btn">
+            Cancel
+          </button>
+          <button type="submit" className="submit-btn">
+            Submit
+          </button>
+        </div>
+      </form>
     </div>
   );
 };
