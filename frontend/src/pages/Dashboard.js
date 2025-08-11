@@ -60,16 +60,6 @@ const Dashboard = () => {
                 >
                   ➕ Add Person
                 </button>
-                <button
-                  onClick={() => {
-                    const link = `${window.location.origin}/public-form`;
-                    navigator.clipboard.writeText(link);
-                    alert("Public form link copied: " + link);
-                  }}
-                  className="share-form-button"
-                >
-                  🔗 Share Public Form
-                </button>
               </div>
             )}
 

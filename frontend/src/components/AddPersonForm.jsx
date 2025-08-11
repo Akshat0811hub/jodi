@@ -1,54 +1,73 @@
-// src/components/AddPersonForm.jsx
+// src/components/AddPersonFormModal.jsx
 import React, { useState } from "react";
 import api from "../api";
 import "../css/addPerson.css";
 
 const AddPersonForm = ({ onClose, onPersonAdded }) => {
   const [formData, setFormData] = useState({
+    // Personal Details
     name: "",
-    age: "",
-    height: "",
-    religion: "",
-    caste: "",
-    maritalStatus: "",
     gender: "",
-    state: "",
-    country: "",
-    area: "",
+    maritalStatus: "",
+    dob: "",
+    birthPlaceTime: "",
+    nativePlace: "",
+    gotra: "",
+    height: "",
+    complexion: "",
+    horoscope: "",
+    eatingHabits: "",
+    drinkingHabits: "",
+    smokingHabits: "",
+    disability: "",
+    nri: "",
+    vehicle: "",
+    // Family Details
+    fatherName: "",
+    fatherOccupation: "",
+    fatherOffice: "",
+    motherName: "",
+    motherOccupation: "",
+    residence: "",
+    otherProperty: "",
+    // Education
+    higherQualification: "",
+    graduation: "",
+    schooling: "",
+    // Profession & Income
+    occupation: "",
+    personalIncome: "",
+    familyIncome: "",
   });
 
-  const [showOther, setShowOther] = useState({});
+  const [siblings, setSiblings] = useState([]);
   const [photos, setPhotos] = useState([]);
   const [error, setError] = useState("");
 
-  const predefinedOptions = {
-    religion: ["Hindu", "Muslim", "Christian", "Sikh"],
-    caste: ["Brahmin", "Rajput", "SC", "ST", "OBC"],
-    maritalStatus: ["Single", "Married", "Divorced", "Widowed"],
-    gender: ["Male", "Female"],
-    state: ["Uttar Pradesh", "Maharashtra", "Bihar", "Delhi"],
-    country: ["India", "USA", "UK", "Canada"],
-  };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-    if (value === "Other") {
-      setShowOther({ ...showOther, [name]: true });
-    } else {
-      setShowOther({ ...showOther, [name]: false });
-    }
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleOtherChange = (name, value) => {
-    setFormData({ ...formData, [name]: value });
+  const handleSiblingChange = (index, field, value) => {
+    const updated = [...siblings];
+    updated[index][field] = value;
+    setSiblings(updated);
+  };
+
+  const addSibling = () => {
+    setSiblings([...siblings, { name: "", relation: "", age: "", profession: "", maritalStatus: "" }]);
+  };
+
+  const removeSibling = (index) => {
+    setSiblings(siblings.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    if (photos.length <= 2) {
+    if (photos.length < 3) {
       setError("Please upload at least 3 photos.");
       return;
     }
@@ -56,98 +75,122 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
     try {
       const data = new FormData();
       Object.keys(formData).forEach((key) => data.append(key, formData[key]));
+      data.append("siblings", JSON.stringify(siblings));
       photos.forEach((photo) => data.append("photos", photo));
+
+      // 🔍 Debug: log all fields being sent
+      console.log("📤 FormData being sent to backend:");
+      for (let [key, value] of data.entries()) {
+        console.log(key, value);
+      }
 
       await api.post("/people", data);
       onPersonAdded();
       onClose();
     } catch (err) {
       setError("Failed to add person");
-      console.error(err);
+      console.error("❌ API Error:", err.response?.data || err);
     }
   };
 
   return (
-    <div className="addperson-container">
-      <h2 className="form-title">Add New Person</h2>
-      {error && <p className="error-text">{error}</p>}
-
-      <form onSubmit={handleSubmit} className="person-form">
-        <input
-          type="text"
-          name="name"
-          placeholder="Name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-        />
-
-        <input
-          type="number"
-          name="age"
-          placeholder="Age"
-          value={formData.age}
-          onChange={handleChange}
-        />
-
-        <input
-          type="number"
-          name="height"
-          placeholder="Height (cm)"
-          value={formData.height}
-          onChange={handleChange}
-        />
-
-        {Object.keys(predefinedOptions).map((field) => (
-          <div key={field}>
-            <select
-              name={field}
-              value={formData[field]}
-              onChange={handleChange}
-            >
-              <option value="">Select {field}</option>
-              {predefinedOptions[field].map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-              <option value="Other">Other</option>
-            </select>
-            {showOther[field] && (
-              <input
-                type="text"
-                placeholder={`Enter ${field}`}
-                value={formData[field]}
-                onChange={(e) => handleOtherChange(field, e.target.value)}
-              />
-            )}
-          </div>
-        ))}
-
-        <input
-          type="text"
-          name="area"
-          placeholder="Area"
-          value={formData.area}
-          onChange={handleChange}
-        />
-
-        <input
-          type="file"
-          multiple
-          accept="image/*"
-          onChange={(e) => setPhotos(Array.from(e.target.files))}
-        />
-
-        <div className="form-buttons">
-          <button type="button" onClick={onClose} className="cancel-btn">
-            Cancel
-          </button>
-          <button type="submit" className="submit-btn">
-            Submit
-          </button>
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <div className="modal-header">
+          <h2>Add New Person</h2>
+          <button className="close-btn" onClick={onClose}>×</button>
         </div>
-      </form>
+
+        {error && <p className="error-text">{error}</p>}
+
+        <form onSubmit={handleSubmit} className="modal-form">
+          {/* Personal Details */}
+          <h3>Personal Details</h3>
+          <input name="name" placeholder="Name" onChange={handleChange} required />
+          <select name="gender" onChange={handleChange}>
+            <option value="">Gender</option>
+            <option>Male</option>
+            <option>Female</option>
+          </select>
+          <select name="maritalStatus" onChange={handleChange}>
+            <option value="">Marital Status</option>
+            <option>Never Married</option>
+            <option>Married</option>
+            <option>Divorced</option>
+            <option>Widowed</option>
+          </select>
+          <input type="date" name="dob" onChange={handleChange} />
+          <input name="birthPlaceTime" placeholder="Place of Birth & Time" onChange={handleChange} />
+          <input name="nativePlace" placeholder="Native Place" onChange={handleChange} />
+          <input name="gotra" placeholder="Gotra" onChange={handleChange} />
+          <input name="height" placeholder="Height" onChange={handleChange} />
+          <input name="complexion" placeholder="Complexion" onChange={handleChange} />
+          <select name="horoscope" onChange={handleChange}>
+            <option value="">Believe in Horoscopes?</option>
+            <option>Yes</option>
+            <option>No</option>
+          </select>
+          <input name="eatingHabits" placeholder="Eating Habits" onChange={handleChange} />
+          <input name="drinkingHabits" placeholder="Drinking Habits" onChange={handleChange} />
+          <input name="smokingHabits" placeholder="Smoking Habits" onChange={handleChange} />
+          <input name="disability" placeholder="Physical Disability" onChange={handleChange} />
+          <select name="nri" onChange={handleChange}>
+            <option value="">NRI?</option>
+            <option>Yes</option>
+            <option>No</option>
+          </select>
+          <select name="vehicle" onChange={handleChange}>
+            <option value="">Vehicle?</option>
+            <option>Yes</option>
+            <option>No</option>
+          </select>
+
+          {/* Family Details */}
+          <h3>Family Details</h3>
+          <input name="fatherName" placeholder="Father Name" onChange={handleChange} />
+          <input name="fatherOccupation" placeholder="Father Occupation Detail" onChange={handleChange} />
+          <input name="fatherOffice" placeholder="Father Office Detail" onChange={handleChange} />
+          <input name="motherName" placeholder="Mother Name" onChange={handleChange} />
+          <input name="motherOccupation" placeholder="Mother Occupation" onChange={handleChange} />
+          <input name="residence" placeholder="Residence" onChange={handleChange} />
+          <input name="otherProperty" placeholder="Other Property" onChange={handleChange} />
+
+          {/* Siblings */}
+          <h4>Siblings & Family Members</h4>
+          {siblings.map((s, idx) => (
+            <div key={idx} className="sibling-row">
+              <input placeholder="Name" value={s.name} onChange={(e) => handleSiblingChange(idx, "name", e.target.value)} />
+              <input placeholder="Relation" value={s.relation} onChange={(e) => handleSiblingChange(idx, "relation", e.target.value)} />
+              <input placeholder="Age" value={s.age} onChange={(e) => handleSiblingChange(idx, "age", e.target.value)} />
+              <input placeholder="Profession" value={s.profession} onChange={(e) => handleSiblingChange(idx, "profession", e.target.value)} />
+              <input placeholder="Marital Status" value={s.maritalStatus} onChange={(e) => handleSiblingChange(idx, "maritalStatus", e.target.value)} />
+              <button type="button" onClick={() => removeSibling(idx)}>❌</button>
+            </div>
+          ))}
+          <button type="button" onClick={addSibling} className="add-sibling-btn">+ Add Sibling</button>
+
+          {/* Education */}
+          <h3>Education</h3>
+          <input name="higherQualification" placeholder="Higher Qualification" onChange={handleChange} />
+          <input name="graduation" placeholder="Graduation" onChange={handleChange} />
+          <input name="schooling" placeholder="Schooling" onChange={handleChange} />
+
+          {/* Profession & Income */}
+          <h3>Profession & Income</h3>
+          <textarea name="occupation" placeholder="Occupation / Business Details" onChange={handleChange}></textarea>
+          <input name="personalIncome" placeholder="Personal Income" onChange={handleChange} />
+          <input name="familyIncome" placeholder="Family Income" onChange={handleChange} />
+
+          {/* Photos */}
+          <h3>Photos</h3>
+          <input type="file" multiple accept="image/*" onChange={(e) => setPhotos(Array.from(e.target.files))} />
+
+          <div className="form-actions">
+            <button type="button" onClick={onClose} className="cancel-btn">Cancel</button>
+            <button type="submit" className="submit-btn">Submit</button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

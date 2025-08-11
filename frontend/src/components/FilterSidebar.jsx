@@ -5,13 +5,13 @@ import "../css/filterSidebar.css";
 const dropdownOptions = {
   age: ["18-25", "26-30", "31-35", "36-40", "41+", "Other"],
   height: ["<150cm", "150-160cm", "161-170cm", "171-180cm", "181cm+", "Other"],
-  religion: ["Hindu", "Muslim", "Christian", "Sikh", "Jain", "Other"],
-  caste: ["General", "OBC", "SC", "ST", "Other"],
+  religion: ["Hindu", "Jain", "Sikh", "Marawadi", "Bania", "Other"],
+  caste: ["General", "Other"],
   maritalStatus: ["Single", "Married", "Divorced", "Widowed", "Other"],
   gender: ["Male", "Female", "Other"],
-  state: ["Uttar Pradesh", "Maharashtra", "Delhi", "Karnataka", "Tamil Nadu", "Other"],
-  country: ["India", "USA", "UK", "Canada", "Australia", "Other"],
-  area: ["Urban", "Rural", "Suburban", "Other"],
+  state: ["Delhi", "NCR Gurgaon", "Noida", "Meerut", "Haryana", "Other"],
+  country: ["India", "USA", "UK", "Canada", "Other"],
+  // area removed from dropdown — handled as free text
 };
 
 const FilterSidebar = ({ onFilter }) => {
@@ -77,6 +77,20 @@ const FilterSidebar = ({ onFilter }) => {
           )}
         </div>
       ))}
+
+      {/* Area filter - always free text */}
+      <div className="filter-group">
+        <label className="filter-label">Area</label>
+        <input
+          type="text"
+          className="filter-input"
+          placeholder="Enter area"
+          value={filters.area || ""}
+          onChange={(e) =>
+            setFilters({ ...filters, area: e.target.value })
+          }
+        />
+      </div>
 
       <button className="submit-btn" onClick={handleSubmit}>
         Show Results

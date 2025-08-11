@@ -5,11 +5,10 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const path = require("path");
 
-const authRoutes = require("./routes/authRoutes");
 const pdfRoutes = require("./routes/pdfRoutes");
+const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const personRoutes = require("./routes/personRoutes");
-const publicFormRoutes = require("./routes/publicForm"); // ✅ NEW
 
 dotenv.config();
 
@@ -20,6 +19,7 @@ app.use(express.json());
 
 // ✅ Serve uploaded images
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/assets", express.static(path.join(__dirname, "assets"))); // if using assets for logo
 
 mongoose
   .connect(process.env.MONGO_URI, {
@@ -32,8 +32,7 @@ mongoose
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/people", personRoutes);
-app.use("/api", publicFormRoutes); 
-app.use("/api/people", pdfRoutes);
+app.use("/api/people", pdfRoutes); // ✅ Only once
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));

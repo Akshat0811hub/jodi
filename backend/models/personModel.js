@@ -1,0 +1,37 @@
+const mongoose = require("mongoose");
+
+const personSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  gender: { type: String, required: true },
+  maritalStatus: String,
+  dob: Date,
+  birthPlaceTime: String,
+  nativePlace: String,
+  gotra: String,
+  height: String,
+  complexion: String,
+  horoscope: String,
+  eatingHabits: String,
+  drinkingHabits: String,
+  smokingHabits: String,
+  disability: String,
+  nri: String,
+  vehicle: String,
+  fatherName: String,
+  fatherOccupation: String,
+  fatherOffice: String,
+  motherName: String,
+  motherOccupation: String,
+  residence: String,
+  otherProperty: String,
+  higherQualification: String,
+  graduation: String,
+  schooling: String,
+  occupation: String,
+  personalIncome: String,
+  familyIncome: String,
+  siblings: { type: Array, default: [] },
+  photos: { type: [String], default: [] },
+});
+
+module.exports = mongoose.model("Person", personSchema);

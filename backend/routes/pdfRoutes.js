@@ -3,44 +3,73 @@ const router = express.Router();
 const puppeteer = require("puppeteer");
 const ejs = require("ejs");
 const path = require("path");
-const Person = require("../models/Person"); // adjust path to your Mongoose model
+const Person = require("../models/personModel");
 
-// GET /api/people/:id/pdf
+// GET /api/people/:id/pdf?fields=age,height
 router.get("/:id/pdf", async (req, res) => {
   try {
-    const id = req.params.id;
-    // fetch person from DB
-    const person = await Person.findById(id).lean();
-    if (!person) return res.status(404).json({ message: "Person not found" });
+    const { fields } = req.query;
+    const selectedFields = fields ? fields.split(",") : [];
 
-    // Prepare data for the template
-    // Ensure photos are full public URLs (e.g. /uploads/filename.jpg or absolute URLs)
-    // logoUrl can be stored in DB or config; set default here
+    const person = await Person.findById(req.params.id).lean();
+    if (!person) {
+      return res.status(404).json({ message: "Person not found" });
+    }
+
+    // ✅ Ensure photos have absolute URLs so they show in PDF
+    if (person.photos && person.photos.length > 0) {
+      person.photos = person.photos.map((photo) =>
+        photo.startsWith("http")
+          ? photo
+          : `${req.protocol}://${req.get("host")}${photo}`
+      );
+    }
+
+    let filteredPerson = { name: person.name, photos: person.photos };
+
+    if (selectedFields.length > 0) {
+      selectedFields.forEach((field) => {
+        if (person[field] !== undefined) {
+          filteredPerson[field] = person[field];
+        }
+      });
+
+      // ✅ Always include relationship details if available
+      ["father", "mother", "siblings", "other"].forEach((rel) => {
+        if (person[rel] !== undefined) {
+          filteredPerson[rel] = person[rel];
+        }
+      });
+    } else {
+      filteredPerson = person;
+    }
+
+    const logoPath = `${req.protocol}://${req.get("host")}/assets/logo.png`;
+
     const templateData = {
-      person,
-      logoUrl: process.env.COMPANY_LOGO_URL || `${req.protocol}://${req.get("host")}/assets/logo.png`,
-      companyName: process.env.COMPANY_NAME || "SHADIEVERGREEN A UNIT OF LAGANPARTNERS",
-      companyContact: process.env.COMPANY_CONTACT || "contact@laganpartners.com",
-      companyAddress: process.env.COMPANY_ADDRESS || "Delhi Branch - C 7, Netaji Road Adarsh Nagar Delhi 110033",
+      person: filteredPerson,
+      logoUrl: logoPath,
+      companyName: "Jodi No.1",
+      PhoneNo: "9871080409 , 9211729184 , 9211729185 , 9211729186",
+      companyContact: "www.jodino1.com",
+      companyAddress:
+        "G-25, Vardhman Premium Mall, Opp Kali Mata Mandir Depali enclave Delhi-110034",
       generatedAt: new Date(),
     };
 
-    // Render EJS to HTML
-    const html = await ejs.renderFile(path.join(__dirname, "..", "templates", "person-pdf.ejs"), templateData, { async: true });
+    const html = await ejs.renderFile(
+      path.join(__dirname, "..", "templates", "person-pdf.ejs"),
+      templateData,
+      { async: true }
+    );
 
-    // Launch Puppeteer
     const browser = await puppeteer.launch({
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
     const page = await browser.newPage();
-
-    // Set HTML content
     await page.setContent(html, { waitUntil: "networkidle0" });
-
-    // Emulate print CSS
     await page.emulateMediaType("screen");
 
-    // Create PDF buffer
     const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
@@ -49,16 +78,18 @@ router.get("/:id/pdf", async (req, res) => {
 
     await browser.close();
 
-    // send as download
     res.set({
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="${person.name || "profile"}.pdf"`,
       "Content-Length": pdfBuffer.length,
     });
+
     res.send(pdfBuffer);
   } catch (err) {
-    console.error("PDF generation error:", err);
-    res.status(500).json({ message: "Failed to generate PDF" });
+    console.error("❌ PDF generation error:", err);
+    res
+      .status(500)
+      .json({ message: "Failed to generate PDF", error: err.message });
   }
 });
 
