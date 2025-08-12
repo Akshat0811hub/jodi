@@ -7,10 +7,11 @@ const dropdownOptions = {
   height: ["<150cm", "150-160cm", "161-170cm", "171-180cm", "181cm+", "Other"],
   religion: ["Hindu", "Jain", "Sikh", "Marawadi", "Bania", "Other"],
   caste: ["General", "Other"],
+  gotra: ["Shandilya", "Bharadwaj", "Kashyap", "Gautam", "Other"], // ✅ New field
   maritalStatus: ["Single", "Married", "Divorced", "Widowed", "Other"],
   gender: ["Male", "Female", "Other"],
   state: ["Delhi", "NCR Gurgaon", "Noida", "Meerut", "Haryana", "Other"],
-  country: ["India", "USA", "UK", "Canada", "Other"],
+  // country removed
   // area removed from dropdown — handled as free text
 };
 

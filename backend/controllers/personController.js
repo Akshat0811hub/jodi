@@ -1,4 +1,3 @@
-// controllers/personController.js
 const path = require("path");
 const Person = require("../models/personModel");
 
@@ -39,7 +38,8 @@ const addPerson = async (req, res) => {
       }
     }
 
-    if (req.body.siblings) {
+    // Siblings parse
+    if (req.body.siblings && typeof req.body.siblings === "string") {
       try {
         req.body.siblings = JSON.parse(req.body.siblings);
       } catch (err) {
@@ -48,38 +48,11 @@ const addPerson = async (req, res) => {
       }
     }
 
+    // Photo handling
     const photoPaths = req.files?.map((file) => `/uploads/${file.filename}`) || [];
 
     const newPerson = new Person({
-      name: req.body.name,
-      gender: req.body.gender,
-      maritalStatus: req.body.maritalStatus,
-      dob: req.body.dob,
-      birthPlaceTime: req.body.birthPlaceTime,
-      nativePlace: req.body.nativePlace,
-      gotra: req.body.gotra,
-      height: req.body.height,
-      complexion: req.body.complexion,
-      horoscope: req.body.horoscope,
-      eatingHabits: req.body.eatingHabits,
-      drinkingHabits: req.body.drinkingHabits,
-      smokingHabits: req.body.smokingHabits,
-      disability: req.body.disability,
-      nri: req.body.nri,
-      vehicle: req.body.vehicle,
-      fatherName: req.body.fatherName,
-      fatherOccupation: req.body.fatherOccupation,
-      fatherOffice: req.body.fatherOffice,
-      motherName: req.body.motherName,
-      motherOccupation: req.body.motherOccupation,
-      residence: req.body.residence,
-      otherProperty: req.body.otherProperty,
-      higherQualification: req.body.higherQualification,
-      graduation: req.body.graduation,
-      schooling: req.body.schooling,
-      occupation: req.body.occupation,
-      personalIncome: req.body.personalIncome,
-      familyIncome: req.body.familyIncome,
+      ...req.body, // spread body so all fields are assigned
       siblings: req.body.siblings || [],
       photos: photoPaths,
     });
@@ -95,7 +68,25 @@ const addPerson = async (req, res) => {
 // 📌 Update a person
 const updatePerson = async (req, res) => {
   try {
-    const updated = await Person.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    let updatedData = { ...req.body };
+
+    // If files are uploaded, add them
+    if (req.files && req.files.length > 0) {
+      const photoPaths = req.files.map((file) => `/uploads/${file.filename}`);
+      updatedData.photos = photoPaths;
+    }
+
+    // Handle siblings JSON parsing
+    if (updatedData.siblings && typeof updatedData.siblings === "string") {
+      try {
+        updatedData.siblings = JSON.parse(updatedData.siblings);
+      } catch (err) {
+        console.error("❌ Failed to parse siblings in update:", err);
+        return res.status(400).json({ message: "Invalid siblings format" });
+      }
+    }
+
+    const updated = await Person.findByIdAndUpdate(req.params.id, updatedData, { new: true });
     if (!updated) {
       return res.status(404).json({ message: "Person not found" });
     }

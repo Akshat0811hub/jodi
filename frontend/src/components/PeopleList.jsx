@@ -142,7 +142,7 @@ const PeopleList = ({ filters }) => {
                 <td>{person.height || "-"}</td>
                 <td>{person.dob || "-"}</td>
                 <td>{person.phone || "-"}</td>
-                <td>{person.state || "-"}, {person.country || "-"}</td>
+                <td>{person.state || "-"}</td>
               </tr>
 
               {expandedRow === person._id && (

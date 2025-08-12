@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title><%= person.name %> - Profile</title>
+  <title><%= person.name || "Profile" %> - Profile</title>
   <style>
     @page { size: A4; margin: 0; }
     html,body { margin:0; padding:0; font-family: "Helvetica", Arial, sans-serif; color: #111; -webkit-print-color-adjust: exact; }
@@ -44,7 +44,6 @@
 
     .disclaimer { font-size:11px; color:#666; margin-top:14px; line-height:1.25; }
 
-    /* Full-page photo styling */
     .photo-page { page-break-before: always; text-align: center; }
     .photo-page img { max-width: 100%; max-height: 95vh; object-fit: contain; }
   </style>
@@ -76,36 +75,36 @@
       <% } %>
 
       <div class="personal-details">
-        <div class="detail-row"><div class="label">Name :</div><div class="value"><%= person.name || "" %></div></div>
-        <div class="detail-row"><div class="label">Gender :</div><div class="value"><%= person.gender || "" %></div></div>
-        <div class="detail-row"><div class="label">Marital Status :</div><div class="value"><%= person.maritalStatus || "" %></div></div>
-        <div class="detail-row"><div class="label">Date Of Birth :</div><div class="value"><%= person.dob || "" %></div></div>
-        <div class="detail-row"><div class="label">Native Place :</div><div class="value"><%= person.nativePlace || "" %></div></div>
-        <div class="detail-row"><div class="label">Height :</div><div class="value"><%= person.height || "" %></div></div>
-        <div class="detail-row"><div class="label">Complexion :</div><div class="value"><%= person.complexion || "" %></div></div>
-        <div class="detail-row"><div class="label">Eating Habits :</div><div class="value"><%= person.eatingHabits || "" %></div></div>
+        <div class="detail-row"><div class="label">Name :</div><div class="value"><%= person.name || "—" %></div></div>
+        <div class="detail-row"><div class="label">Gender :</div><div class="value"><%= person.gender || "—" %></div></div>
+        <div class="detail-row"><div class="label">Marital Status :</div><div class="value"><%= person.maritalStatus || "—" %></div></div>
+        <div class="detail-row"><div class="label">Date Of Birth :</div><div class="value"><%= person.dob || "—" %></div></div>
+        <div class="detail-row"><div class="label">Native Place :</div><div class="value"><%= person.nativePlace || "—" %></div></div>
+        <div class="detail-row"><div class="label">Height :</div><div class="value"><%= person.height || "—" %></div></div>
+        <div class="detail-row"><div class="label">Complexion :</div><div class="value"><%= person.complexion || "—" %></div></div>
+        <div class="detail-row"><div class="label">Eating Habits :</div><div class="value"><%= person.eatingHabits || "—" %></div></div>
         <div class="detail-row"><div class="label">NRI :</div><div class="value"><%= person.nri ? "Yes" : "No" %></div></div>
       </div>
     </div>
 
     <div class="section">
       <h2>Educational & Profession</h2>
-      <div class="detail-row"><div class="label">Higher Qualification :</div><div class="value"><%= person.education || "" %></div></div>
-      <div class="detail-row"><div class="label">Occupation :</div><div class="value"><%= person.occupation || "" %></div></div>
-      <div class="detail-row"><div class="label">Personal Income :</div><div class="value"><%= person.income || "" %></div></div>
-      <div class="detail-row"><div class="label">Residence :</div><div class="value"><%= person.residence || "" %></div></div>
+      <div class="detail-row"><div class="label">Higher Qualification :</div><div class="value"><%= person.education || "—" %></div></div>
+      <div class="detail-row"><div class="label">Occupation :</div><div class="value"><%= person.occupation || "—" %></div></div>
+      <div class="detail-row"><div class="label">Personal Income :</div><div class="value"><%= person.income || "—" %></div></div>
+      <div class="detail-row"><div class="label">Residence :</div><div class="value"><%= person.residence || "—" %></div></div>
     </div>
 
     <div class="section">
       <h2>Family Details</h2>
       <table class="family-table">
         <tr>
-          <td><strong>Father</strong></td><td><%= person.family?.father || "" %></td>
-          <td><strong>Mother</strong></td><td><%= person.family?.mother || "" %></td>
+          <td><strong>Father</strong></td><td><%= (person.family && person.family.father) || person.fatherName || "—" %></td>
+          <td><strong>Mother</strong></td><td><%= (person.family && person.family.mother) || person.motherName || "—" %></td>
         </tr>
         <tr>
-          <td><strong>Family Income</strong></td><td><%= person.familyIncome || "" %></td>
-          <td><strong>Other Property</strong></td><td><%= person.otherProperty || "" %></td>
+          <td><strong>Family Income</strong></td><td><%= person.familyIncome || "—" %></td>
+          <td><strong>Other Property</strong></td><td><%= person.otherProperty || "—" %></td>
         </tr>
       </table>
     </div>
@@ -117,14 +116,14 @@
           <tr><td><strong>Name</strong></td><td><strong>Relation</strong></td><td><strong>Age</strong></td><td><strong>Profession</strong></td><td><strong>Marital Status</strong></td></tr>
         </thead>
         <tbody>
-          <% if (person.siblings && person.siblings.length) { %>
+          <% if (Array.isArray(person.siblings) && person.siblings.length) { %>
             <% person.siblings.forEach(function(sib){ %>
               <tr>
-                <td><%= sib.name %></td>
-                <td><%= sib.relation %></td>
-                <td><%= sib.age %></td>
-                <td><%= sib.profession %></td>
-                <td><%= sib.maritalStatus %></td>
+                <td><%= sib.name || "—" %></td>
+                <td><%= sib.relation || "—" %></td>
+                <td><%= sib.age || "—" %></td>
+                <td><%= sib.profession || "—" %></td>
+                <td><%= sib.maritalStatus || "—" %></td>
               </tr>
             <% }) %>
           <% } else { %>
@@ -139,7 +138,6 @@
     </div>
   </div>
 
-  <!-- Extra photos as separate pages -->
   <% if (person.photos && person.photos.length > 1) { 
        for (let i = 1; i < person.photos.length; i++) { %>
     <div class="photo-page">

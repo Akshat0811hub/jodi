@@ -5,7 +5,6 @@ const ejs = require("ejs");
 const path = require("path");
 const Person = require("../models/personModel");
 
-// GET /api/people/:id/pdf?fields=age,height
 router.get("/:id/pdf", async (req, res) => {
   try {
     const { fields } = req.query;
@@ -16,7 +15,7 @@ router.get("/:id/pdf", async (req, res) => {
       return res.status(404).json({ message: "Person not found" });
     }
 
-    // ✅ Ensure photos have absolute URLs so they show in PDF
+    // ✅ Ensure photos have absolute URLs
     if (person.photos && person.photos.length > 0) {
       person.photos = person.photos.map((photo) =>
         photo.startsWith("http")
@@ -25,23 +24,55 @@ router.get("/:id/pdf", async (req, res) => {
       );
     }
 
-    let filteredPerson = { name: person.name, photos: person.photos };
+    // ✅ Always include these fields in the PDF
+    const alwaysInclude = [
+      "dob",
+      "nativePlace",
+      "complexion",
+      "eatingHabits",
+      "higherQualification",
+      "personalIncome",
+      "fatherName",
+      "fatherOccupation",
+      "fatherOffice",
+      "motherName",
+      "motherOccupation",
+      "residence",
+      "otherProperty",
+      "siblings",
+    ];
+
+    // ✅ Safe value formatting
+    function safeValue(val) {
+      if (val === null || val === undefined) return "N/A";
+      if (typeof val === "string" && val.trim() === "") return "N/A";
+      if (val instanceof Date) return val.toLocaleDateString("en-GB"); // format dates
+      if (Array.isArray(val) && val.length === 0) return "N/A";
+      return val;
+    }
+
+    let filteredPerson = { name: person.name || "N/A", photos: person.photos || [] };
 
     if (selectedFields.length > 0) {
+      // Include only selected fields
       selectedFields.forEach((field) => {
         if (person[field] !== undefined) {
-          filteredPerson[field] = person[field];
+          filteredPerson[field] = safeValue(person[field]);
         }
       });
 
-      // ✅ Always include relationship details if available
-      ["father", "mother", "siblings", "other"].forEach((rel) => {
-        if (person[rel] !== undefined) {
-          filteredPerson[rel] = person[rel];
+      // ✅ Always include important relationship fields
+      alwaysInclude.forEach((field) => {
+        if (person[field] !== undefined) {
+          filteredPerson[field] = safeValue(person[field]);
         }
       });
     } else {
-      filteredPerson = person;
+      // If no filter, include everything
+      filteredPerson = {};
+      Object.keys(person).forEach((key) => {
+        filteredPerson[key] = safeValue(person[key]);
+      });
     }
 
     const logoPath = `${req.protocol}://${req.get("host")}/assets/logo.png`;
