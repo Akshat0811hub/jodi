@@ -12,6 +12,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@sparticuz/chromium": "^138.0.2",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
@@ -22,7 +23,7 @@
     "mongodb": "^6.18.0",
     "mongoose": "^8.17.1",
     "multer": "^2.0.2",
-    "puppeteer": "^22.15.0"
+    "puppeteer-core": "^24.16.2"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const puppeteer = require("puppeteer");
+const chromium = require("@sparticuz/chromium"); // ✅ Render-friendly chromium
+const puppeteer = require("puppeteer-core"); // ✅ core version
 const ejs = require("ejs");
 const path = require("path");
 const Person = require("../models/personModel");
@@ -15,7 +16,6 @@ router.get("/:id/pdf", async (req, res) => {
       return res.status(404).json({ message: "Person not found" });
     }
 
-    // ✅ Ensure photos have absolute URLs
     if (person.photos && person.photos.length > 0) {
       person.photos = person.photos.map((photo) =>
         photo.startsWith("http")
@@ -30,7 +30,6 @@ router.get("/:id/pdf", async (req, res) => {
     };
 
     if (selectedFields.length > 0) {
-      // ✅ Only include selected fields (including phoneNumber if ticked)
       selectedFields.forEach((field) => {
         if (person[field] !== undefined) {
           filteredPerson[field] =
@@ -40,7 +39,6 @@ router.get("/:id/pdf", async (req, res) => {
         }
       });
 
-      // ✅ Always include important fields even if not selected
       const alwaysInclude = [
         "fatherName",
         "fatherOccupation",
@@ -63,7 +61,6 @@ router.get("/:id/pdf", async (req, res) => {
         }
       });
     } else {
-      // ✅ No filter => include all fields
       filteredPerson = {};
       Object.keys(person).forEach((key) => {
         filteredPerson[key] =
@@ -92,11 +89,12 @@ router.get("/:id/pdf", async (req, res) => {
       { async: true }
     );
 
-    // ✅ Puppeteer launch config updated for Render
+    // ✅ Render-compatible Puppeteer launch
     const browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-      executablePath: puppeteer.executablePath(),
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
     });
 
     const page = await browser.newPage();
