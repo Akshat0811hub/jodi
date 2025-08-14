@@ -24,54 +24,46 @@ router.get("/:id/pdf", async (req, res) => {
       );
     }
 
-    // ✅ Always include these fields in the PDF
-    const alwaysInclude = [
-      "dob",
-      "nativePlace",
-      "complexion",
-      "eatingHabits",
-      "higherQualification",
-      "personalIncome",
-      "fatherName",
-      "fatherOccupation",
-      "fatherOffice",
-      "motherName",
-      "motherOccupation",
-      "residence",
-      "otherProperty",
-      "siblings",
-    ];
-
-    // ✅ Safe value formatting
-    function safeValue(val) {
-      if (val === null || val === undefined) return "N/A";
-      if (typeof val === "string" && val.trim() === "") return "N/A";
-      if (val instanceof Date) return val.toLocaleDateString("en-GB"); // format dates
-      if (Array.isArray(val) && val.length === 0) return "N/A";
-      return val;
-    }
-
     let filteredPerson = { name: person.name || "N/A", photos: person.photos || [] };
 
     if (selectedFields.length > 0) {
-      // Include only selected fields
+      // ✅ Only include selected fields (including phoneNumber if ticked)
       selectedFields.forEach((field) => {
         if (person[field] !== undefined) {
-          filteredPerson[field] = safeValue(person[field]);
+          filteredPerson[field] =
+            person[field] && person[field].toString().trim() !== ""
+              ? person[field]
+              : "N/A";
         }
       });
 
-      // ✅ Always include important relationship fields
+      // ✅ Always include important fields even if not selected
+      const alwaysInclude = [
+        "fatherName",
+        "fatherOccupation",
+        "fatherOffice",
+        "motherName",
+        "motherOccupation",
+        "residence",
+        "otherProperty",
+        "siblings",
+      ];
       alwaysInclude.forEach((field) => {
-        if (person[field] !== undefined) {
-          filteredPerson[field] = safeValue(person[field]);
+        if (person[field] !== undefined && filteredPerson[field] === undefined) {
+          filteredPerson[field] =
+            person[field] && person[field].toString().trim() !== ""
+              ? person[field]
+              : "N/A";
         }
       });
     } else {
-      // If no filter, include everything
+      // ✅ No filter => include all fields
       filteredPerson = {};
       Object.keys(person).forEach((key) => {
-        filteredPerson[key] = safeValue(person[key]);
+        filteredPerson[key] =
+          person[key] && person[key].toString().trim() !== ""
+            ? person[key]
+            : "N/A";
       });
     }
 
@@ -118,9 +110,7 @@ router.get("/:id/pdf", async (req, res) => {
     res.send(pdfBuffer);
   } catch (err) {
     console.error("❌ PDF generation error:", err);
-    res
-      .status(500)
-      .json({ message: "Failed to generate PDF", error: err.message });
+    res.status(500).json({ message: "Failed to generate PDF", error: err.message });
   }
 });
 

@@ -13,8 +13,10 @@ const availableFields = [
   "caste",
   "maritalStatus",
   "state",
-  "country",
+  "phoneNumber",
   "area",
+  "dob",
+  "nativePlace"
 ];
 
 const fieldLabels = {
@@ -25,8 +27,10 @@ const fieldLabels = {
   caste: "Caste",
   maritalStatus: "Marital Status",
   state: "State",
-  country: "Country",
   area: "Area",
+  dob: "Date of Birth",
+  nativePlace: "Native Place",
+  phoneNumber: "Phone Number",
 };
 
 const PeopleList = ({ filters }) => {
@@ -115,6 +119,17 @@ const PeopleList = ({ filters }) => {
     }
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    if (isNaN(date)) return "-";
+    return date.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
   return (
     <div className="people-container">
       <h2 className="people-heading">
@@ -138,11 +153,11 @@ const PeopleList = ({ filters }) => {
                 }
                 className="people-row"
               >
-                <td>{person.name}</td>
+                <td>{person.name || "-"}</td>
                 <td>{person.height || "-"}</td>
-                <td>{person.dob || "-"}</td>
-                <td>{person.phone || "-"}</td>
-                <td>{person.state || "-"}</td>
+                <td>{formatDate(person.dob)}</td>
+                <td>{person.phoneNumber || "-"}</td>
+                <td>{person.nativePlace || person.state || "-"}</td>
               </tr>
 
               {expandedRow === person._id && (
@@ -161,7 +176,10 @@ const PeopleList = ({ filters }) => {
                           <div>
                             {availableFields.map((field) => (
                               <p key={field}>
-                                <strong>{fieldLabels[field]}:</strong> {person[field]}
+                                <strong>{fieldLabels[field]}:</strong>{" "}
+                                {field === "dob"
+                                  ? formatDate(person[field])
+                                  : (person[field] || "-")}
                               </p>
                             ))}
                           </div>
@@ -177,7 +195,9 @@ const PeopleList = ({ filters }) => {
                           <button
                             onClick={() =>
                               setShowFieldSelection(
-                                showFieldSelection === person._id ? false : person._id
+                                showFieldSelection === person._id
+                                  ? false
+                                  : person._id
                               )
                             }
                             className="pdf-btn"

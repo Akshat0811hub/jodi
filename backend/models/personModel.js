@@ -30,6 +30,7 @@ const personSchema = new mongoose.Schema({
   occupation: String,
   personalIncome: String,
   familyIncome: String,
+  phoneNumber: String, // ✅ Added this
   siblings: { type: Array, default: [] },
   photos: { type: [String], default: [] },
 });

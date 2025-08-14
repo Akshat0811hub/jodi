@@ -132,10 +132,6 @@
         </tbody>
       </table>
     </div>
-
-    <div class="disclaimer">
-      <strong>NOTE :</strong> The above particulars have been provided to the best of our knowledge, as per information provided by the concerned party. We shall not be responsible for misrepresentation of any information here in. Amount will not be refunded in any case. All clients have to pay full maturity amount on ROKA CEREMONY.
-    </div>
   </div>
 
   <% if (person.photos && person.photos.length > 1) { 
@@ -144,6 +140,17 @@
       <img src="<%= person.photos[i] %>" alt="Photo <%= i+1 %>" />
     </div>
   <% } } %>
+
+  <!-- Last Page NOTE -->
+  <div style="page-break-before: always; padding: 80px 40px; text-align: center;">
+    <div style="font-size: 20px; font-weight: bold; line-height: 1.6; background-color: maroon; color: white;">
+      NOTE : The above particulars have been provided to the best of our knowledge, as per
+      information provided by the concerned party.<br/>
+      We ( Jodi No 1) shall not be responsible for misrepresentation of the any or all of
+      the information here in. Amount will not be refunded in any case.<br/>
+      All clients have to pay full maturity amount on ROKA CEREMONY.
+    </div>
+  </div>
 
   <footer>
     <div style="display:flex;justify-content:space-between;align-items:center;">
