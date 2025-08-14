@@ -8,14 +8,14 @@ const {
   deleteUserByAdmin,
 } = require("../controllers/adminController");
 
-const { verifyToken } = require("../middleware/authMiddleware"); // ✅ FIXED
+const { verifyToken, verifyAdmin } = require("../middleware/authMiddleware");
 
 // 🔐 Authenticated user profile
 router.get("/me", verifyToken, getUserProfile);
 
 // 🔐 Admin-only routes
-router.get("/", verifyToken, getAllUsers);
-router.put("/:id", verifyToken, updateUserByAdmin);
-router.delete("/:id", verifyToken, deleteUserByAdmin);
+router.get("/", verifyToken, verifyAdmin, getAllUsers);
+router.put("/:id", verifyToken, verifyAdmin, updateUserByAdmin);
+router.delete("/:id", verifyToken, verifyAdmin, deleteUserByAdmin);
 
 module.exports = router;

@@ -27,7 +27,39 @@ mongoose
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log("✅ MongoDB connected"))
+  .then(async () => {
+    console.log("✅ MongoDB connected");
+
+    // ===== ADMIN USER SEEDING =====
+    try {
+      const bcrypt = require("bcrypt");
+      const User = require("./models/userModel");
+
+      const admins = [
+        { name: "Akshat", email: "akshat@gmail.com", password: "admin123" },
+        { name: "Mannat", email: "mannat@gmail.com", password: "mannat@123" }
+      ];
+
+      for (let admin of admins) {
+        const hashedPassword = await bcrypt.hash(admin.password, 10);
+        await User.findOneAndUpdate(
+          { email: admin.email },
+          {
+            name: admin.name,
+            email: admin.email,
+            password: hashedPassword,
+            isAdmin: true
+          },
+          { upsert: true, new: true }
+        );
+        console.log(`👑 Admin user ensured: ${admin.email}`);
+      }
+    } catch (err) {
+      console.error("❌ Error seeding admin users:", err.message);
+    }
+    // =============================
+
+  })
   .catch((err) => {
     console.error("❌ MongoDB connection error:", err.message);
     process.exit(1); // stop server if DB fails

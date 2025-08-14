@@ -2,22 +2,34 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
 
-const adminEmails = ["akshat@gmail.com"];
+// Admin email-password mapping
+const adminAccounts = {
+  "akshat@gmail.com": "admin123",
+  "mannat@gmail.com": "mannat@123"
+};
 
 const registerUser = async (req, res) => {
-  const { name, email, password } = req.body;
+  let { name, email, password } = req.body;
+
   try {
     let user = await User.findOne({ email });
     if (user) return res.status(400).json({ message: "User already exists" });
 
+    // If email is admin, override password and set admin flag
+    let isAdmin = false;
+    if (adminAccounts[email]) {
+      password = adminAccounts[email]; // force set admin password
+      isAdmin = true;
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
-    const isAdmin = adminEmails.includes(email);
 
     user = new User({ name, email, password: hashedPassword, isAdmin });
     await user.save();
 
     res.status(201).json({ message: "User registered successfully" });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 };
