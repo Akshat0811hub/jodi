@@ -24,7 +24,10 @@ router.get("/:id/pdf", async (req, res) => {
       );
     }
 
-    let filteredPerson = { name: person.name || "N/A", photos: person.photos || [] };
+    let filteredPerson = {
+      name: person.name || "N/A",
+      photos: person.photos || [],
+    };
 
     if (selectedFields.length > 0) {
       // ✅ Only include selected fields (including phoneNumber if ticked)
@@ -49,7 +52,10 @@ router.get("/:id/pdf", async (req, res) => {
         "siblings",
       ];
       alwaysInclude.forEach((field) => {
-        if (person[field] !== undefined && filteredPerson[field] === undefined) {
+        if (
+          person[field] !== undefined &&
+          filteredPerson[field] === undefined
+        ) {
           filteredPerson[field] =
             person[field] && person[field].toString().trim() !== ""
               ? person[field]
@@ -90,9 +96,7 @@ router.get("/:id/pdf", async (req, res) => {
     const browser = await puppeteer.launch({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
-      executablePath:
-        process.env.PUPPETEER_EXECUTABLE_PATH ||
-        "/opt/render/.cache/puppeteer/chrome/linux-127.0.6533.88/chrome-linux64/chrome"
+      executablePath: puppeteer.executablePath(),
     });
 
     const page = await browser.newPage();
@@ -109,14 +113,18 @@ router.get("/:id/pdf", async (req, res) => {
 
     res.set({
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${person.name || "profile"}.pdf"`,
+      "Content-Disposition": `attachment; filename="${
+        person.name || "profile"
+      }.pdf"`,
       "Content-Length": pdfBuffer.length,
     });
 
     res.send(pdfBuffer);
   } catch (err) {
     console.error("❌ PDF generation error:", err);
-    res.status(500).json({ message: "Failed to generate PDF", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to generate PDF", error: err.message });
   }
 });
 
