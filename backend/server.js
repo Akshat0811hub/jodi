@@ -21,11 +21,17 @@ app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/assets", express.static(path.join(__dirname, "assets"))); // if using assets for logo
 
-// ✅ Updated MongoDB Connection
+// ✅ MongoDB Connection (Atlas Ready)
 mongoose
-  .connect(process.env.MONGO_URI)
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => console.error("❌ MongoDB connection error:", err));
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err.message);
+    process.exit(1); // stop server if DB fails
+  });
 
 // ✅ TEST ROUTE (Temporary - Delete after testing)
 app.get("/api/test-insert", async (req, res) => {
