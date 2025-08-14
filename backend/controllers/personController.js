@@ -1,10 +1,39 @@
 const path = require("path");
 const Person = require("../models/personModel");
 
-// 📌 Get all people
+// 📌 Get all people with filters
 const getPeople = async (req, res) => {
   try {
-    const people = await Person.find();
+    const queryObj = {};
+
+    // Personal details fields jo hum filter karna chahte hain
+    const regexFields = [
+      "name",
+      "gotra",
+      "area",
+      "state",
+      "religion",
+      "maritalStatus",
+      "gender",
+      "height",
+      "complexion",
+      "nativePlace"
+    ];
+
+    // Loop through query params
+    for (const [key, value] of Object.entries(req.query)) {
+      if (!value || value.trim() === "") continue; // skip empty
+
+      if (regexFields.includes(key)) {
+        // Case-insensitive partial match
+        queryObj[key] = { $regex: value.trim(), $options: "i" };
+      } else {
+        // Exact match
+        queryObj[key] = value;
+      }
+    }
+
+    const people = await Person.find(queryObj);
     res.status(200).json(people);
   } catch (err) {
     console.error("❌ Error in getPeople:", err);
@@ -52,7 +81,7 @@ const addPerson = async (req, res) => {
     const photoPaths = req.files?.map((file) => `/uploads/${file.filename}`) || [];
 
     const newPerson = new Person({
-      ...req.body, // spread body so all fields are assigned
+      ...req.body,
       siblings: req.body.siblings || [],
       photos: photoPaths,
     });
