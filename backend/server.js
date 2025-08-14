@@ -14,7 +14,13 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors());
+// ✅ CORS setup for frontend (Vercel)
+app.use(cors({
+  origin: ["https://jodi-iexr.vercel.app"], // frontend domain
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
+
 app.use(express.json());
 
 // ✅ Serve uploaded images

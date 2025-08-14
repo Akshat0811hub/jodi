@@ -2,7 +2,9 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "/api",
+  baseURL: process.env.NODE_ENV === "production"
+    ? "https://jodi-fi4e.onrender.com/api" // ✅ Render backend URL
+    : "/api", // ✅ Localhost pe proxy se kaam lega
 });
 
 // 🔐 Automatically attach token to every request
