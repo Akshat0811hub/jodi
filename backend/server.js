@@ -21,13 +21,24 @@ app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/assets", express.static(path.join(__dirname, "assets"))); // if using assets for logo
 
+// ✅ Updated MongoDB Connection
 mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB connection error:", err));
+
+// ✅ TEST ROUTE (Temporary - Delete after testing)
+app.get("/api/test-insert", async (req, res) => {
+  try {
+    const TestSchema = new mongoose.Schema({ name: String, age: Number });
+    const TestModel = mongoose.model("TestUser", TestSchema);
+    const newDoc = new TestModel({ name: "Test User", age: 25 });
+    await newDoc.save();
+    res.json({ message: "✅ Test document inserted" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
