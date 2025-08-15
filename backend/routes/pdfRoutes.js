@@ -4,6 +4,8 @@ const chromium = require("@sparticuz/chromium"); // ✅ Render-friendly chromium
 const puppeteer = require("puppeteer-core"); // ✅ core version
 const ejs = require("ejs");
 const path = require("path");
+const fs = require("fs");
+const os = require("os");
 const Person = require("../models/personModel");
 
 router.get("/:id/pdf", async (req, res) => {
@@ -89,11 +91,19 @@ router.get("/:id/pdf", async (req, res) => {
       { async: true }
     );
 
-    // ✅ Render-compatible Puppeteer launch
+    // ✅ Fix for Render ETXTBSY error
+    let execPath = await chromium.executablePath();
+    const tmpChromePath = path.join(os.tmpdir(), "chrome");
+
+    if (!fs.existsSync(tmpChromePath)) {
+      fs.copyFileSync(execPath, tmpChromePath);
+      fs.chmodSync(tmpChromePath, "755");
+    }
+
     const browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
+      executablePath: tmpChromePath,
       headless: chromium.headless,
     });
 

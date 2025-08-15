@@ -26,7 +26,7 @@ const fieldLabels = {
   religion: "Religion",
   caste: "Caste",
   maritalStatus: "Marital Status",
-  state: "State",
+  state: "state",
   area: "Area",
   dob: "Date of Birth",
   nativePlace: "Native Place",
