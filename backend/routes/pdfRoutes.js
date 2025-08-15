@@ -18,18 +18,21 @@ router.get("/:id/pdf", async (req, res) => {
       return res.status(404).json({ message: "Person not found" });
     }
 
+    // ✅ Use BASE_URL if available
+    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
+
     // ✅ Absolute URL conversion for photos
     if (person.photos && person.photos.length > 0) {
       person.photos = person.photos.map((photo) =>
         photo.startsWith("http")
           ? photo
-          : `${req.protocol}://${req.get("host")}/uploads/${photo}`
+          : `${baseUrl}/uploads/${photo}`
       );
     }
 
     // ✅ Absolute URL for profile picture
     if (person.profilePicture && !person.profilePicture.startsWith("http")) {
-      person.profilePicture = `${req.protocol}://${req.get("host")}/uploads/${person.profilePicture}`;
+      person.profilePicture = `${baseUrl}/uploads/${person.profilePicture}`;
     }
 
     let filteredPerson = {
@@ -80,7 +83,7 @@ router.get("/:id/pdf", async (req, res) => {
     }
 
     // ✅ Absolute URL for logo
-    const logoPath = `${req.protocol}://${req.get("host")}/assets/logo.png`;
+    const logoPath = `${baseUrl}/assets/logo.png`;
 
     const templateData = {
       person: filteredPerson,
@@ -115,7 +118,19 @@ router.get("/:id/pdf", async (req, res) => {
     });
 
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "networkidle0" });
+    await page.setContent(html, { waitUntil: "domcontentloaded" });
+
+    // ✅ Wait for all images to load
+    await page.evaluate(async () => {
+      const selectors = Array.from(document.images).map(img => {
+        if (img.complete) return;
+        return new Promise(resolve => {
+          img.onload = img.onerror = resolve;
+        });
+      });
+      await Promise.all(selectors);
+    });
+
     await page.emulateMediaType("screen");
 
     const pdfBuffer = await page.pdf({

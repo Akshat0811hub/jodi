@@ -90,4 +90,6 @@ app.use("/api/people", personRoutes);
 app.use("/api/people", pdfRoutes); // ✅ Only once
 
 const PORT = process.env.PORT || 5000;
+console.log(`🌍 BASE_URL set to: ${process.env.BASE_URL || `http://localhost:${PORT}`}`);
+
 app.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));

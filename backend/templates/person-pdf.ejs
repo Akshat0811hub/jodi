@@ -130,7 +130,9 @@
     <h1 class="title">Profile Detail</h1>
 
     <div class="profile-top">
-      <% if (person.photos && person.photos.length) { %>
+      <% if (person.profilePicture) { %>
+        <img src="<%= person.profilePicture %>" alt="Profile Picture" class="profile-pic" />
+      <% } else if (person.photos && person.photos.length) { %>
         <img src="<%= person.photos[0] %>" alt="Profile Picture" class="profile-pic" />
       <% } else { %>
         <img src="/assets/no-photo.png" alt="no photo" class="profile-pic" />
