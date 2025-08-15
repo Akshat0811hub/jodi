@@ -130,12 +130,19 @@
     <h1 class="title">Profile Detail</h1>
 
     <div class="profile-top">
+      <% 
+        const makeAbsolute = (url) => {
+          if (!url) return null;
+          if (url.startsWith('http')) return url;
+          return `${baseUrl}${url.startsWith('/') ? url : '/' + url}`;
+        };
+      %>
       <% if (person.profilePicture) { %>
-        <img src="<%= person.profilePicture %>" alt="Profile Picture" class="profile-pic" />
+        <img src="<%= makeAbsolute(person.profilePicture) %>" alt="Profile Picture" class="profile-pic" />
       <% } else if (person.photos && person.photos.length) { %>
-        <img src="<%= person.photos[0] %>" alt="Profile Picture" class="profile-pic" />
+        <img src="<%= makeAbsolute(person.photos[0]) %>" alt="Profile Picture" class="profile-pic" />
       <% } else { %>
-        <img src="/assets/no-photo.png" alt="no photo" class="profile-pic" />
+        <img src="<%= makeAbsolute('/assets/no-photo.png') %>" alt="no photo" class="profile-pic" />
       <% } %>
 
       <div class="personal-details">
@@ -150,6 +157,20 @@
         <div class="detail-row"><div class="label">NRI :</div><div class="value"><%= person.nri ? "Yes" : "No" %></div></div>
       </div>
     </div>
+
+    <!-- NEW: Uploaded Photos Grid -->
+    <% if (person.photos && person.photos.length > 0) { %>
+      <div class="section">
+        <h2>Uploaded Photos</h2>
+        <div style="display:flex; flex-wrap:wrap; gap:10px;">
+          <% person.photos.forEach((photo, idx) => { %>
+            <div>
+              <img src="<%= makeAbsolute(photo) %>" style="width:180px;height:auto;border:1px solid #ccc;border-radius:4px;" alt="Photo <%= idx+1 %>">
+            </div>
+          <% }) %>
+        </div>
+      </div>
+    <% } %>
 
     <div class="section">
       <h2>Educational & Profession</h2>
@@ -201,7 +222,7 @@
   <% if (person.photos && person.photos.length > 1) { 
        for (let i = 1; i < person.photos.length; i++) { %>
     <div class="photo-page">
-      <img src="<%= person.photos[i] %>" alt="Photo <%= i+1 %>" />
+      <img src="<%= makeAbsolute(person.photos[i]) %>" alt="Photo <%= i+1 %>" />
     </div>
   <% } } %>
 

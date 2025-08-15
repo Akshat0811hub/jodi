@@ -88,6 +88,7 @@ router.get("/:id/pdf", async (req, res) => {
     const templateData = {
       person: filteredPerson,
       logoUrl: logoPath,
+      baseUrl, // ✅ Pass baseUrl to EJS
       companyName: "Jodi No.1  by Mamta Aggarwal",
       PhoneNo: "9871080409 , 9211729184 , 9211729185 , 9211729186",
       companyContact: "www.jodino1.com",

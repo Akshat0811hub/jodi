@@ -1,24 +1,24 @@
-const multer = require("multer");
-const fs = require("fs");
-const path = require("path");
+// controllers/personController.js
+const Person = require("../models/personModel");
 
-const uploadDir = path.join(__dirname, "../uploads");
+const addPerson = async (req, res) => {
+  try {
+    // Multer se uploaded files ka array milega
+    const photos = req.files?.map(file => file.filename) || [];
 
-// Ensure uploads folder exists
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
+    const person = new Person({
+      ...req.body,
+      photos, // yaha store karein
+    });
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueName = `${Date.now()}-${file.fieldname}${path.extname(file.originalname)}`;
-    cb(null, uniqueName);
-  },
-});
+    await person.save();
+    res.status(201).json(person);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
-const upload = multer({ storage });
-
-module.exports = upload;
+module.exports = {
+  addPerson,
+  // baaki controllers
+};
