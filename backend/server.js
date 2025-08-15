@@ -24,7 +24,7 @@ app.use(cors({
 app.use(express.json());
 
 // ✅ Serve uploaded images
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use("/assets", express.static(path.join(__dirname, "assets"))); // if using assets for logo
 
 // ✅ MongoDB Connection (Atlas Ready)
