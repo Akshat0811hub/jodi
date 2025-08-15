@@ -4,8 +4,6 @@ const chromium = require("@sparticuz/chromium"); // ✅ Render-friendly chromium
 const puppeteer = require("puppeteer-core"); // ✅ core version
 const ejs = require("ejs");
 const path = require("path");
-const fs = require("fs");
-const os = require("os");
 const Person = require("../models/personModel");
 
 router.get("/:id/pdf", async (req, res) => {
@@ -91,18 +89,11 @@ router.get("/:id/pdf", async (req, res) => {
       { async: true }
     );
 
-    // ✅ FIX: Avoid ETXTBSY by copying chromium to a tmp folder
-    const execPath = await chromium.executablePath();
-    const tmpExecPath = path.join(os.tmpdir(), "chromium");
-    if (!fs.existsSync(tmpExecPath)) {
-      fs.copyFileSync(execPath, tmpExecPath);
-      fs.chmodSync(tmpExecPath, 0o755);
-    }
-
+    // ✅ FIXED Puppeteer launch for Render
     const browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: tmpExecPath,
+      executablePath: await chromium.executablePath(), // direct executablePath — no temp copy
       headless: chromium.headless,
     });
 
