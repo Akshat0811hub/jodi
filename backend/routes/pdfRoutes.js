@@ -77,7 +77,7 @@ router.get("/:id/pdf", async (req, res) => {
     const templateData = {
       person: filteredPerson,
       logoUrl: logoPath,
-      companyName: "Jodi No.1",
+      companyName: "Jodi No.1  by Mamta Aggarwal",
       PhoneNo: "9871080409 , 9211729184 , 9211729185 , 9211729186",
       companyContact: "www.jodino1.com",
       companyAddress:
@@ -91,19 +91,18 @@ router.get("/:id/pdf", async (req, res) => {
       { async: true }
     );
 
-    // ✅ Fix for Render ETXTBSY error
-    let execPath = await chromium.executablePath();
-    const tmpChromePath = path.join(os.tmpdir(), "chrome");
-
-    if (!fs.existsSync(tmpChromePath)) {
-      fs.copyFileSync(execPath, tmpChromePath);
-      fs.chmodSync(tmpChromePath, "755");
+    // ✅ FIX: Avoid ETXTBSY by copying chromium to a tmp folder
+    const execPath = await chromium.executablePath();
+    const tmpExecPath = path.join(os.tmpdir(), "chromium");
+    if (!fs.existsSync(tmpExecPath)) {
+      fs.copyFileSync(execPath, tmpExecPath);
+      fs.chmodSync(tmpExecPath, 0o755);
     }
 
     const browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: tmpChromePath,
+      executablePath: tmpExecPath,
       headless: chromium.headless,
     });
 
