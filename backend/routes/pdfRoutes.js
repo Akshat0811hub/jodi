@@ -1,9 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const chromium = require("@sparticuz/chromium"); // ✅ Render-friendly chromium
-const puppeteer = require("puppeteer-core"); // ✅ core version
+const chromium = require("@sparticuz/chromium");
+const puppeteer = require("puppeteer-core");
 const ejs = require("ejs");
 const path = require("path");
+const fs = require("fs");
+const os = require("os");
 const Person = require("../models/personModel");
 
 router.get("/:id/pdf", async (req, res) => {
@@ -16,17 +18,24 @@ router.get("/:id/pdf", async (req, res) => {
       return res.status(404).json({ message: "Person not found" });
     }
 
+    // ✅ Absolute URL conversion for photos
     if (person.photos && person.photos.length > 0) {
       person.photos = person.photos.map((photo) =>
         photo.startsWith("http")
           ? photo
-          : `${req.protocol}://${req.get("host")}${photo}`
+          : `${req.protocol}://${req.get("host")}/uploads/${photo}`
       );
+    }
+
+    // ✅ Absolute URL for profile picture
+    if (person.profilePicture && !person.profilePicture.startsWith("http")) {
+      person.profilePicture = `${req.protocol}://${req.get("host")}/uploads/${person.profilePicture}`;
     }
 
     let filteredPerson = {
       name: person.name || "N/A",
       photos: person.photos || [],
+      profilePicture: person.profilePicture || "",
     };
 
     if (selectedFields.length > 0) {
@@ -70,6 +79,7 @@ router.get("/:id/pdf", async (req, res) => {
       });
     }
 
+    // ✅ Absolute URL for logo
     const logoPath = `${req.protocol}://${req.get("host")}/assets/logo.png`;
 
     const templateData = {
@@ -78,6 +88,7 @@ router.get("/:id/pdf", async (req, res) => {
       companyName: "Jodi No.1  by Mamta Aggarwal",
       PhoneNo: "9871080409 , 9211729184 , 9211729185 , 9211729186",
       companyContact: "www.jodino1.com",
+      companyEmail: "info@jodino1.com",
       companyAddress:
         "G-25, Vardhman Premium Mall, Opp Kali Mata Mandir Depali enclave Delhi-110034",
       generatedAt: new Date(),
@@ -89,11 +100,17 @@ router.get("/:id/pdf", async (req, res) => {
       { async: true }
     );
 
-    // ✅ FIXED Puppeteer launch for Render
+    const execPath = await chromium.executablePath();
+    const tmpExecPath = path.join(os.tmpdir(), "chromium");
+    if (!fs.existsSync(tmpExecPath)) {
+      fs.copyFileSync(execPath, tmpExecPath);
+      fs.chmodSync(tmpExecPath, 0o755);
+    }
+
     const browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(), // direct executablePath — no temp copy
+      executablePath: tmpExecPath,
       headless: chromium.headless,
     });
 

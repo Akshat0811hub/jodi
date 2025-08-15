@@ -5,60 +5,125 @@
   <title><%= person.name || "Profile" %> - Profile</title>
   <style>
     @page { size: A4; margin: 0; }
-    html,body { margin:0; padding:0; font-family: "Helvetica", Arial, sans-serif; color: #111; -webkit-print-color-adjust: exact; }
+    html,body {
+      margin:0; padding:0;
+      font-family: "Helvetica", Arial, sans-serif;
+      color: #111;
+      -webkit-print-color-adjust: exact;
+    }
     .page { box-sizing: border-box; padding: 110px 40px 110px 40px; }
 
+    /* HEADER */
     header {
-      position: fixed; top: 0; left: 0; right: 0;
+      position: fixed;
+      top: 0; left: 0; right: 0;
       height: 90px; padding: 12px 40px;
-      border-bottom: 1px solid #ddd;
+      border-bottom: 2px solid #444;
       display:flex; align-items:center; justify-content:space-between;
       background: #fff;
     }
     .header-left { display:flex; gap:16px; align-items:center; }
-    .logo { height:64px; width:auto; object-fit:contain; }
-    .company-meta { font-size:12px; line-height:1.1; color:#333; }
-    .header-right { text-align:right; font-size:12px; }
-
-    footer {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      height: 90px; padding: 12px 40px;
-      border-top: 1px solid #ddd; font-size:11px; color:#444; background:#fff;
+    .logo { height:70px; width:auto; object-fit:contain; }
+    .company-meta {
+      font-size:14px; line-height:1.3; color:#000;
+    }
+    .company-meta strong {
+      font-size:20px;
+      font-weight:700;
+      color: maroon;
+    }
+    .header-right {
+      text-align:right;
+      font-size:14px;
+      font-weight:600;
     }
 
-    h1.title { font-size:20px; margin:0 0 12px 0; letter-spacing:0.5px; }
+    footer {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 90px; padding: 12px 40px;
+      border-top: 1px solid #ddd;
+      font-size:11px; color:#444; background:#fff;
+    }
+
+    h1.title {
+      font-size:22px;
+      margin:0 0 12px 0;
+      letter-spacing:0.5px;
+      font-weight:700;
+      color: maroon;
+    }
     .profile-top { display:flex; gap:18px; margin-bottom:18px; }
     .profile-pic {
-      width:180px; height:220px; object-fit:cover;
+      width:180px; height:220px;
+      object-fit:cover;
       border-radius:4px; border:1px solid #ccc;
     }
     .personal-details { flex:1; }
-    .detail-row { display:flex; gap:12px; margin-bottom:6px; }
+    .detail-row {
+      display:flex; gap:12px; margin-bottom:6px;
+      font-size:14px;
+    }
     .label { width:180px; font-weight:600; color:#222; }
     .value { flex:1; }
 
     .section { margin-top:10px; page-break-inside: avoid; }
-    .section h2 { font-size:14px; margin:8px 0; border-bottom:1px solid #eee; padding-bottom:6px; }
-    .family-table, .siblings-table { width:100%; border-collapse: collapse; margin-top:6px; }
-    .family-table td, .siblings-table td { padding:6px 8px; border:1px solid #e8e8e8; vertical-align:top; font-size:13px; }
+    .section h2 {
+      font-size:15px;
+      margin:8px 0;
+      border-bottom:1px solid #eee;
+      padding-bottom:6px;
+      font-weight:700;
+      color: maroon;
+    }
+    .family-table, .siblings-table {
+      width:100%; border-collapse: collapse; margin-top:6px;
+    }
+    .family-table td, .siblings-table td {
+      padding:6px 8px;
+      border:1px solid #e8e8e8;
+      vertical-align:top;
+      font-size:13px;
+    }
+    .family-table td strong, .siblings-table td strong {
+      color: maroon;
+    }
 
-    .disclaimer { font-size:11px; color:#666; margin-top:14px; line-height:1.25; }
+    .disclaimer {
+      font-size:11px; color:#666;
+      margin-top:14px; line-height:1.25;
+    }
 
-    .photo-page { page-break-before: always; text-align: center; }
-    .photo-page img { max-width: 100%; max-height: 95vh; object-fit: contain; }
+    /* Photo Pages */
+    .photo-page {
+      page-break-before: always;
+      text-align: center;
+      padding: 20px;
+    }
+    .photo-page img {
+      max-width: 90%;
+      max-height: 85vh;
+      object-fit: contain;
+      border: 2px solid #ccc;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
   </style>
 </head>
 <body>
   <header>
-    <div class="header-left" style="font-size: 15vh; font-weight: 700;">
+    <div class="header-left">
       <img src="<%= logoUrl %>" class="logo" alt="logo" />
       <div class="company-meta">
         <strong><%= companyName %></strong><br/>
-        <span><%= companyContact %></span><br/>
-        <small><%= companyAddress %></small>
+        <span>📞 <%= companyContact %></span><br/>
+        <span>📧 <%= companyEmail || "—" %></span><br/>
+        <small>📍 <%= companyAddress %></small>
       </div>
     </div>
-    
+    <div class="header-right">
+      Date: <%= new Date().toLocaleDateString() %>
+    </div>
   </header>
 
   <div class="page">
@@ -140,11 +205,11 @@
 
   <!-- Last Page NOTE -->
   <div style="page-break-before: always; padding: 80px 40px; text-align: center;">
-    <div style="font-size: 20px; font-weight: bold; margin-top: 32px;   line-height: 1.6; background-color: maroon; color: white;">
+    <div style="font-size: 20px; font-weight: bold; margin-top: 32px; line-height: 1.6; background-color: maroon; color: white; padding: 20px; border-radius: 6px;">
       NOTE : The above particulars have been provided to the best of our knowledge, as per
       information provided by the concerned party.<br/>
-      We ( Jodi No 1) shall not be responsible for misrepresentation of the any or all of
-      the information here in. Amount will not be refunded in any case.<br/>
+      We ( Jodi No 1) shall not be responsible for misrepresentation of any or all of
+      the information herein. Amount will not be refunded in any case.<br/>
       All clients have to pay full maturity amount on ROKA CEREMONY.
     </div>
   </div>
