@@ -26,8 +26,8 @@ app.use(cors({
     "http://localhost:3001"
   ],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
 }));
 
 // ✅ Request logging middleware
@@ -36,9 +36,19 @@ app.use((req, res, next) => {
   next();
 });
 
-// ✅ Static file serving
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/assets', express.static(path.join(__dirname, 'assets')));
+// ✅ Static file serving - IMPORTANT: Make sure uploads directory exists
+const uploadsPath = path.join(__dirname, 'uploads');
+const assetsPath = path.join(__dirname, 'assets');
+
+// Create directories if they don't exist
+const fs = require('fs');
+if (!fs.existsSync(uploadsPath)) {
+  fs.mkdirSync(uploadsPath, { recursive: true });
+  console.log('📁 Created uploads directory');
+}
+
+app.use('/uploads', express.static(uploadsPath));
+app.use('/assets', express.static(assetsPath));
 
 // ✅ Root health check
 app.get("/", (req, res) => {
@@ -91,7 +101,10 @@ try {
   console.log("✅ Auth routes mounted at /api/auth");
 } catch (error) {
   console.error("❌ Failed to load auth routes:", error.message);
-  process.exit(1);
+  // Create a basic auth route if file doesn't exist
+  app.post("/api/auth/login", (req, res) => {
+    res.status(501).json({ message: "Auth routes not implemented yet" });
+  });
 }
 
 // User routes
@@ -101,15 +114,34 @@ try {
   console.log("✅ User routes mounted at /api/users");
 } catch (error) {
   console.error("⚠️ User routes not available:", error.message);
+  // Create a basic user route if file doesn't exist
+  app.get("/api/users", (req, res) => {
+    res.status(501).json({ message: "User routes not implemented yet" });
+  });
 }
 
-// Person routes
+// Person routes - CRITICAL: This is what's missing!
 try {
   const personRoutes = require("./routes/personRoutes");
   app.use("/api/people", personRoutes);
   console.log("✅ Person routes mounted at /api/people");
 } catch (error) {
-  console.error("⚠️ Person routes not available:", error.message);
+  console.error("❌ Failed to load person routes:", error.message);
+  console.error("This is likely why you're getting 404 errors!");
+  
+  // Create a basic person route as fallback
+  app.get("/api/people", async (req, res) => {
+    try {
+      const Person = require("./models/personModel");
+      const people = await Person.find().sort({ createdAt: -1 });
+      res.json(people);
+    } catch (err) {
+      res.status(500).json({ 
+        message: "Person routes not properly configured", 
+        error: err.message 
+      });
+    }
+  });
 }
 
 // PDF routes
@@ -119,6 +151,10 @@ try {
   console.log("✅ PDF routes mounted at /api/pdf");
 } catch (error) {
   console.error("⚠️ PDF routes not available:", error.message);
+  // Create a basic PDF route if file doesn't exist
+  app.get("/api/pdf/person/:id/pdf", (req, res) => {
+    res.status(501).json({ message: "PDF generation not implemented yet" });
+  });
 }
 
 // ✅ MongoDB Connection
@@ -126,6 +162,10 @@ console.log("🔄 Connecting to MongoDB...");
 
 const connectDB = async (retries = 5) => {
   try {
+    if (!process.env.MONGO_URI) {
+      throw new Error("MONGO_URI environment variable is not set");
+    }
+
     await mongoose.connect(process.env.MONGO_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
@@ -230,7 +270,11 @@ app.use("*", (req, res) => {
       "POST /api/auth/login",
       "POST /api/auth/register",
       "GET /api/users",
-      "GET /api/people"
+      "GET /api/people",
+      "POST /api/people",
+      "PUT /api/people/:id",
+      "DELETE /api/people/:id",
+      "GET /api/pdf/person/:id/pdf"
     ],
   });
 });
@@ -254,6 +298,8 @@ const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`🔗 Health: http://localhost:${PORT}/health`);
   console.log(`🧪 API Test: http://localhost:${PORT}/api/test`);
   console.log(`🔐 Auth: http://localhost:${PORT}/api/auth`);
+  console.log(`👥 People: http://localhost:${PORT}/api/people`);
+  console.log(`📄 PDF: http://localhost:${PORT}/api/pdf`);
   console.log(`📊 Ready to accept connections!\n`);
 });
 

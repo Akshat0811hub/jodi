@@ -1,62 +1,80 @@
-// models/personModel.js - Make sure these fields exist
+// models/personModel.js
 const mongoose = require("mongoose");
 
 const personSchema = new mongoose.Schema({
-  // Personal Details
+  // Personal Details - matching frontend fields
   name: { type: String, required: true },
-  gender: String,
-  maritalStatus: String,
-  dob: String,
-  birthPlaceTime: String,
-  nativePlace: String,
-  gotra: String,
+  age: { type: String }, // Adding age field that frontend expects
+  height: { type: String },
+  gender: { type: String },
   religion: { type: String, required: true },
+  caste: { type: String }, // Adding caste field that frontend expects
+  maritalStatus: { type: String },
+  state: { type: String }, // Adding state field that frontend expects
   phoneNumber: { type: String, required: true },
-  height: String,
-  complexion: String,
-  horoscope: Boolean,
-  eatingHabits: String,
-  drinkingHabits: String,
-  smokingHabits: String,
-  disability: String,
-  nri: Boolean,
-  vehicle: Boolean,
+  area: { type: String }, // Adding area field that frontend expects
+  dob: { type: String }, // Date of birth
+  nativePlace: { type: String },
+  
+  // Additional personal details
+  birthPlaceTime: { type: String },
+  gotra: { type: String },
+  complexion: { type: String },
+  horoscope: { type: Boolean, default: false },
+  eatingHabits: { type: String },
+  drinkingHabits: { type: String },
+  smokingHabits: { type: String },
+  disability: { type: String },
+  nri: { type: Boolean, default: false },
+  vehicle: { type: Boolean, default: false },
 
   // Family Details
-  fatherName: String,
-  fatherOccupation: String,
-  fatherOffice: String,
-  motherName: String,
-  motherOccupation: String,
-  residence: String,
-  otherProperty: String,
+  fatherName: { type: String },
+  fatherOccupation: { type: String },
+  fatherOffice: { type: String },
+  motherName: { type: String },
+  motherOccupation: { type: String },
+  residence: { type: String },
+  otherProperty: { type: String },
 
   // Education (support both field names for compatibility)
-  education: String,
-  higherQualification: String,
-  graduation: String,
-  schooling: String,
+  education: { type: String },
+  higherQualification: { type: String },
+  graduation: { type: String },
+  schooling: { type: String },
 
   // Income (support both field names for compatibility)
-  income: String,
-  personalIncome: String,
-  familyIncome: String,
-  occupation: String,
+  income: { type: String },
+  personalIncome: { type: String },
+  familyIncome: { type: String },
+  occupation: { type: String },
 
   // Files and Relations
-  photos: [String], // Store filenames only
-  profilePicture: String,
+  photos: [{ type: String }], // Store filenames only
+  profilePicture: { type: String },
   siblings: [{
-    name: String,
-    relation: String,
-    age: String,
-    profession: String,
-    maritalStatus: String
+    name: { type: String },
+    relation: { type: String },
+    age: { type: String },
+    profession: { type: String },
+    maritalStatus: { type: String }
   }],
 
   // Metadata
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
+});
+
+// Update the updatedAt field on save
+personSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
+});
+
+// Update the updatedAt field on findOneAndUpdate
+personSchema.pre('findOneAndUpdate', function(next) {
+  this.set({ updatedAt: Date.now() });
+  next();
 });
 
 module.exports = mongoose.model("Person", personSchema);
