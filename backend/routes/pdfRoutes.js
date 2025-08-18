@@ -452,8 +452,8 @@ const addStyledHeader = (doc, person) => {
   doc.fontSize(11)
      .font('Helvetica')
      .fillColor(colors.light)
-     .text('📞 9871080409 | ✉️ jodino1@gmail.com', 50, 55)
-     .text('📍 G-25, Vardhman Premium Mall, Opp.Kali Mata Mandir,Deepali enclave , Delhi-110034', 50, 70);
+     .text(' 9871080409 |  jodino1@gmail.com', 50, 55)
+     .text(' G-25, Vardhman Premium Mall, Opp.Kali Mata Mandir,Deepali enclave , Delhi-110034', 50, 70);
   
   doc.moveDown(3);
   
@@ -520,7 +520,7 @@ router.get("/person/:id/pdf", async (req, res) => {
     addStyledHeader(doc, person);
 
     // Personal Details Section
-    addStyledSectionHeader(doc, '👤 PERSONAL DETAILS');
+    addStyledSectionHeader(doc, ' PERSONAL DETAILS');
     addStyledField(doc, 'Full Name', person.name);
     addStyledField(doc, 'Gender', person.gender);
     addStyledField(doc, 'Marital Status', person.maritalStatus);
@@ -533,7 +533,7 @@ router.get("/person/:id/pdf", async (req, res) => {
     addStyledField(doc, 'Complexion', person.complexion);
 
     // Lifestyle Section
-    addStyledSectionHeader(doc, '🏠 LIFESTYLE & HABITS');
+    addStyledSectionHeader(doc, ' LIFESTYLE & HABITS');
     addStyledField(doc, 'Eating Habits', person.eatingHabits);
     addStyledField(doc, 'Drinking Habits', person.drinkingHabits);
     addStyledField(doc, 'Smoking Habits', person.smokingHabits);
@@ -543,7 +543,7 @@ router.get("/person/:id/pdf", async (req, res) => {
     addStyledField(doc, 'Horoscope Available', person.horoscope ? 'Yes' : 'No');
 
     // Family Details Section
-    addStyledSectionHeader(doc, '👨‍👩‍👧‍👦 FAMILY DETAILS');
+    addStyledSectionHeader(doc, 'FAMILY DETAILS');
     addStyledField(doc, 'Father\'s Name', person.fatherName);
     addStyledField(doc, 'Father\'s Occupation', person.fatherOccupation);
     addStyledField(doc, 'Father\'s Office Details', person.fatherOffice);
@@ -553,26 +553,26 @@ router.get("/person/:id/pdf", async (req, res) => {
     addStyledField(doc, 'Other Properties', person.otherProperty);
 
     // Education Section
-    addStyledSectionHeader(doc, '🎓 EDUCATIONAL QUALIFICATIONS');
+    addStyledSectionHeader(doc, ' EDUCATIONAL QUALIFICATIONS');
     addStyledField(doc, 'Highest Qualification', person.higherQualification);
     addStyledField(doc, 'Graduation Details', person.graduation);
     addStyledField(doc, 'School Education', person.schooling);
 
     // Professional Section
-    addStyledSectionHeader(doc, '💼 PROFESSION & INCOME');
+    addStyledSectionHeader(doc, ' PROFESSION & INCOME');
     addStyledField(doc, 'Current Occupation', person.occupation);
     addStyledField(doc, 'Personal Income', person.personalIncome);
     addStyledField(doc, 'Family Income', person.familyIncome);
 
     // Contact Information Section
-    addStyledSectionHeader(doc, '📞 CONTACT INFORMATION');
+    addStyledSectionHeader(doc, 'CONTACT INFORMATION');
     addStyledField(doc, 'Phone Number', person.phoneNumber);
     addStyledField(doc, 'Email Address', person.email);
     addStyledField(doc, 'Current Address', person.currentAddress);
 
     // Siblings Section
     if (person.siblings && person.siblings.length > 0) {
-      addStyledSectionHeader(doc, '👨‍👩‍👧‍👦 SIBLINGS INFORMATION');
+      addStyledSectionHeader(doc, ' SIBLINGS INFORMATION');
       
       person.siblings.forEach((sibling, index) => {
         doc.fontSize(13)
