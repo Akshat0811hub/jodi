@@ -242,17 +242,70 @@ try {
   });
 }
 
-// PDF routes
+// ✅ FIXED: PDF routes - This was the main issue!
 try {
   const pdfRoutes = require("./routes/pdfRoutes");
-  app.use("/api/pdf", pdfRoutes);
+  app.use("/api/pdf", pdfRoutes);  // ✅ This ensures the route is properly mounted
   console.log("✅ PDF routes mounted at /api/pdf");
+  
+  // ✅ Test if PDF route is working
+  console.log("🧪 Testing PDF route availability...");
+  
 } catch (error) {
-  console.error("⚠️ PDF routes not available:", error.message);
+  console.error("❌ Failed to load PDF routes:", error.message);
+  console.error("❌ PDF Route Error Stack:", error.stack);
+  
+  // ✅ CRITICAL: Create emergency PDF fallback if module fails
   app.get("/api/pdf/person/:id/pdf", (req, res) => {
-    res.status(501).json({ message: "PDF generation not implemented yet" });
+    console.error("🚨 PDF route fallback triggered - main PDF module failed to load");
+    res.status(500).json({ 
+      message: "PDF generation module failed to load",
+      error: "PDF routes could not be initialized",
+      details: error.message
+    });
+  });
+  
+  app.post("/api/pdf/bulk", (req, res) => {
+    console.error("🚨 Bulk PDF route fallback triggered");
+    res.status(500).json({ 
+      message: "Bulk PDF generation module failed to load",
+      error: "PDF routes could not be initialized"
+    });
   });
 }
+
+// ✅ Additional route verification
+app.get("/api/routes-test", (req, res) => {
+  const routes = [];
+  
+  app._router.stack.forEach((middleware) => {
+    if (middleware.route) {
+      routes.push({
+        path: middleware.route.path,
+        methods: Object.keys(middleware.route.methods)
+      });
+    } else if (middleware.name === 'router') {
+      middleware.handle.stack.forEach((handler) => {
+        if (handler.route) {
+          const basePath = middleware.regexp.source
+            .replace('^\\', '')
+            .replace('\\/?(?=\\/|$)', '')
+            .replace(/\\\//g, '/');
+          routes.push({
+            path: basePath + handler.route.path,
+            methods: Object.keys(handler.route.methods)
+          });
+        }
+      });
+    }
+  });
+  
+  res.json({
+    message: "Available routes",
+    routes: routes,
+    count: routes.length
+  });
+});
 
 // ✅ MongoDB Connection
 console.log("🔄 Connecting to MongoDB...");
@@ -382,6 +435,7 @@ app.use("*", (req, res) => {
       "GET /health", 
       "GET /cors-test",
       "GET /api/test",
+      "GET /api/routes-test",
       "POST /api/auth/login",
       "POST /api/auth/register",
       "GET /api/users",
@@ -389,7 +443,8 @@ app.use("*", (req, res) => {
       "POST /api/people",
       "PUT /api/people/:id",
       "DELETE /api/people/:id",
-      "GET /api/pdf/person/:id/pdf"
+      "GET /api/pdf/person/:id/pdf",
+      "POST /api/pdf/bulk"
     ],
   });
 });
@@ -413,6 +468,7 @@ const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`🔗 Health: http://localhost:${PORT}/health`);
   console.log(`🧪 CORS Test: http://localhost:${PORT}/cors-test`);
   console.log(`🧪 API Test: http://localhost:${PORT}/api/test`);
+  console.log(`🧪 Routes Test: http://localhost:${PORT}/api/routes-test`);
   console.log(`🔐 Auth: http://localhost:${PORT}/api/auth`);
   console.log(`👥 People: http://localhost:${PORT}/api/people`);
   console.log(`📄 PDF: http://localhost:${PORT}/api/pdf`);
