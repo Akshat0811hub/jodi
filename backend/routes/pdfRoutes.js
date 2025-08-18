@@ -44,6 +44,37 @@ const addField = (doc, label, value, options = {}) => {
   doc.moveDown(0.3);
 };
 
+// ✅ Helper function to add profile photo
+const addProfilePhoto = async (doc, photoPath) => {
+  try {
+    if (!photoPath) return false;
+    
+    // Clean the photo path
+    const cleanPath = photoPath.startsWith('/') ? photoPath.substring(1) : photoPath;
+    const fullPath = path.join(__dirname, '..', cleanPath);
+    
+    console.log('📸 Attempting to load photo:', fullPath);
+    
+    // Check if file exists
+    if (fs.existsSync(fullPath)) {
+      // Add photo with specific dimensions
+      doc.image(fullPath, 400, 100, { 
+        width: 120, 
+        height: 140,
+        align: 'center'
+      });
+      console.log('✅ Photo added successfully');
+      return true;
+    } else {
+      console.log('❌ Photo file not found:', fullPath);
+      return false;
+    }
+  } catch (error) {
+    console.error('❌ Error adding photo:', error.message);
+    return false;
+  }
+};
+
 // ✅ Helper function to add section header
 const addSectionHeader = (doc, title) => {
   doc.moveDown(0.5);
@@ -162,8 +193,8 @@ router.get("/person/:id/pdf", async (req, res) => {
     doc.fontSize(12)
        .fillColor('#000000')
        .font('Helvetica')
-       .text('9871080409 | jodino1@gmail.com', { align: 'center' })
-       .text('Gurugram, Haryana, India', { align: 'center' });
+       .text('📞 9871080409 | 📧 jodino1@gmail.com', { align: 'center' })
+       .text('📍 Gurugram, Haryana, India', { align: 'center' });
 
     doc.moveDown(1);
 
@@ -175,29 +206,78 @@ router.get("/person/:id/pdf", async (req, res) => {
 
     doc.moveDown(1.5);
 
-    // Personal details
-    addSectionHeader(doc, 'PERSONAL DETAILS');
+    // 📸 Add profile photo if available
+    if (person.profilePicture || (person.photos && person.photos.length > 0)) {
+      const photoPath = person.profilePicture || person.photos[0];
+      await addProfilePhoto(doc, photoPath);
+      doc.moveDown(1);
+    }
+
+    // Personal details (REMOVED phone number)
+    addSectionHeader(doc, '👤 PERSONAL DETAILS');
     addField(doc, 'Name', person.name);
     addField(doc, 'Gender', person.gender);
     addField(doc, 'Marital Status', person.maritalStatus);
     addField(doc, 'Date of Birth', formatDate(person.dob));
+    addField(doc, 'Birth Place & Time', person.birthPlaceTime);
     addField(doc, 'Native Place', person.nativePlace);
+    addField(doc, 'Gotra', person.gotra);
     addField(doc, 'Religion', person.religion);
-    addField(doc, 'Phone Number', person.phoneNumber);
     addField(doc, 'Height', person.height);
+    addField(doc, 'Complexion', person.complexion);
+
+    // Lifestyle section
+    addSectionHeader(doc, '🍽️ LIFESTYLE');
+    addField(doc, 'Eating Habits', person.eatingHabits);
+    addField(doc, 'Drinking Habits', person.drinkingHabits);
+    addField(doc, 'Smoking Habits', person.smokingHabits);
+    addField(doc, 'Disability', person.disability);
+    addField(doc, 'NRI Status', person.nri ? 'Yes' : 'No');
+    addField(doc, 'Vehicle', person.vehicle);
+    addField(doc, 'Horoscope', person.horoscope);
 
     // Family details
-    addSectionHeader(doc, 'FAMILY DETAILS');
+    addSectionHeader(doc, '👨‍👩‍👧‍👦 FAMILY DETAILS');
     addField(doc, 'Father Name', person.fatherName);
     addField(doc, 'Father Occupation', person.fatherOccupation);
+    addField(doc, 'Father Office', person.fatherOffice);
     addField(doc, 'Mother Name', person.motherName);
     addField(doc, 'Mother Occupation', person.motherOccupation);
+    addField(doc, 'Residence', person.residence);
+    addField(doc, 'Other Property', person.otherProperty);
+
+    // Education section
+    addSectionHeader(doc, '🎓 EDUCATION');
+    addField(doc, 'Higher Qualification', person.higherQualification);
+    addField(doc, 'Graduation', person.graduation);
+    addField(doc, 'Schooling', person.schooling);
 
     // Professional details
-    addSectionHeader(doc, 'PROFESSION & INCOME');
+    addSectionHeader(doc, '💼 PROFESSION & INCOME');
     addField(doc, 'Occupation', person.occupation);
     addField(doc, 'Personal Income', person.personalIncome);
     addField(doc, 'Family Income', person.familyIncome);
+
+    // 👫 SIBLINGS SECTION (FIXED - Now shows full details)
+    if (person.siblings && person.siblings.length > 0) {
+      addSectionHeader(doc, '👫 SIBLINGS');
+      
+      person.siblings.forEach((sibling, index) => {
+        doc.fontSize(12)
+           .font('Helvetica-Bold')
+           .fillColor('#2c3e50')
+           .text(`Sibling ${index + 1}:`, 50);
+        doc.moveDown(0.3);
+        
+        addField(doc, '  Name', sibling.name, { indent: 20 });
+        addField(doc, '  Relationship', sibling.relationship, { indent: 20 });
+        addField(doc, '  Age', sibling.age, { indent: 20 });
+        addField(doc, '  Marital Status', sibling.maritalStatus, { indent: 20 });
+        addField(doc, '  Occupation', sibling.occupation, { indent: 20 });
+        
+        doc.moveDown(0.5);
+      });
+    }
 
     // Footer
     doc.fontSize(10)
