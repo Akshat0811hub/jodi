@@ -1,4 +1,4 @@
-// src/components/AddPersonFormModal.jsx - COMPLETE FIXED VERSION
+// src/components/AddPersonFormModal.jsx - FIXED VERSION (1-4 Photos Support)
 import React, { useState } from "react";
 import api from "../api";
 import "../css/addPerson.css";
@@ -52,7 +52,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // ✅ FIXED: Proper photo handler
+  // ✅ FIXED: Photo handler for 1-4 photos
   const handlePhotoChange = (e) => {
     const files = Array.from(e.target.files);
     console.log("📸 Files selected:", files.length);
@@ -105,14 +105,14 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
         return;
       }
 
-      // ✅ IMPROVED Photo validation with detailed logging
+      // ✅ FIXED: Photo validation for 1-4 photos (minimum 1, maximum 4)
       console.log("📸 Photo validation - Current photos:", photos);
       console.log("📸 Photos length:", photos.length);
       console.log("📸 Photos array:", Array.isArray(photos));
 
-      if (!photos || !Array.isArray(photos) || photos.length < 3) {
+      if (!photos || !Array.isArray(photos) || photos.length < 1) {
         setError(
-          `Please upload at least 3 photos. Currently selected: ${
+          `Please upload at least 1 photo. Currently selected: ${
             photos ? photos.length : 0
           }`
         );
@@ -495,8 +495,8 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
             onChange={handleChange}
           />
 
-          {/* ✅ IMPROVED Photos Section */}
-          <h3>Photos (Minimum 3 required) *</h3>
+          {/* ✅ FIXED: Photos Section (1-4 photos) */}
+          <h3>Photos (1-4 photos allowed) *</h3>
           <div className="photo-upload-section">
             <input
               type="file"
@@ -511,7 +511,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
               <div className="selected-photos-info">
                 <p className="photos-count">
                   ✅ Selected: {photos.length} photo(s)
-                  {photos.length >= 3 && photos.length <= 4 && " (Valid)"}
+                  {photos.length >= 1 && photos.length <= 4 && " (Valid)"}
                 </p>
                 <ul className="photos-list">
                   {Array.from(photos).map((file, index) => (
@@ -526,10 +526,10 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
             <div className="photo-requirements">
               <p
                 className={`requirement ${
-                  photos.length >= 3 ? "valid" : "invalid"
+                  photos.length >= 1 ? "valid" : "invalid"
                 }`}
               >
-                • Minimum 3 photos required {photos.length >= 3 ? "✅" : "❌"}
+                • Minimum 1 photo required {photos.length >= 1 ? "✅" : "❌"}
               </p>
               <p
                 className={`requirement ${

@@ -1,4 +1,4 @@
-// routes/pdfRoutes.js - ENHANCED VERSION with Photos at End & Better Styling
+// routes/pdfRoutes.js - ENHANCED VERSION with 1-4 Photos Support & Better Styling
 const express = require("express");
 const PDFDocument = require('pdfkit');
 const Person = require("../models/personModel");
@@ -7,7 +7,7 @@ const fs = require("fs");
 
 const router = express.Router();
 
-console.log("📄 Loading ENHANCED PDFKit PDF routes with photos at end...");
+console.log("📄 Loading ENHANCED PDFKit PDF routes with 1-4 photos support...");
 
 // Color scheme for better styling
 const colors = {
@@ -88,98 +88,188 @@ const addStyledSectionHeader = (doc, title) => {
   doc.fillColor(colors.text).moveDown(1.2);
 };
 
-// ✨ ENHANCED: Add all photos at the end with styling
+// ✨ FIXED: Add all photos at the end with dynamic layout for 1-4 photos
 const addPhotosSection = async (doc, person) => {
   try {
-    // Collect all available photos
+    console.log("📸 Starting photos section processing...");
+    console.log("📸 Person data:", { 
+      profilePicture: person.profilePicture, 
+      photos: person.photos, 
+      photosLength: person.photos ? person.photos.length : 0 
+    });
+
+    // ✅ FIXED: Collect all available photos properly
     const allPhotos = [];
     
-    if (person.profilePicture) {
+    // Add profile picture if exists
+    if (person.profilePicture && typeof person.profilePicture === 'string' && person.profilePicture.trim()) {
       allPhotos.push(person.profilePicture);
+      console.log("📸 Added profile picture:", person.profilePicture);
     }
     
+    // Add photos array if exists
     if (person.photos && Array.isArray(person.photos)) {
-      allPhotos.push(...person.photos);
+      person.photos.forEach((photo, index) => {
+        if (photo && typeof photo === 'string' && photo.trim()) {
+          allPhotos.push(photo);
+          console.log(`📸 Added photo ${index + 1}:`, photo);
+        }
+      });
     }
     
-    // Remove duplicates and limit to 3
-    const uniquePhotos = [...new Set(allPhotos)].slice(0, 3);
+    // Remove duplicates and keep original order (limit to 4 as per form validation)
+    const uniquePhotos = [...new Set(allPhotos)].slice(0, 4);
+    console.log(`📸 Final photos to process: ${uniquePhotos.length}`, uniquePhotos);
     
-    if (uniquePhotos.length === 0) {
-      console.log("📸 No photos available for photos section");
-      return;
-    }
-    
-    console.log(`📸 Adding ${uniquePhotos.length} photos to end of PDF`);
-    
+    // ✅ ALWAYS add photos section, even if no photos (will show placeholder message)
     // Add new page for photos
     doc.addPage();
     
     // Photos section header
     addStyledSectionHeader(doc, '📸 PHOTOGRAPHS');
     
-    // Calculate layout for photos
-    const pageWidth = doc.page.width - 100; // 50 margin on each side
-    const photoWidth = Math.min(150, (pageWidth - 40) / 3); // Max 150px or fit 3 in a row
-    const photoHeight = photoWidth * 1.2; // Slightly taller than wide
+    if (uniquePhotos.length === 0) {
+      // ✅ Show "No photos available" message with styling
+      doc.rect(50, doc.y, 500, 100)
+         .fill('#F8F9FA')
+         .stroke('#DEE2E6');
+      
+      doc.fontSize(14)
+         .font('Helvetica-Bold')
+         .fillColor('#6C757D')
+         .text('📷 No photos available', 50, doc.y - 80, { 
+           width: 500, 
+           align: 'center' 
+         });
+      
+      doc.fontSize(11)
+         .font('Helvetica')
+         .text('Photos will be displayed here when uploaded', 50, doc.y + 20, { 
+           width: 500, 
+           align: 'center' 
+         });
+      
+      console.log("📸 No photos available - added placeholder message");
+      return true;
+    }
     
-    let currentX = 50;
+    // ✅ FIXED: Dynamic layout based on number of photos
+    const photosCount = uniquePhotos.length;
+    console.log(`📸 Laying out ${photosCount} photos`);
+    
+    // Calculate layout dynamically
+    let photosPerRow, photoWidth, photoHeight;
+    
+    if (photosCount === 1) {
+      // 1 photo: Center it, make it larger
+      photosPerRow = 1;
+      photoWidth = 200;
+      photoHeight = 240;
+    } else if (photosCount === 2) {
+      // 2 photos: Side by side
+      photosPerRow = 2;
+      photoWidth = 180;
+      photoHeight = 216;
+    } else if (photosCount === 3) {
+      // 3 photos: First row 2, second row 1 centered
+      photosPerRow = 2; // We'll handle the 3rd photo separately
+      photoWidth = 150;
+      photoHeight = 180;
+    } else { // photosCount === 4
+      // 4 photos: 2x2 grid
+      photosPerRow = 2;
+      photoWidth = 150;
+      photoHeight = 180;
+    }
+    
+    const pageWidth = doc.page.width - 100; // 50 margin on each side
+    const totalWidthUsed = photosPerRow * photoWidth + (photosPerRow - 1) * 40; // 40px spacing
+    const startX = 50 + (pageWidth - totalWidthUsed) / 2; // Center horizontally
+    
+    let currentX = startX;
     let currentY = doc.y + 20;
     let photosInCurrentRow = 0;
+    let rowNumber = 0;
     
     for (let i = 0; i < uniquePhotos.length; i++) {
       const photoPath = uniquePhotos[i];
       
-      // Check if we need a new row (max 2 photos per row for better visibility)
-      if (photosInCurrentRow >= 2) {
+      // ✅ Special handling for 3 photos layout
+      if (photosCount === 3 && i === 2) {
+        // Third photo: start new row and center it
         currentY += photoHeight + 60;
-        currentX = 50;
+        currentX = 50 + (pageWidth - photoWidth) / 2; // Center the single photo
         photosInCurrentRow = 0;
+        rowNumber++;
+      } else if (photosInCurrentRow >= photosPerRow) {
+        // Normal new row logic
+        currentY += photoHeight + 60;
+        currentX = startX;
+        photosInCurrentRow = 0;
+        rowNumber++;
       }
+      
+      console.log(`📸 Processing photo ${i + 1} at position (${currentX}, ${currentY})`);
       
       // Try to add the photo
       const photoAdded = await addSinglePhoto(doc, photoPath, currentX, currentY, photoWidth, photoHeight, i + 1);
       
-      if (photoAdded) {
-        currentX += photoWidth + 60; // Space between photos
-        photosInCurrentRow++;
-      } else {
+      if (!photoAdded) {
         // Add placeholder if photo fails
+        console.log(`📸 Photo ${i + 1} failed, adding placeholder`);
         addPhotoPlaceholder(doc, currentX, currentY, photoWidth, photoHeight, i + 1);
-        currentX += photoWidth + 60;
-        photosInCurrentRow++;
       }
+      
+      // Move to next position (except for the centered 3rd photo in 3-photo layout)
+      if (!(photosCount === 3 && i === 2)) {
+        currentX += photoWidth + 40; // Space between photos
+      }
+      photosInCurrentRow++;
     }
     
     // Calculate final Y position after all photos
     const finalPhotoY = currentY + photoHeight + 50;
     doc.y = finalPhotoY;
     
+    console.log(`✅ Photos section completed with ${uniquePhotos.length} photos`);
     return true;
     
   } catch (error) {
     console.error("❌ Error in addPhotosSection:", error);
+    
+    // ✅ Even on error, add a fallback message
+    try {
+      doc.fontSize(12)
+         .fillColor('#E74C3C')
+         .text('⚠️ Error loading photos section', 50, doc.y, { align: 'center' });
+    } catch (fallbackError) {
+      console.error("❌ Fallback error message failed:", fallbackError);
+    }
+    
     return false;
   }
 };
 
-// ✨ Helper function to add single photo with styling
+// ✨ FIXED: Helper function to add single photo with better error handling
 const addSinglePhoto = async (doc, photoPath, x, y, width, height, photoNumber) => {
   try {
-    if (!photoPath) return false;
-    
-    console.log(`📸 Processing photo ${photoNumber}:`, photoPath);
-    
-    // Resolve photo path
-    let fullPath = resolvePhotoPath(photoPath);
-    
-    if (!fullPath || !fs.existsSync(fullPath)) {
-      console.log(`❌ Photo ${photoNumber} not found:`, fullPath);
+    if (!photoPath || typeof photoPath !== 'string' || !photoPath.trim()) {
+      console.log(`❌ Invalid photo path for photo ${photoNumber}:`, photoPath);
       return false;
     }
     
-    // Validate image
-    const validExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
+    console.log(`📸 Processing photo ${photoNumber}:`, photoPath);
+    
+    // ✅ IMPROVED: Resolve photo path with more alternatives
+    let fullPath = resolvePhotoPath(photoPath.trim());
+    
+    if (!fullPath || !fs.existsSync(fullPath)) {
+      console.log(`❌ Photo ${photoNumber} file not found. Tried:`, fullPath);
+      return false;
+    }
+    
+    // ✅ IMPROVED: Validate image file
+    const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
     const ext = path.extname(fullPath).toLowerCase();
     
     if (!validExtensions.includes(ext)) {
@@ -187,19 +277,28 @@ const addSinglePhoto = async (doc, photoPath, x, y, width, height, photoNumber) 
       return false;
     }
     
-    // Add decorative frame
+    // Check file size (optional - prevent huge files from crashing)
+    const stats = fs.statSync(fullPath);
+    if (stats.size > 10 * 1024 * 1024) { // 10MB limit
+      console.log(`❌ Photo ${photoNumber} too large:`, (stats.size / 1024 / 1024).toFixed(2), 'MB');
+      return false;
+    }
+    
+    // ✅ Add decorative frame
     doc.rect(x - 5, y - 5, width + 10, height + 35)
        .fill(colors.light)
-       .stroke(colors.primary);
+       .stroke(colors.primary)
+       .lineWidth(2);
     
-    // Add photo
+    // ✅ Add photo with error handling
     doc.image(fullPath, x, y, { 
       width: width, 
       height: height,
+      fit: [width, height],
       align: 'center'
     });
     
-    // Add photo label
+    // ✅ Add photo label
     doc.fontSize(10)
        .font('Helvetica-Bold')
        .fillColor(colors.primary)
@@ -214,51 +313,75 @@ const addSinglePhoto = async (doc, photoPath, x, y, width, height, photoNumber) 
   }
 };
 
-// ✨ Helper function to add photo placeholder
+// ✨ IMPROVED: Helper function to add photo placeholder with better styling
 const addPhotoPlaceholder = (doc, x, y, width, height, photoNumber) => {
-  // Add frame
-  doc.rect(x - 5, y - 5, width + 10, height + 35)
-     .fill('#F8F9FA')
-     .stroke(colors.primary);
-  
-  // Add placeholder content
-  doc.rect(x, y, width, height)
-     .fill('#E9ECEF')
-     .stroke('#DEE2E6');
-  
-  // Add icon/text
-  doc.fontSize(12)
-     .font('Helvetica')
-     .fillColor('#6C757D')
-     .text('📷', x + width/2 - 10, y + height/2 - 20, { align: 'center' });
-  
-  doc.fontSize(9)
-     .text('Photo Not Available', x, y + height/2, { width: width, align: 'center' });
-  
-  // Add label
-  doc.fontSize(10)
-     .font('Helvetica-Bold')
-     .fillColor(colors.primary)
-     .text(`Photo ${photoNumber}`, x, y + height + 10, { width: width, align: 'center' });
+  try {
+    // Add frame
+    doc.rect(x - 5, y - 5, width + 10, height + 35)
+       .fill('#F8F9FA')
+       .stroke(colors.danger)
+       .lineWidth(2);
+    
+    // Add placeholder content
+    doc.rect(x, y, width, height)
+       .fill('#E9ECEF')
+       .stroke('#DEE2E6');
+    
+    // Add icon/text
+    doc.fontSize(24)
+       .font('Helvetica')
+       .fillColor('#6C757D')
+       .text('📷', x + width/2 - 12, y + height/2 - 25, { align: 'left' });
+    
+    doc.fontSize(10)
+       .fillColor('#DC3545')
+       .text('Photo Not Available', x, y + height/2 + 5, { width: width, align: 'center' });
+    
+    // Add label
+    doc.fontSize(10)
+       .font('Helvetica-Bold')
+       .fillColor(colors.primary)
+       .text(`Photo ${photoNumber}`, x, y + height + 10, { width: width, align: 'center' });
+    
+    console.log(`📸 Placeholder added for photo ${photoNumber}`);
+  } catch (error) {
+    console.error(`❌ Error adding placeholder for photo ${photoNumber}:`, error);
+  }
 };
 
-// ✨ Helper function to resolve photo path
+// ✨ IMPROVED: Helper function to resolve photo path with more alternatives
 const resolvePhotoPath = (photoPath) => {
-  if (!photoPath) return null;
+  if (!photoPath || typeof photoPath !== 'string') return null;
   
+  const cleanPath = photoPath.trim();
+  const fileName = path.basename(cleanPath);
+  
+  // Try multiple possible paths
   const alternatives = [
-    path.join(__dirname, '..', 'uploads', path.basename(photoPath)),
-    path.join(__dirname, '..', photoPath.startsWith('/') ? photoPath.substring(1) : photoPath),
-    path.join(process.cwd(), 'uploads', path.basename(photoPath)),
-    path.join(__dirname, 'uploads', path.basename(photoPath))
+    // Original path as-is
+    cleanPath,
+    // Relative to project root uploads
+    path.join(process.cwd(), 'uploads', fileName),
+    // Relative to current directory uploads
+    path.join(__dirname, '..', 'uploads', fileName),
+    // Just uploads folder relative to project root
+    path.join(__dirname, '..', '..', 'uploads', fileName),
+    // Remove leading slash if present and try uploads
+    path.join(process.cwd(), 'uploads', cleanPath.startsWith('/') ? cleanPath.substring(1) : cleanPath),
+    // Direct path if it's already absolute
+    path.resolve(cleanPath)
   ];
+  
+  console.log(`🔍 Searching for photo: ${cleanPath}`);
   
   for (const altPath of alternatives) {
     if (fs.existsSync(altPath)) {
+      console.log(`✅ Found photo at: ${altPath}`);
       return altPath;
     }
   }
   
+  console.log(`❌ Photo not found in any of these locations:`, alternatives);
   return null;
 };
 
@@ -329,8 +452,8 @@ const addStyledHeader = (doc, person) => {
   doc.fontSize(11)
      .font('Helvetica')
      .fillColor(colors.light)
-     .text(' 9871080409 |  jodino1@gmail.com', 50, 55)
-     .text(' G-25, Vardhman Premium Mall, Opp.Kali Mata Mandir,Deepali enclave , Delhi-110034', 50, 70);
+     .text('📞 9871080409 | ✉️ jodino1@gmail.com', 50, 55)
+     .text('📍 G-25, Vardhman Premium Mall, Opp.Kali Mata Mandir,Deepali enclave , Delhi-110034', 50, 70);
   
   doc.moveDown(3);
   
@@ -347,7 +470,7 @@ const addStyledHeader = (doc, person) => {
   doc.fillColor(colors.text);
 };
 
-// ✨ MAIN ENHANCED PDF ROUTE
+// ✨ MAIN ENHANCED PDF ROUTE with 1-4 photos support
 router.get("/person/:id/pdf", async (req, res) => {
   let doc = null;
   
@@ -367,6 +490,11 @@ router.get("/person/:id/pdf", async (req, res) => {
     }
     
     console.log("✅ Person found:", person.name || 'Unnamed');
+    console.log("📸 Person photos data:", { 
+      profilePicture: person.profilePicture, 
+      photos: person.photos,
+      photosCount: person.photos ? person.photos.length : 0
+    });
 
     // Set response headers
     res.setHeader('Content-Type', 'application/pdf');
@@ -392,7 +520,7 @@ router.get("/person/:id/pdf", async (req, res) => {
     addStyledHeader(doc, person);
 
     // Personal Details Section
-    addStyledSectionHeader(doc, ' PERSONAL DETAILS');
+    addStyledSectionHeader(doc, '👤 PERSONAL DETAILS');
     addStyledField(doc, 'Full Name', person.name);
     addStyledField(doc, 'Gender', person.gender);
     addStyledField(doc, 'Marital Status', person.maritalStatus);
@@ -405,17 +533,17 @@ router.get("/person/:id/pdf", async (req, res) => {
     addStyledField(doc, 'Complexion', person.complexion);
 
     // Lifestyle Section
-    addStyledSectionHeader(doc, ' LIFESTYLE & HABITS');
+    addStyledSectionHeader(doc, '🏠 LIFESTYLE & HABITS');
     addStyledField(doc, 'Eating Habits', person.eatingHabits);
     addStyledField(doc, 'Drinking Habits', person.drinkingHabits);
     addStyledField(doc, 'Smoking Habits', person.smokingHabits);
     addStyledField(doc, 'Any Disability', person.disability);
     addStyledField(doc, 'NRI Status', person.nri ? 'Yes' : 'No');
     addStyledField(doc, 'Vehicle Owned', person.vehicle);
-    addStyledField(doc, 'Horoscope Available', person.horoscope);
+    addStyledField(doc, 'Horoscope Available', person.horoscope ? 'Yes' : 'No');
 
     // Family Details Section
-    addStyledSectionHeader(doc, ' FAMILY DETAILS');
+    addStyledSectionHeader(doc, '👨‍👩‍👧‍👦 FAMILY DETAILS');
     addStyledField(doc, 'Father\'s Name', person.fatherName);
     addStyledField(doc, 'Father\'s Occupation', person.fatherOccupation);
     addStyledField(doc, 'Father\'s Office Details', person.fatherOffice);
@@ -425,26 +553,26 @@ router.get("/person/:id/pdf", async (req, res) => {
     addStyledField(doc, 'Other Properties', person.otherProperty);
 
     // Education Section
-    addStyledSectionHeader(doc, ' EDUCATIONAL QUALIFICATIONS');
+    addStyledSectionHeader(doc, '🎓 EDUCATIONAL QUALIFICATIONS');
     addStyledField(doc, 'Highest Qualification', person.higherQualification);
     addStyledField(doc, 'Graduation Details', person.graduation);
     addStyledField(doc, 'School Education', person.schooling);
 
     // Professional Section
-    addStyledSectionHeader(doc, ' PROFESSION & INCOME');
+    addStyledSectionHeader(doc, '💼 PROFESSION & INCOME');
     addStyledField(doc, 'Current Occupation', person.occupation);
     addStyledField(doc, 'Personal Income', person.personalIncome);
     addStyledField(doc, 'Family Income', person.familyIncome);
 
     // Contact Information Section
-    addStyledSectionHeader(doc, ' CONTACT INFORMATION');
+    addStyledSectionHeader(doc, '📞 CONTACT INFORMATION');
     addStyledField(doc, 'Phone Number', person.phoneNumber);
     addStyledField(doc, 'Email Address', person.email);
     addStyledField(doc, 'Current Address', person.currentAddress);
 
     // Siblings Section
     if (person.siblings && person.siblings.length > 0) {
-      addStyledSectionHeader(doc, 'SIBLINGS INFORMATION');
+      addStyledSectionHeader(doc, '👨‍👩‍👧‍👦 SIBLINGS INFORMATION');
       
       person.siblings.forEach((sibling, index) => {
         doc.fontSize(13)
@@ -463,7 +591,7 @@ router.get("/person/:id/pdf", async (req, res) => {
       });
     }
 
-    // Add photos section at the end
+    // ✅ ALWAYS add photos section (handles 0-4 photos gracefully)
     await addPhotosSection(doc, person);
 
     // Add important notice with proper spacing
@@ -477,7 +605,7 @@ router.get("/person/:id/pdf", async (req, res) => {
              50, footerY, { align: 'center' });
 
     doc.end();
-    console.log("✅ Enhanced PDF generated successfully with photos at end and proper spacing");
+    console.log("✅ Enhanced PDF generated successfully with 1-4 photos support");
 
   } catch (error) {
     console.error("❌ Enhanced PDF generation error:", error);
@@ -495,7 +623,7 @@ router.get("/person/:id/pdf", async (req, res) => {
   }
 });
 
-// Keep existing routes (test, debug, etc.)
+// Test route for PDF functionality
 router.get("/test-pdf", (req, res) => {
   try {
     const doc = new PDFDocument({ margin: 50 });
@@ -505,8 +633,8 @@ router.get("/test-pdf", (req, res) => {
     
     doc.pipe(res);
     
-    doc.fontSize(20).fillColor(colors.primary).text('Enhanced PDFKit Test - Success!', 100, 100);
-    doc.fontSize(12).fillColor(colors.text).text('Enhanced styling is working correctly.', 100, 140);
+    doc.fontSize(20).fillColor(colors.primary).text('Enhanced PDFKit Test - Success! ✅', 100, 100);
+    doc.fontSize(12).fillColor(colors.text).text('1-4 Photos support is working correctly.', 100, 140);
     
     doc.end();
     
@@ -516,6 +644,6 @@ router.get("/test-pdf", (req, res) => {
   }
 });
 
-console.log("✅ Enhanced PDFKit routes loaded with photos at end and beautiful styling");
+console.log("✅ Enhanced PDFKit routes loaded with 1-4 photos support and beautiful styling");
 
 module.exports = router;
