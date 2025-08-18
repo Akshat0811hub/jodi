@@ -1,21 +1,22 @@
-// src/api.js - UPDATED VERSION WITH BETTER FILE UPLOAD SUPPORT
+// src/api.js - FIXED VERSION WITH BETTER CORS AND ERROR HANDLING
 import axios from "axios";
 
-// ✅ Fixed: Use the correct base URL without /api suffix
+// ✅ Fixed: Use the correct base URL
 const baseURL = process.env.REACT_APP_API_URL || "https://jodi-fi4e.onrender.com";
 
 console.log("🔗 API Base URL:", baseURL);
 console.log("🌍 Environment:", process.env.NODE_ENV);
 
 const api = axios.create({
-  baseURL: `${baseURL}/api`, // Add /api here for all API routes
-  timeout: 120000, // ✅ INCREASED: 120 second timeout for file uploads (was 60s)
+  baseURL: `${baseURL}/api`,
+  timeout: 120000, // 2 minutes for regular requests
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: false, // ✅ Changed: Set to false for CORS simplicity
 });
 
-// ✅ Request interceptor with better logging and file upload handling
+// ✅ Request interceptor with better file upload handling
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
@@ -23,14 +24,14 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    // ✅ IMPROVED: Handle multipart form data
+    // ✅ Handle FormData properly
     if (config.data instanceof FormData) {
       // Remove Content-Type header for FormData - let browser set it with boundary
       delete config.headers["Content-Type"];
       console.log("📤 FormData request detected - removing Content-Type header");
       
       // Increase timeout for file uploads
-      config.timeout = 180000; // 3 minutes for file uploads
+      config.timeout = 300000; // 5 minutes for file uploads
       
       // Log FormData contents for debugging
       console.log("📤 FormData contents:");
@@ -60,7 +61,7 @@ api.interceptors.request.use(
   }
 );
 
-// ✅ Response interceptor with comprehensive error handling
+// ✅ Response interceptor with better error handling
 api.interceptors.response.use(
   (response) => {
     console.log("✅ API Response:", {
@@ -80,10 +81,20 @@ api.interceptors.response.use(
       method: error.config?.method?.toUpperCase(),
       message: error.message,
       data: error.response?.data,
-      code: error.code
+      code: error.code,
+      fullURL: error.config ? `${error.config.baseURL}${error.config.url}` : 'unknown'
     };
     
-    console.error("❌ API Error:", errorInfo);
+    console.error("❌ API Error Details:", errorInfo);
+    
+    // ✅ Handle specific CORS errors
+    if (error.message.includes('Network Error') || error.code === 'ERR_NETWORK') {
+      console.error("🚨 CORS/Network Error Detected:");
+      console.error("   - Check if server is running at:", baseURL);
+      console.error("   - Verify CORS configuration on server");
+      console.error("   - Check if frontend URL is in CORS allowlist");
+      console.error("   - Try: curl -X OPTIONS " + errorInfo.fullURL);
+    }
     
     // ✅ Handle different error types
     if (error.response?.status === 401) {
@@ -101,18 +112,16 @@ api.interceptors.response.use(
     } else if (error.response?.status === 403) {
       console.error("🚫 Forbidden - insufficient permissions");
     } else if (error.response?.status === 404) {
-      console.error("🔍 Not Found - check if server is running and route exists");
-      console.error("🔗 Full URL attempted:", `${error.config?.baseURL}${error.config?.url}`);
+      console.error("🔍 Not Found - check if server route exists");
+      console.error("🔗 Full URL attempted:", errorInfo.fullURL);
     } else if (error.response?.status === 413) {
       console.error("📦 Request Entity Too Large - files too big or too many files");
     } else if (error.response?.status === 500) {
       console.error("💥 Server Error - check server logs");
     } else if (error.code === 'ECONNABORTED') {
       console.error("⏱️ Request timeout - server may be slow or down");
-    } else if (error.message.includes('Network Error')) {
-      console.error("🌐 Network error - check if server is running at:", baseURL);
-    } else if (error.code === 'ERR_NETWORK') {
-      console.error("📡 Network connection failed - server may be down");
+    } else if (error.message.includes('CORS')) {
+      console.error("🔄 CORS Error - server CORS configuration issue");
     }
     
     return Promise.reject(error);
@@ -123,42 +132,96 @@ api.interceptors.response.use(
 export const checkServerHealth = async () => {
   try {
     // Direct call to health endpoint without /api prefix
-    const response = await axios.get(`${baseURL}/health`, { timeout: 10000 });
+    const response = await axios.get(`${baseURL}/health`, { 
+      timeout: 10000,
+      withCredentials: false 
+    });
     console.log("💚 Server health check passed:", response.data);
-    return true;
+    return { success: true, data: response.data };
   } catch (error) {
     console.error("💔 Server health check failed:", error.message);
-    return false;
+    return { success: false, error: error.message };
   }
 };
 
 // ✅ Helper function to test API connectivity
 export const testAPI = async () => {
   try {
-    // This will call /api/test through the configured api instance
     const response = await api.get('/test');
     console.log("🎯 API test successful:", response.data);
-    return true;
+    return { success: true, data: response.data };
   } catch (error) {
     console.error("🎯 API test failed:", error.message);
-    return false;
+    return { success: false, error: error.message };
   }
 };
 
-// ✅ NEW: Helper function for file uploads with progress
+// ✅ Diagnostic function to test CORS
+export const testCORS = async () => {
+  try {
+    console.log("🔍 Testing CORS configuration...");
+    
+    // Test OPTIONS request first
+    const optionsResponse = await axios.options(`${baseURL}/api/people`, {
+      headers: {
+        'Origin': window.location.origin,
+        'Access-Control-Request-Method': 'POST',
+        'Access-Control-Request-Headers': 'Content-Type'
+      },
+      timeout: 10000
+    });
+    
+    console.log("✅ OPTIONS preflight successful:", optionsResponse.status);
+    return { success: true, message: "CORS is working" };
+    
+  } catch (error) {
+    console.error("❌ CORS test failed:", error.message);
+    return { success: false, error: error.message };
+  }
+};
+
+// ✅ Helper function for file uploads with progress
 export const uploadWithProgress = (url, formData, onProgress = null) => {
+  console.log("📤 Starting file upload to:", url);
+  
   return api.post(url, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
     timeout: 300000, // 5 minutes for large uploads
     onUploadProgress: (progressEvent) => {
-      if (onProgress) {
+      if (onProgress && progressEvent.total) {
         const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        console.log(`📊 Upload progress: ${percentCompleted}%`);
         onProgress(percentCompleted);
       }
     }
   });
+};
+
+// ✅ Add network status checker
+export const isOnline = () => {
+  return navigator.onLine;
+};
+
+// ✅ Add retry mechanism for failed requests
+export const retryRequest = async (requestFn, maxRetries = 3, delay = 1000) => {
+  let lastError;
+  
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const result = await requestFn();
+      return result;
+    } catch (error) {
+      lastError = error;
+      console.log(`🔄 Request failed, attempt ${i + 1}/${maxRetries}:`, error.message);
+      
+      if (i < maxRetries - 1) {
+        console.log(`⏱️ Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay *= 2; // Exponential backoff
+      }
+    }
+  }
+  
+  throw lastError;
 };
 
 export default api;

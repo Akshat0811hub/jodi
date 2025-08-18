@@ -13,79 +13,55 @@ console.log("🔄 Starting server setup...");
 console.log("🌍 Environment:", process.env.NODE_ENV || "development");
 console.log("📡 Port:", process.env.PORT || 5000);
 
-// ✅ ENHANCED CORS Configuration - This is the key fix!
+// ✅ SIMPLIFIED AND FIXED CORS Configuration
 const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-    
-    const allowedOrigins = [
-      "https://jodi-iexr.vercel.app",
-      "http://localhost:3000",
-      "http://localhost:5173",
-      "http://localhost:3001",
-      // Add your actual frontend URL here if different
-    ];
-    
-    console.log("🔍 CORS Check - Origin:", origin);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      console.log("✅ CORS - Origin allowed:", origin);
-      callback(null, true);
-    } else {
-      console.log("❌ CORS - Origin blocked:", origin);
-      // Still allow it but log it - can change to false to block
-      callback(null, true); // Change to false to strictly enforce
-    }
-  },
-  credentials: true,
-  optionsSuccessStatus: 200, // For legacy browser support
+  origin: [
+    "https://jodi-iexr.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:3001"
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: [
     'Origin',
-    'X-Requested-With',
+    'X-Requested-With', 
     'Content-Type',
     'Accept',
     'Authorization',
-    'Cache-Control',
-    'X-HTTP-Method-Override'
+    'Cache-Control'
   ],
-  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
-  preflightContinue: false,
+  credentials: true,
+  optionsSuccessStatus: 200
 };
 
-// Apply CORS middleware FIRST and GLOBALLY
+// Apply CORS middleware FIRST
 app.use(cors(corsOptions));
 
-// ✅ Handle preflight requests explicitly
-app.options('*', cors(corsOptions));
-
-// ✅ Additional CORS headers for extra safety
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (origin) {
-    res.header('Access-Control-Allow-Origin', origin);
-  }
+// ✅ Explicit OPTIONS handler for all routes
+app.options('*', (req, res) => {
+  console.log(`✅ OPTIONS request for: ${req.path} from origin: ${req.headers.origin}`);
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control');
   res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET,HEAD,OPTIONS,POST,PUT,DELETE,PATCH');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, X-HTTP-Method-Override');
-  
-  // Handle preflight
-  if (req.method === 'OPTIONS') {
-    console.log("✅ Preflight request handled for:", req.url);
-    return res.sendStatus(200);
-  }
-  
-  next();
+  res.sendStatus(200);
 });
 
-// ✅ Body parsing middleware
+// ✅ Body parsing middleware with increased limits for file uploads
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // ✅ Request logging middleware
 app.use((req, res, next) => {
   console.log(`📥 ${new Date().toISOString()} - ${req.method} ${req.url} from ${req.headers.origin || 'unknown'}`);
+  
+  // Add CORS headers to every response
+  const origin = req.headers.origin;
+  if (corsOptions.origin.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
   next();
 });
 
@@ -232,9 +208,9 @@ const connectDB = async (retries = 5) => {
       useNewUrlParser: true,
       useUnifiedTopology: true,
       maxPoolSize: 10,
-      serverSelectionTimeoutMS: 10000, // Increased timeout
+      serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
-      family: 4 // Force IPv4
+      family: 4
     });
 
     console.log("✅ MongoDB connected successfully");
@@ -255,7 +231,6 @@ const connectDB = async (retries = 5) => {
       setTimeout(() => connectDB(retries - 1), 5000);
     } else {
       console.error("💥 MongoDB connection failed after all retries");
-      // Don't exit, let server run for debugging
       console.log("🚨 Server will continue running for debugging purposes");
     }
   }
@@ -319,7 +294,7 @@ app.use((err, req, res, next) => {
 
   // Ensure CORS headers are present even in error responses
   const origin = req.headers.origin;
-  if (origin) {
+  if (corsOptions.origin.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Credentials', 'true');
   }
@@ -337,7 +312,7 @@ app.use("*", (req, res) => {
   
   // Ensure CORS headers
   const origin = req.headers.origin;
-  if (origin) {
+  if (corsOptions.origin.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Credentials', 'true');
   }
@@ -384,7 +359,7 @@ const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`🔐 Auth: http://localhost:${PORT}/api/auth`);
   console.log(`👥 People: http://localhost:${PORT}/api/people`);
   console.log(`📄 PDF: http://localhost:${PORT}/api/pdf`);
-  console.log(`📊 CORS enabled for frontend domains`);
+  console.log(`📊 CORS enabled for: ${corsOptions.origin.join(', ')}`);
   console.log(`💓 Keep-alive: http://localhost:${PORT}/keep-alive`);
   console.log(`🎯 Ready to accept connections!\n`);
 });
