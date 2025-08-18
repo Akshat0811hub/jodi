@@ -1,4 +1,4 @@
-// src/api.js
+// src/api.js - UPDATED VERSION WITH BETTER FILE UPLOAD SUPPORT
 import axios from "axios";
 
 // ✅ Fixed: Use the correct base URL without /api suffix
@@ -9,13 +9,13 @@ console.log("🌍 Environment:", process.env.NODE_ENV);
 
 const api = axios.create({
   baseURL: `${baseURL}/api`, // Add /api here for all API routes
-  timeout: 60000, // 60 second timeout for PDF generation
+  timeout: 120000, // ✅ INCREASED: 120 second timeout for file uploads (was 60s)
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// ✅ Request interceptor with better logging
+// ✅ Request interceptor with better logging and file upload handling
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
@@ -23,11 +23,33 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
+    // ✅ IMPROVED: Handle multipart form data
+    if (config.data instanceof FormData) {
+      // Remove Content-Type header for FormData - let browser set it with boundary
+      delete config.headers["Content-Type"];
+      console.log("📤 FormData request detected - removing Content-Type header");
+      
+      // Increase timeout for file uploads
+      config.timeout = 180000; // 3 minutes for file uploads
+      
+      // Log FormData contents for debugging
+      console.log("📤 FormData contents:");
+      for (let [key, value] of config.data.entries()) {
+        if (value instanceof File) {
+          console.log(`  ${key}: FILE - ${value.name} (${(value.size / 1024 / 1024).toFixed(2)}MB)`);
+        } else {
+          console.log(`  ${key}: ${value}`);
+        }
+      }
+    }
+    
     console.log("🔄 API Request:", {
       method: config.method?.toUpperCase(),
       url: config.url,
       fullURL: `${config.baseURL}${config.url}`,
-      hasToken: !!token
+      hasToken: !!token,
+      timeout: config.timeout,
+      contentType: config.headers["Content-Type"] || "multipart/form-data (auto)"
     });
     
     return config;
@@ -44,7 +66,8 @@ api.interceptors.response.use(
     console.log("✅ API Response:", {
       status: response.status,
       url: response.config.url,
-      method: response.config.method?.toUpperCase()
+      method: response.config.method?.toUpperCase(),
+      size: response.headers['content-length'] ? `${response.headers['content-length']} bytes` : 'unknown'
     });
     return response;
   },
@@ -80,6 +103,8 @@ api.interceptors.response.use(
     } else if (error.response?.status === 404) {
       console.error("🔍 Not Found - check if server is running and route exists");
       console.error("🔗 Full URL attempted:", `${error.config?.baseURL}${error.config?.url}`);
+    } else if (error.response?.status === 413) {
+      console.error("📦 Request Entity Too Large - files too big or too many files");
     } else if (error.response?.status === 500) {
       console.error("💥 Server Error - check server logs");
     } else if (error.code === 'ECONNABORTED') {
@@ -118,6 +143,22 @@ export const testAPI = async () => {
     console.error("🎯 API test failed:", error.message);
     return false;
   }
+};
+
+// ✅ NEW: Helper function for file uploads with progress
+export const uploadWithProgress = (url, formData, onProgress = null) => {
+  return api.post(url, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+    timeout: 300000, // 5 minutes for large uploads
+    onUploadProgress: (progressEvent) => {
+      if (onProgress) {
+        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        onProgress(percentCompleted);
+      }
+    }
+  });
 };
 
 export default api;

@@ -1,4 +1,4 @@
-// src/components/AddPersonFormModal.jsx
+// src/components/AddPersonFormModal.jsx - COMPLETE FIXED VERSION
 import React, { useState } from "react";
 import api from "../api";
 import "../css/addPerson.css";
@@ -13,8 +13,8 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
     birthPlaceTime: "",
     nativePlace: "",
     gotra: "",
-    religion: "",        // ✅ ADDED - ye missing tha
-    phoneNumber: "",     // ✅ ADDED - ye bhi missing tha
+    religion: "",        
+    phoneNumber: "",     
     height: "",
     complexion: "",
     horoscope: "",
@@ -45,10 +45,20 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
   const [siblings, setSiblings] = useState([]);
   const [photos, setPhotos] = useState([]);
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // ✅ FIXED: Proper photo handler
+  const handlePhotoChange = (e) => {
+    const files = Array.from(e.target.files);
+    console.log("📸 Files selected:", files.length);
+    console.log("📸 File details:", files.map(f => ({ name: f.name, size: f.size, type: f.type })));
+    setPhotos(files);
+    setError(""); // Clear any previous photo errors
   };
 
   const handleSiblingChange = (index, field, value) => {
@@ -71,60 +81,123 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
-    // ✅ Basic validation
-    if (!formData.name.trim()) {
-      setError("Name is required");
-      return;
-    }
-    if (!formData.religion.trim()) {
-      setError("Religion is required");
-      return;
-    }
-    if (!formData.phoneNumber?.trim()) {
-      setError("Phone Number is required");
-      return;
-    }
-    if (!/^\d{1,10}$/.test(formData.phoneNumber.trim())) {
-      setError("Phone Number must be numeric and max 10 digits");
-      return;
-    }
-
-    // ✅ Photo validation (minimum 3) - FIXED: 1 se 3 kiya
-    if (photos.length < 3) {
-      setError("Please upload at least 3 photos.");
-      return;
-    }
-    if (photos.length > 4) {
-      setError("You can upload a maximum of 4 photos.");
-      return;
-    }
+    setIsSubmitting(true);
 
     try {
-      const data = new FormData();
-      Object.keys(formData).forEach((key) => data.append(key, formData[key]));
+      // ✅ Basic validation
+      if (!formData.name.trim()) {
+        setError("Name is required");
+        return;
+      }
+      if (!formData.religion.trim()) {
+        setError("Religion is required");
+        return;
+      }
+      if (!formData.phoneNumber?.trim()) {
+        setError("Phone Number is required");
+        return;
+      }
+      if (!/^\d{1,10}$/.test(formData.phoneNumber.trim())) {
+        setError("Phone Number must be numeric and max 10 digits");
+        return;
+      }
 
-      // ✅ Allow empty siblings
+      // ✅ IMPROVED Photo validation with detailed logging
+      console.log("📸 Photo validation - Current photos:", photos);
+      console.log("📸 Photos length:", photos.length);
+      console.log("📸 Photos array:", Array.isArray(photos));
+
+      if (!photos || !Array.isArray(photos) || photos.length < 3) {
+        setError(`Please upload at least 3 photos. Currently selected: ${photos ? photos.length : 0}`);
+        return;
+      }
+      if (photos.length > 4) {
+        setError("You can upload a maximum of 4 photos.");
+        return;
+      }
+
+      // ✅ Validate file types
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+      const invalidFiles = photos.filter(photo => !validTypes.includes(photo.type));
+      if (invalidFiles.length > 0) {
+        setError("Please upload only image files (JPEG, PNG, GIF)");
+        return;
+      }
+
+      // ✅ Validate file sizes (max 5MB each)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      const oversizedFiles = photos.filter(photo => photo.size > maxSize);
+      if (oversizedFiles.length > 0) {
+        setError("Each photo must be less than 5MB");
+        return;
+      }
+
+      const data = new FormData();
+      
+      // Append form data
+      Object.keys(formData).forEach((key) => {
+        data.append(key, formData[key]);
+      });
+
+      // ✅ Handle siblings
       if (siblings.length > 0) {
         data.append("siblings", JSON.stringify(siblings));
       } else {
         data.append("siblings", JSON.stringify([]));
       }
 
-      photos.forEach((photo) => data.append("photos", photo));
+      // ✅ IMPROVED: Append photos with detailed logging
+      console.log("📤 Appending photos to FormData:");
+      photos.forEach((photo, index) => {
+        console.log(`📸 Photo ${index + 1}:`, {
+          name: photo.name,
+          size: `${(photo.size / 1024 / 1024).toFixed(2)}MB`,
+          type: photo.type
+        });
+        data.append("photos", photo);
+      });
 
-      // Debug log
-      console.log("📤 Sending FormData to backend:");
+      // ✅ Debug: Log FormData contents
+      console.log("📤 FormData contents:");
       for (let [key, value] of data.entries()) {
-        console.log(key, value);
+        if (key === 'photos') {
+          console.log(key, "FILE:", value.name, value.size, value.type);
+        } else {
+          console.log(key, value);
+        }
       }
 
-      await api.post("/people", data);
+      console.log("📤 Sending request to /people endpoint...");
+      const response = await api.post("/people", data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 60000 // 60 second timeout for file upload
+      });
+
+      console.log("✅ Person added successfully:", response.data);
       onPersonAdded();
       onClose();
+
     } catch (err) {
-      setError("Failed to add person");
-      console.error("❌ API Error:", err.response?.data || err);
+      console.error("❌ API Error Details:", {
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data,
+        message: err.message
+      });
+
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.status === 400) {
+        setError("Invalid data provided. Please check all fields.");
+      } else if (err.response?.status === 413) {
+        setError("Files too large. Please reduce image sizes.");
+      } else {
+        setError("Failed to add person. Please try again.");
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -138,58 +211,81 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
           </button>
         </div>
 
-        {error && <p className="error-text">{error}</p>}
+        {error && <div className="error-text">{error}</div>}
 
         <form onSubmit={handleSubmit} className="modal-form">
           {/* Personal Details */}
           <h3>Personal Details</h3>
           <input
             name="name"
-            placeholder="Name"
+            placeholder="Name *"
+            value={formData.name}
             onChange={handleChange}
             required
           />
-          <select name="gender" onChange={handleChange}>
+          <select name="gender" value={formData.gender} onChange={handleChange}>
             <option value="">Gender</option>
             <option>Male</option>
             <option>Female</option>
           </select>
-          <select name="maritalStatus" onChange={handleChange}>
+          <select name="maritalStatus" value={formData.maritalStatus} onChange={handleChange}>
             <option value="">Marital Status</option>
             <option>Never Married</option>
             <option>Married</option>
             <option>Divorced</option>
             <option>Widowed</option>
           </select>
-          <input type="date" name="dob" onChange={handleChange} />
+          <input 
+            type="date" 
+            name="dob" 
+            value={formData.dob}
+            onChange={handleChange} 
+          />
           <input
             name="birthPlaceTime"
             placeholder="Place of Birth & Time"
+            value={formData.birthPlaceTime}
             onChange={handleChange}
           />
           <input
             name="nativePlace"
             placeholder="Native Place"
+            value={formData.nativePlace}
             onChange={handleChange}
           />
-          <input name="gotra" placeholder="Gotra" onChange={handleChange} />
+          <input 
+            name="gotra" 
+            placeholder="Gotra" 
+            value={formData.gotra}
+            onChange={handleChange} 
+          />
           <input
             name="religion"
-            placeholder="Religion"
+            placeholder="Religion *"
+            value={formData.religion}
             onChange={handleChange}
+            required
           />
           <input
             name="phoneNumber"
-            placeholder="Ph No"
+            placeholder="Ph No *"
+            value={formData.phoneNumber}
             onChange={handleChange}
+            required
           />
-          <input name="height" placeholder="Height" onChange={handleChange} />
+          <input 
+            name="height" 
+            placeholder="Height" 
+            value={formData.height}
+            onChange={handleChange} 
+          />
           <input
             name="complexion"
             placeholder="Complexion"
+            value={formData.complexion}
             onChange={handleChange}
           />
-          <select name="horoscope" onChange={handleChange}>
+          <select name="horoscope" value={formData.horoscope} onChange={handleChange}>
             <option value="">Believe in Horoscopes?</option>
             <option>Yes</option>
             <option>No</option>
@@ -197,29 +293,33 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
           <input
             name="eatingHabits"
             placeholder="Eating Habits"
+            value={formData.eatingHabits}
             onChange={handleChange}
           />
           <input
             name="drinkingHabits"
             placeholder="Drinking Habits"
+            value={formData.drinkingHabits}
             onChange={handleChange}
           />
           <input
             name="smokingHabits"
             placeholder="Smoking Habits"
+            value={formData.smokingHabits}
             onChange={handleChange}
           />
           <input
             name="disability"
             placeholder="Physical Disability"
+            value={formData.disability}
             onChange={handleChange}
           />
-          <select name="nri" onChange={handleChange}>
+          <select name="nri" value={formData.nri} onChange={handleChange}>
             <option value="">NRI?</option>
             <option>Yes</option>
             <option>No</option>
           </select>
-          <select name="vehicle" onChange={handleChange}>
+          <select name="vehicle" value={formData.vehicle} onChange={handleChange}>
             <option value="">Vehicle?</option>
             <option>Yes</option>
             <option>No</option>
@@ -230,36 +330,43 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
           <input
             name="fatherName"
             placeholder="Father Name"
+            value={formData.fatherName}
             onChange={handleChange}
           />
           <input
             name="fatherOccupation"
             placeholder="Father Occupation Detail"
+            value={formData.fatherOccupation}
             onChange={handleChange}
           />
           <input
             name="fatherOffice"
             placeholder="Father Office Detail"
+            value={formData.fatherOffice}
             onChange={handleChange}
           />
           <input
             name="motherName"
             placeholder="Mother Name"
+            value={formData.motherName}
             onChange={handleChange}
           />
           <input
             name="motherOccupation"
             placeholder="Mother Occupation"
+            value={formData.motherOccupation}
             onChange={handleChange}
           />
           <input
             name="residence"
             placeholder="Residence"
+            value={formData.residence}
             onChange={handleChange}
           />
           <input
             name="otherProperty"
             placeholder="Other Property"
+            value={formData.otherProperty}
             onChange={handleChange}
           />
 
@@ -320,16 +427,19 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
           <input
             name="higherQualification"
             placeholder="Higher Qualification"
+            value={formData.higherQualification}
             onChange={handleChange}
           />
           <input
             name="graduation"
             placeholder="Graduation"
+            value={formData.graduation}
             onChange={handleChange}
           />
           <input
             name="schooling"
             placeholder="Schooling"
+            value={formData.schooling}
             onChange={handleChange}
           />
 
@@ -338,34 +448,78 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
           <textarea
             name="occupation"
             placeholder="Occupation / Business Details"
+            value={formData.occupation}
             onChange={handleChange}
           ></textarea>
           <input
             name="personalIncome"
             placeholder="Personal Income"
+            value={formData.personalIncome}
             onChange={handleChange}
           />
           <input
             name="familyIncome"
             placeholder="Family Income"
+            value={formData.familyIncome}
             onChange={handleChange}
           />
 
-          {/* Photos */}
-          <h3>Photos</h3>
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={(e) => setPhotos(Array.from(e.target.files))}
-          />
+          {/* ✅ IMPROVED Photos Section */}
+          <h3>Photos (Minimum 3 required) *</h3>
+          <div className="photo-upload-section">
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={handlePhotoChange}
+              className="photo-input"
+              required
+            />
+            
+            {photos.length > 0 && (
+              <div className="selected-photos-info">
+                <p className="photos-count">
+                  ✅ Selected: {photos.length} photo(s)
+                  {photos.length >= 3 && photos.length <= 4 && " (Valid)"}
+                </p>
+                <ul className="photos-list">
+                  {Array.from(photos).map((file, index) => (
+                    <li key={index} className="photo-item">
+                      📸 {file.name} ({(file.size / 1024 / 1024).toFixed(2)}MB)
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            <div className="photo-requirements">
+              <p className={`requirement ${photos.length >= 3 ? 'valid' : 'invalid'}`}>
+                • Minimum 3 photos required {photos.length >= 3 ? '✅' : '❌'}
+              </p>
+              <p className={`requirement ${photos.length <= 4 ? 'valid' : 'invalid'}`}>
+                • Maximum 4 photos allowed {photos.length <= 4 ? '✅' : '❌'}
+              </p>
+              <p className="requirement-note">
+                • Supported formats: JPEG, PNG, GIF (Max 5MB each)
+              </p>
+            </div>
+          </div>
 
           <div className="form-actions">
-            <button type="button" onClick={onClose} className="cancel-btn">
+            <button 
+              type="button" 
+              onClick={onClose} 
+              className="cancel-btn"
+              disabled={isSubmitting}
+            >
               Cancel
             </button>
-            <button type="submit" className="submit-btn">
-              Submit
+            <button 
+              type="submit" 
+              className="submit-btn"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Adding..." : "Submit"}
             </button>
           </div>
         </form>

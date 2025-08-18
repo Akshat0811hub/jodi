@@ -1,57 +1,350 @@
-.addperson-container {
-  width: 350px;
+/* src/css/addPerson.css - COMPLETE UPDATED VERSION */
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-container {
+  background: white;
+  border-radius: 12px;
+  padding: 0;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  background: #3b82f6;
+  color: white;
   padding: 20px;
-  background-color: #ffffff;
-  border-left: 1px solid #ccc;
-  height: 100vh;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 2rem;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.close-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Form Styles */
+.modal-form {
+  padding: 20px;
+  max-height: calc(90vh - 100px);
   overflow-y: auto;
 }
 
-.form-title {
-  font-size: 22px;
-  font-weight: bold;
-  margin-bottom: 16px;
+.modal-form h3 {
+  color: #1f2937;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 8px;
+  margin: 25px 0 15px 0;
+  font-size: 1.2rem;
+  font-weight: 600;
 }
 
-.error-text {
-  color: red;
+.modal-form h4 {
+  color: #374151;
+  margin: 20px 0 10px 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.modal-form input,
+.modal-form select,
+.modal-form textarea {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.modal-form input:focus,
+.modal-form select:focus,
+.modal-form textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.modal-form textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+/* Sibling Row Styles */
+.sibling-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 80px 1fr 120px 40px;
+  gap: 8px;
   margin-bottom: 10px;
+  align-items: center;
 }
 
-.person-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.sibling-row input {
+  margin-bottom: 0;
 }
 
-.person-form input,
-.person-form select {
-  padding: 8px 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-.form-buttons {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.cancel-btn,
-.submit-btn {
-  padding: 8px 16px;
+.sibling-row button {
+  background: #ef4444;
+  color: white;
   border: none;
   border-radius: 4px;
+  padding: 8px;
   cursor: pointer;
+  font-size: 12px;
+  height: 36px;
+  transition: background-color 0.2s;
+}
+
+.sibling-row button:hover {
+  background: #dc2626;
+}
+
+.add-sibling-btn {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-bottom: 15px;
+  transition: background-color 0.2s;
+}
+
+.add-sibling-btn:hover {
+  background: #059669;
+}
+
+/* ✅ NEW: Photo Upload Styles */
+.photo-upload-section {
+  margin: 15px 0;
+  padding: 20px;
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  background-color: #f9fafb;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.photo-upload-section:hover {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+}
+
+.photo-input {
+  width: 100%;
+  padding: 15px;
+  margin-bottom: 15px;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.photo-input:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+}
+
+.selected-photos-info {
+  background-color: #ecfdf5;
+  border: 1px solid #10b981;
+  padding: 15px;
+  border-radius: 8px;
+  margin: 15px 0;
+}
+
+.photos-count {
+  font-weight: 600;
+  color: #065f46;
+  margin: 0 0 10px 0;
+  font-size: 14px;
+}
+
+.photos-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.photo-item {
+  padding: 4px 0;
+  font-size: 13px;
+  color: #047857;
+  border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.photo-item:last-child {
+  border-bottom: none;
+}
+
+.photo-requirements {
+  margin-top: 15px;
+  padding: 12px;
+  background-color: #fef3c7;
+  border-radius: 6px;
+  border-left: 4px solid #f59e0b;
+}
+
+.requirement {
+  margin: 5px 0;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.requirement.valid {
+  color: #065f46;
+}
+
+.requirement.invalid {
+  color: #dc2626;
+}
+
+.requirement-note {
+  margin: 8px 0 0 0;
+  font-size: 12px;
+  color: #92400e;
+  font-style: italic;
+}
+
+/* Error Styles */
+.error-text {
+  background-color: #fef2f2;
+  color: #dc2626;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  border: 1px solid #fecaca;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: flex-end;
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
 }
 
 .cancel-btn {
-  background-color: #777;
+  background: #6b7280;
   color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.cancel-btn:hover:not(:disabled) {
+  background: #4b5563;
 }
 
 .submit-btn {
-  background-color: #007bff;
+  background: #3b82f6;
   color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  min-width: 100px;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.submit-btn:disabled,
+.cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .modal-container {
+    width: 95%;
+    margin: 10px;
+  }
+  
+  .sibling-row {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .cancel-btn,
+  .submit-btn {
+    width: 100%;
+    margin: 0;
+  }
+
+  .photo-upload-section {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-header {
+    padding: 15px;
+  }
+  
+  .modal-form {
+    padding: 15px;
+  }
+  
+  .modal-header h2 {
+    font-size: 1.3rem;
+  }
 }
