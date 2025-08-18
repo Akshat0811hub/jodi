@@ -1,14 +1,14 @@
 // src/api.js
 import axios from "axios";
 
-// ✅ Use environment variable or fallback to your Render URL
-const baseURL = process.env.REACT_APP_API_URL || "https://jodi-fi4e.onrender.com/api";
+// ✅ Fixed: Use the correct base URL without /api suffix
+const baseURL = process.env.REACT_APP_API_URL || "https://jodi-fi4e.onrender.com";
 
 console.log("🔗 API Base URL:", baseURL);
 console.log("🌍 Environment:", process.env.NODE_ENV);
 
 const api = axios.create({
-  baseURL,
+  baseURL: `${baseURL}/api`, // Add /api here for all API routes
   timeout: 60000, // 60 second timeout for PDF generation
   headers: {
     "Content-Type": "application/json",
@@ -97,7 +97,8 @@ api.interceptors.response.use(
 // ✅ Helper function to check server health
 export const checkServerHealth = async () => {
   try {
-    const response = await axios.get(`${baseURL.replace('/api', '')}/health`, { timeout: 10000 });
+    // Direct call to health endpoint without /api prefix
+    const response = await axios.get(`${baseURL}/health`, { timeout: 10000 });
     console.log("💚 Server health check passed:", response.data);
     return true;
   } catch (error) {
@@ -109,6 +110,7 @@ export const checkServerHealth = async () => {
 // ✅ Helper function to test API connectivity
 export const testAPI = async () => {
   try {
+    // This will call /api/test through the configured api instance
     const response = await api.get('/test');
     console.log("🎯 API test successful:", response.data);
     return true;
