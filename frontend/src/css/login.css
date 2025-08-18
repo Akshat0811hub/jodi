@@ -1,97 +1,418 @@
-/* General reset */
+/* src/css/login.css - ENHANCED FASCINATING MODERN DESIGN */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  --glass-bg: rgba(255, 255, 255, 0.25);
+  --glass-border: rgba(255, 255, 255, 0.18);
+  --shadow-soft: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  --shadow-intense: 0 20px 60px 0 rgba(31, 38, 135, 0.5);
+  --text-primary: #2d3748;
+  --text-secondary: #4a5568;
+}
+
+/* Reset and Base Styles */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Background styling */
 body {
-  background: linear-gradient(120deg, #2980b9, #6dd5fa, #ffffff);
-  background-size: 300% 300%;
-  animation: gradientBG 10s ease infinite;
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Animated Background with Particles */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%);
+  background-size: 400% 400%;
+  animation: gradientFlow 15s ease infinite;
+  z-index: -2;
+}
+
+@keyframes gradientFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Floating Particles Effect */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.3) 2px, transparent 3px),
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.2) 1px, transparent 2px),
+    radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.4) 1px, transparent 2px),
+    radial-gradient(circle at 90% 90%, rgba(255, 255, 255, 0.3) 2px, transparent 3px),
+    radial-gradient(circle at 10% 10%, rgba(255, 255, 255, 0.2) 1px, transparent 2px);
+  background-size: 200px 200px, 300px 300px, 400px 400px, 250px 250px, 350px 350px;
+  animation: floatParticles 20s linear infinite;
+  z-index: -1;
+}
+
+@keyframes floatParticles {
+  0% { transform: translateY(0px) translateX(0px); }
+  33% { transform: translateY(-20px) translateX(10px); }
+  66% { transform: translateY(-10px) translateX(-15px); }
+  100% { transform: translateY(0px) translateX(0px); }
+}
+
+/* Main Login Container */
+.login-container {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 20px;
+  position: relative;
 }
 
-/* Gradient animation */
-@keyframes gradientBG {
+/* Glassmorphism Login Form */
+.login-form {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  padding: 50px 40px;
+  width: 100%;
+  max-width: 450px;
+  box-shadow: var(--shadow-intense);
+  position: relative;
+  overflow: hidden;
+  animation: slideInScale 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes slideInScale {
   0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
+    opacity: 0;
+    transform: translateY(50px) scale(0.9);
   }
   100% {
-    background-position: 0% 50%;
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
-/* Form container */
-form {
-  background-color: #ffffff;
-  padding: 40px 30px;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-  width: 100%;
-  max-width: 400px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+/* Decorative Elements */
+.login-form::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--primary-gradient);
+  border-radius: 24px 24px 0 0;
 }
 
-/* Login heading */
+.login-form::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(from 0deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  animation: rotate 10s linear infinite;
+  z-index: -1;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Login Heading with Animation */
 .login-text {
-  font-size: 28px;
-  font-weight: 600;
+  font-size: 2.5rem;
+  font-weight: 800;
   text-align: center;
-  color: #2c3e50;
+  margin-bottom: 40px;
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+  letter-spacing: -0.02em;
+  animation: textShimmer 3s ease-in-out infinite;
 }
 
-/* Input fields */
-.login-form,
-.pass-form {
-  padding: 12px 16px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
+@keyframes textShimmer {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+.login-text::before {
+  content: '🔐';
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 3rem;
+  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
+  animation: bounce 2s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-10px); }
+}
+
+/* Input Field Container */
+.input-group {
+  position: relative;
+  margin-bottom: 25px;
+}
+
+/* Enhanced Input Fields */
+input[type="email"],
+input[type="password"] {
+  width: 100%;
+  padding: 18px 24px 18px 60px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--text-primary);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   outline: none;
-  font-size: 16px;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  font-family: 'Inter', sans-serif;
 }
 
-.login-form:focus,
-.pass-form:focus {
-  border-color: #2980b9;
-  box-shadow: 0 0 5px rgba(41, 128, 185, 0.4);
+input[type="email"]::placeholder,
+input[type="password"]::placeholder {
+  color: rgba(45, 55, 72, 0.6);
+  font-weight: 400;
 }
 
-/* Login button */
+/* Input Icons */
+input[type="email"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2'%3E%3Cpath d='M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z'/%3E%3Cpolyline points='22,6 12,13 2,6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 20px center;
+}
+
+input[type="password"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2'%3E%3Crect x='3' y='11' width='18' height='11' rx='2' ry='2'/%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 20px center;
+}
+
+/* Input Focus States */
+input[type="email"]:focus,
+input[type="password"]:focus {
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3), 0 15px 35px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
+}
+
+/* Premium Login Button */
 .login-btn {
-  background-color: #2980b9;
-  color: white;
-  padding: 12px;
+  width: 100%;
+  padding: 18px 24px;
+  margin-top: 10px;
+  background: var(--primary-gradient);
   border: none;
-  border-radius: 8px;
+  border-radius: 16px;
+  color: white;
   font-size: 16px;
-  font-weight: bold;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+  letter-spacing: 0.5px;
+}
+
+/* Button Shimmer Effect */
+.login-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.6s;
+}
+
+.login-btn:hover::before {
+  left: 100%;
 }
 
 .login-btn:hover {
-  background-color: #2471a3;
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(102, 126, 234, 0.6);
 }
 
-/* Responsive */
-@media (max-width: 480px) {
-  form {
-    padding: 30px 20px;
-  }
+.login-btn:active {
+  transform: translateY(-2px);
+}
 
+.login-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Loading State */
+.login-btn.loading {
+  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+/* Debug Info Styling */
+.debug-info {
+  margin-top: 20px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .login-form {
+    padding: 40px 30px;
+    max-width: 400px;
+    border-radius: 20px;
+  }
+  
   .login-text {
-    font-size: 24px;
+    font-size: 2.2rem;
+    margin-bottom: 35px;
+  }
+  
+  .login-text::before {
+    font-size: 2.5rem;
+    top: -50px;
+  }
+  
+  input[type="email"],
+  input[type="password"] {
+    padding: 16px 22px 16px 55px;
+    font-size: 15px;
+  }
+  
+  .login-btn {
+    padding: 16px 22px;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-container {
+    padding: 15px;
+  }
+  
+  .login-form {
+    padding: 35px 25px;
+    border-radius: 18px;
+  }
+  
+  .login-text {
+    font-size: 2rem;
+    margin-bottom: 30px;
+  }
+  
+  .login-text::before {
+    font-size: 2.2rem;
+    top: -45px;
+  }
+  
+  input[type="email"],
+  input[type="password"] {
+    padding: 15px 20px 15px 50px;
+    font-size: 14px;
+    border-radius: 14px;
+  }
+  
+  .login-btn {
+    padding: 15px 20px;
+    font-size: 14px;
+    border-radius: 14px;
+  }
+}
+
+/* Additional Visual Enhancements */
+@media (min-width: 1200px) {
+  .login-form {
+    max-width: 500px;
+    padding: 60px 50px;
+  }
+  
+  .login-text {
+    font-size: 2.8rem;
+  }
+  
+  input[type="email"],
+  input[type="password"] {
+    padding: 20px 26px 20px 65px;
+    font-size: 17px;
+  }
+  
+  .login-btn {
+    padding: 20px 26px;
+    font-size: 17px;
+  }
+}
+
+/* Accessibility Enhancements */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .login-form {
+    border: 2px solid #000;
+    background: rgba(255, 255, 255, 0.95);
+  }
+  
+  input[type="email"],
+  input[type="password"] {
+    border: 2px solid #000;
+    background: white;
+  }
+  
+  .login-btn {
+    background: #000;
+    border: 2px solid #000;
   }
 }

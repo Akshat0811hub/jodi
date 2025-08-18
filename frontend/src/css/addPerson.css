@@ -337,7 +337,8 @@
   background: linear-gradient(135deg, rgba(240, 147, 251, 0.1) 0%, rgba(245, 87, 108, 0.1) 100%);
   position: relative;
   transition: all 0.4s ease;
-  overflow: hidden;
+  overflow: hidden
+  
 }
 
 .photo-upload-section::before {
