@@ -105,7 +105,7 @@ if (!fs.existsSync(uploadsPath)) {
 }
 
 app.use('/uploads', express.static(uploadsPath));
-app.use('/assets', express.static(assetsPath));
+app.use(express.static(assetsPath));
 
 // ✅ Root health check
 app.get("/", (req, res) => {
@@ -488,4 +488,6 @@ server.on("error", (err) => {
 
 server.timeout = 120000; // 2 minutes
 
-module.exports = app;
+// ✅ Export app and logoPath for reuse
+const logoPath = path.join(__dirname, "logo.png"); // 👈 backend/logo.png resolve
+module.exports = { app, logoPath };
