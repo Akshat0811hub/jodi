@@ -18,6 +18,12 @@
   --border-radius: 20px;
 }
 
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden; /* Only hide horizontal scroll */
+  overflow-y: auto;   /* Allow vertical scroll */
+}
 * {
   box-sizing: border-box;
 }
@@ -60,7 +66,7 @@ body::before {
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-premium);
   position: relative;
-  /*  */
+  min-height: 100vh;
 }
 
 .people-container::before {
