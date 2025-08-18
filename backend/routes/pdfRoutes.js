@@ -162,8 +162,8 @@ router.get("/person/:id/pdf", async (req, res) => {
     doc.fontSize(12)
        .fillColor('#000000')
        .font('Helvetica')
-       .text('📞 9871080409 | 📧 jodino1@gmail.com', { align: 'center' })
-       .text('📍 Gurugram, Haryana, India', { align: 'center' });
+       .text('9871080409 | jodino1@gmail.com', { align: 'center' })
+       .text('Gurugram, Haryana, India', { align: 'center' });
 
     doc.moveDown(1);
 
@@ -176,7 +176,7 @@ router.get("/person/:id/pdf", async (req, res) => {
     doc.moveDown(1.5);
 
     // Personal details
-    addSectionHeader(doc, '👤 PERSONAL DETAILS');
+    addSectionHeader(doc, 'PERSONAL DETAILS');
     addField(doc, 'Name', person.name);
     addField(doc, 'Gender', person.gender);
     addField(doc, 'Marital Status', person.maritalStatus);
@@ -187,14 +187,14 @@ router.get("/person/:id/pdf", async (req, res) => {
     addField(doc, 'Height', person.height);
 
     // Family details
-    addSectionHeader(doc, '👨‍👩‍👧‍👦 FAMILY DETAILS');
+    addSectionHeader(doc, 'FAMILY DETAILS');
     addField(doc, 'Father Name', person.fatherName);
     addField(doc, 'Father Occupation', person.fatherOccupation);
     addField(doc, 'Mother Name', person.motherName);
     addField(doc, 'Mother Occupation', person.motherOccupation);
 
     // Professional details
-    addSectionHeader(doc, '💼 PROFESSION & INCOME');
+    addSectionHeader(doc, 'PROFESSION & INCOME');
     addField(doc, 'Occupation', person.occupation);
     addField(doc, 'Personal Income', person.personalIncome);
     addField(doc, 'Family Income', person.familyIncome);
