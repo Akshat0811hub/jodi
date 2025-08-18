@@ -1,4 +1,4 @@
-// routes/pdfRoutes.js - FIXED VERSION (Memory Optimized for Render)
+// routes/pdfRoutes.js - FIXED VERSION with Working Images
 const express = require("express");
 const PDFDocument = require('pdfkit');
 const Person = require("../models/personModel");
@@ -44,35 +44,125 @@ const addField = (doc, label, value, options = {}) => {
   doc.moveDown(0.3);
 };
 
-// ✅ Helper function to add profile photo
+// 🔧 FIXED: Helper function to add profile photo with correct path handling
 const addProfilePhoto = async (doc, photoPath) => {
   try {
-    if (!photoPath) return false;
+    if (!photoPath) {
+      console.log("📸 No photo path provided");
+      return false;
+    }
     
-    // Clean the photo path
-    const cleanPath = photoPath.startsWith('/') ? photoPath.substring(1) : photoPath;
-    const fullPath = path.join(__dirname, '..', cleanPath);
+    console.log("📸 Original photo path:", photoPath);
     
-    console.log('📸 Attempting to load photo:', fullPath);
+    // 🔧 FIX 1: Handle different path formats
+    let fullPath;
     
-    // Check if file exists
-    if (fs.existsSync(fullPath)) {
-      // Add photo with specific dimensions
+    if (photoPath.startsWith('http://') || photoPath.startsWith('https://')) {
+      // Handle URL paths (if you're storing URLs)
+      console.log("📸 Photo is a URL, cannot display in PDF");
+      return false;
+    } else if (photoPath.startsWith('/uploads/')) {
+      // Handle absolute path from root
+      fullPath = path.join(__dirname, '..', photoPath.substring(1));
+    } else if (photoPath.startsWith('uploads/')) {
+      // Handle relative path without leading slash
+      fullPath = path.join(__dirname, '..', photoPath);
+    } else if (photoPath.includes('uploads')) {
+      // Handle any path containing uploads
+      const uploadsIndex = photoPath.indexOf('uploads');
+      const relativePath = photoPath.substring(uploadsIndex);
+      fullPath = path.join(__dirname, '..', relativePath);
+    } else {
+      // Assume it's in uploads directory
+      fullPath = path.join(__dirname, '..', 'uploads', photoPath);
+    }
+    
+    console.log("📸 Resolved full path:", fullPath);
+    
+    // 🔧 FIX 2: Check if file exists and is accessible
+    if (!fs.existsSync(fullPath)) {
+      console.log("❌ Photo file not found at:", fullPath);
+      
+      // 🔧 FIX 3: Try alternative paths
+      const alternatives = [
+        path.join(__dirname, '..', 'uploads', path.basename(photoPath)),
+        path.join(__dirname, 'uploads', path.basename(photoPath)),
+        path.join(process.cwd(), 'uploads', path.basename(photoPath)),
+        path.join(process.cwd(), photoPath)
+      ];
+      
+      for (const altPath of alternatives) {
+        console.log("🔍 Trying alternative path:", altPath);
+        if (fs.existsSync(altPath)) {
+          fullPath = altPath;
+          console.log("✅ Found image at alternative path:", fullPath);
+          break;
+        }
+      }
+      
+      if (!fs.existsSync(fullPath)) {
+        console.log("❌ Image not found in any location");
+        return false;
+      }
+    }
+    
+    // 🔧 FIX 4: Check file size and type
+    const stats = fs.statSync(fullPath);
+    console.log("📊 File stats:", {
+      size: `${(stats.size / 1024).toFixed(2)}KB`,
+      isFile: stats.isFile()
+    });
+    
+    if (!stats.isFile()) {
+      console.log("❌ Path is not a file");
+      return false;
+    }
+    
+    // 🔧 FIX 5: Validate image file type
+    const validExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
+    const ext = path.extname(fullPath).toLowerCase();
+    
+    if (!validExtensions.includes(ext)) {
+      console.log("❌ Invalid image file type:", ext);
+      return false;
+    }
+    
+    // 🔧 FIX 6: Add image with error handling
+    try {
       doc.image(fullPath, 400, 100, { 
         width: 120, 
         height: 140,
         align: 'center'
       });
-      console.log('✅ Photo added successfully');
+      console.log("✅ Photo added successfully from:", fullPath);
       return true;
-    } else {
-      console.log('❌ Photo file not found:', fullPath);
+    } catch (imageError) {
+      console.error("❌ Error adding image to PDF:", imageError.message);
       return false;
     }
+    
   } catch (error) {
-    console.error('❌ Error adding photo:', error.message);
+    console.error("❌ Error in addProfilePhoto:", error.message);
+    console.error("❌ Stack trace:", error.stack);
     return false;
   }
+};
+
+// 🔧 NEW: Helper function to get best available photo
+const getBestPhoto = (person) => {
+  // Priority order: profilePicture -> first photo in photos array
+  if (person.profilePicture) {
+    console.log("📸 Using profilePicture:", person.profilePicture);
+    return person.profilePicture;
+  }
+  
+  if (person.photos && Array.isArray(person.photos) && person.photos.length > 0) {
+    console.log("📸 Using first photo from photos array:", person.photos[0]);
+    return person.photos[0];
+  }
+  
+  console.log("📸 No photos available for person");
+  return null;
 };
 
 // ✅ Helper function to add section header with maroon background
@@ -134,7 +224,53 @@ const addImportantNote = (doc) => {
      });
 };
 
-// 🔧 FIXED: Simple test endpoint that won't crash
+// 🔧 ENHANCED: Debug route to check photo paths
+router.get("/debug/person/:id/photos", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const person = await Person.findById(id);
+    
+    if (!person) {
+      return res.status(404).json({ message: "Person not found" });
+    }
+
+    const photoInfo = {
+      personName: person.name,
+      profilePicture: person.profilePicture,
+      photos: person.photos,
+      uploadsDir: path.join(__dirname, '..', 'uploads'),
+      checkedPaths: []
+    };
+
+    // Check all possible photo paths
+    const allPhotos = [person.profilePicture, ...(person.photos || [])].filter(Boolean);
+    
+    for (const photoPath of allPhotos) {
+      const alternatives = [
+        path.join(__dirname, '..', 'uploads', path.basename(photoPath)),
+        path.join(__dirname, '..', photoPath.startsWith('/') ? photoPath.substring(1) : photoPath),
+        path.join(process.cwd(), 'uploads', path.basename(photoPath))
+      ];
+      
+      for (const altPath of alternatives) {
+        const exists = fs.existsSync(altPath);
+        photoInfo.checkedPaths.push({
+          original: photoPath,
+          checked: altPath,
+          exists: exists,
+          isFile: exists ? fs.statSync(altPath).isFile() : false
+        });
+      }
+    }
+
+    res.json(photoInfo);
+    
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 🔧 FIXED VERSION: Simple test endpoint that won't crash
 router.get("/test-pdf", (req, res) => {
   try {
     console.log("🧪 Starting PDFKit test...");
@@ -178,7 +314,7 @@ router.get("/test-pdf", (req, res) => {
   }
 });
 
-// 🔧 FIXED: Person PDF route with better error handling and note
+// 🔧 MAIN FIX: Person PDF route with improved image handling
 router.get("/person/:id/pdf", async (req, res) => {
   let doc = null;
   
@@ -194,7 +330,7 @@ router.get("/person/:id/pdf", async (req, res) => {
     
     // Step 2: Find the person with timeout
     console.log("🔍 Searching for person in database...");
-    const person = await Person.findById(id).lean().exec(); // Use lean() for better performance
+    const person = await Person.findById(id).lean().exec();
     
     if (!person) {
       console.log("❌ Person not found in database:", id);
@@ -202,6 +338,11 @@ router.get("/person/:id/pdf", async (req, res) => {
     }
     
     console.log("✅ Person found:", person.name || 'Unnamed');
+    console.log("📸 Person photo data:", {
+      profilePicture: person.profilePicture,
+      photos: person.photos,
+      photosLength: person.photos ? person.photos.length : 0
+    });
 
     // Step 3: Set response headers BEFORE creating PDF
     res.setHeader('Content-Type', 'application/pdf');
@@ -250,14 +391,26 @@ router.get("/person/:id/pdf", async (req, res) => {
 
     doc.moveDown(1.5);
 
-    // 📸 Add profile photo if available
-    if (person.profilePicture || (person.photos && person.photos.length > 0)) {
-      const photoPath = person.profilePicture || person.photos[0];
-      await addProfilePhoto(doc, photoPath);
-      doc.moveDown(1);
+    // 🔧 FIXED: Add profile photo with better path resolution
+    const bestPhoto = getBestPhoto(person);
+    if (bestPhoto) {
+      console.log("📸 Attempting to add photo:", bestPhoto);
+      const photoAdded = await addProfilePhoto(doc, bestPhoto);
+      if (photoAdded) {
+        doc.moveDown(1);
+      } else {
+        console.log("⚠️ Could not add photo, continuing without it");
+        // Add placeholder text where photo would be
+        doc.fontSize(10)
+           .fillColor('#666666')
+           .text('[Photo not available]', 400, 100, { width: 120, align: 'center' });
+        doc.fillColor('#000000');
+      }
+    } else {
+      console.log("📸 No photos available for this person");
     }
 
-    // Personal details (REMOVED phone number)
+    // Personal details (REMOVED phone number from display but kept in data)
     addSectionHeader(doc, 'PERSONAL DETAILS');
     addField(doc, 'Name', person.name);
     addField(doc, 'Gender', person.gender);
@@ -302,7 +455,7 @@ router.get("/person/:id/pdf", async (req, res) => {
     addField(doc, 'Personal Income', person.personalIncome);
     addField(doc, 'Family Income', person.familyIncome);
 
-    // 👫 SIBLINGS SECTION (FIXED - Now shows full details)
+    // 👫 SIBLINGS SECTION
     if (person.siblings && person.siblings.length > 0) {
       addSectionHeader(doc, 'SIBLINGS & FAMILY DETAILS');
       
@@ -323,7 +476,7 @@ router.get("/person/:id/pdf", async (req, res) => {
       });
     }
 
-    // ✅ ADD IMPORTANT NOTE with matching style from your screenshot
+    // ✅ ADD IMPORTANT NOTE
     addImportantNote(doc);
 
     // Footer
@@ -410,13 +563,21 @@ router.post("/bulk", async (req, res) => {
     doc.fontSize(18).text(`Bulk Export - ${people.length} Profiles`, { align: 'center' });
     doc.moveDown(2);
 
-    // Generate each profile
-    people.forEach((person, index) => {
-      if (index > 0) doc.addPage();
+    // Generate each profile with photos
+    for (let i = 0; i < people.length; i++) {
+      const person = people[i];
+      
+      if (i > 0) doc.addPage();
       
       doc.fontSize(18).font('Helvetica-Bold').fillColor('#8B0000')
-         .text(`${index + 1}. ${person.name || 'N/A'}`, 50);
+         .text(`${i + 1}. ${person.name || 'N/A'}`, 50);
       doc.moveDown(1);
+
+      // Try to add photo for each person in bulk
+      const bestPhoto = getBestPhoto(person);
+      if (bestPhoto) {
+        await addProfilePhoto(doc, bestPhoto);
+      }
       
       // Key info only
       addField(doc, 'Gender', person.gender);
@@ -424,7 +585,7 @@ router.post("/bulk", async (req, res) => {
       addField(doc, 'Religion', person.religion);
       addField(doc, 'Phone', person.phoneNumber);
       addField(doc, 'Occupation', person.occupation);
-    });
+    }
 
     // Add note to bulk PDF as well
     addImportantNote(doc);
@@ -509,6 +670,40 @@ router.get("/check-pdfkit", (req, res) => {
   }
 });
 
-console.log("✅ FIXED PDFKit routes loaded");
+// 🔧 NEW: Route to check uploads directory
+router.get("/debug/uploads", (req, res) => {
+  try {
+    const uploadsPath = path.join(__dirname, '..', 'uploads');
+    console.log("📁 Checking uploads directory:", uploadsPath);
+    
+    const exists = fs.existsSync(uploadsPath);
+    let files = [];
+    
+    if (exists) {
+      files = fs.readdirSync(uploadsPath).map(file => {
+        const filePath = path.join(uploadsPath, file);
+        const stats = fs.statSync(filePath);
+        return {
+          name: file,
+          size: stats.size,
+          isFile: stats.isFile(),
+          modified: stats.mtime
+        };
+      });
+    }
+    
+    res.json({
+      uploadsPath,
+      exists,
+      fileCount: files.length,
+      files: files.slice(0, 20) // Limit to first 20 files
+    });
+    
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+console.log("✅ FIXED PDFKit routes loaded with enhanced image support");
 
 module.exports = router;
