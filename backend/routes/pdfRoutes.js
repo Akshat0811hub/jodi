@@ -75,20 +75,63 @@ const addProfilePhoto = async (doc, photoPath) => {
   }
 };
 
-// ✅ Helper function to add section header
+// ✅ Helper function to add section header with maroon background
 const addSectionHeader = (doc, title) => {
   doc.moveDown(0.5);
+  
+  // Create maroon background rectangle
+  doc.rect(50, doc.y, 500, 25)
+     .fill('#8B1538'); // Maroon color matching your screenshot
+  
+  // Add white text on maroon background
   doc.fontSize(14)
      .font('Helvetica-Bold')
-     .fillColor('#8B0000') // Maroon color
-     .text(title, 50);
+     .fillColor('white')
+     .text(title, 60, doc.y - 20);
   
-  // Add underline
-  doc.moveTo(50, doc.y + 2)
-     .lineTo(550, doc.y + 2)
-     .stroke('#8B0000');
-  
+  // Reset color and move down
   doc.fillColor('#000000').moveDown(0.8);
+};
+
+// ✅ Helper function to add the important note with matching style
+const addImportantNote = (doc) => {
+  const noteText = "NOTE: The above particulars have been provided to the best of our knowledge, as per information provided by the concerned party. We (Jodi No1) shall not be responsible for misrepresentation of any or all of the information herein. Amount will not be refunded in any case. All clients have to pay full maturity amount on ROKA CEREMONY.";
+  
+  // Add some space before the note
+  doc.moveDown(2);
+  
+  // Check if we need a new page for the note
+  if (doc.y > doc.page.height - 150) {
+    doc.addPage();
+  }
+  
+  // Create maroon header for the note
+  doc.rect(50, doc.y, 500, 25)
+     .fill('#8B1538'); // Same maroon color as other headers
+  
+  // Add "IMPORTANT NOTE" header text in white
+  doc.fontSize(12)
+     .font('Helvetica-Bold')
+     .fillColor('white')
+     .text('IMPORTANT NOTE', 60, doc.y - 18);
+  
+  // Move down and create light gray background for note content
+  doc.moveDown(0.5);
+  const noteHeight = 80; // Adjust based on text length
+  
+  doc.rect(50, doc.y, 500, noteHeight)
+     .fill('#F8F8F8') // Light gray background
+     .stroke('#8B1538'); // Maroon border
+  
+  // Add the note text in black
+  doc.fontSize(9)
+     .fillColor('black')
+     .font('Helvetica')
+     .text(noteText, 60, doc.y - noteHeight + 10, {
+       width: 480,
+       align: 'justify',
+       lineGap: 1
+     });
 };
 
 // 🔧 FIXED: Simple test endpoint that won't crash
@@ -135,7 +178,7 @@ router.get("/test-pdf", (req, res) => {
   }
 });
 
-// 🔧 FIXED: Person PDF route with better error handling
+// 🔧 FIXED: Person PDF route with better error handling and note
 router.get("/person/:id/pdf", async (req, res) => {
   let doc = null;
   
@@ -193,8 +236,9 @@ router.get("/person/:id/pdf", async (req, res) => {
     doc.fontSize(12)
        .fillColor('#000000')
        .font('Helvetica')
-       .text(' 9871080409 | jodino1@gmail.com', { align: 'center' })
-       .text(' Gurugram, Haryana, India', { align: 'center' });
+       .text(' 9871080409 | jodino1@gmail.com', { align: 'left' })
+       .text(' Gurugram, Haryana, India', { align: 'left' })
+       .text(' G-25, Vardhman Premium Mall, Opp.Kali Mata Mandir', { align: 'left' });
 
     doc.moveDown(1);
 
@@ -214,7 +258,7 @@ router.get("/person/:id/pdf", async (req, res) => {
     }
 
     // Personal details (REMOVED phone number)
-    addSectionHeader(doc, ' PERSONAL DETAILS');
+    addSectionHeader(doc, 'PERSONAL DETAILS');
     addField(doc, 'Name', person.name);
     addField(doc, 'Gender', person.gender);
     addField(doc, 'Marital Status', person.maritalStatus);
@@ -227,7 +271,7 @@ router.get("/person/:id/pdf", async (req, res) => {
     addField(doc, 'Complexion', person.complexion);
 
     // Lifestyle section
-    addSectionHeader(doc, ' LIFESTYLE');
+    addSectionHeader(doc, 'LIFESTYLE');
     addField(doc, 'Eating Habits', person.eatingHabits);
     addField(doc, 'Drinking Habits', person.drinkingHabits);
     addField(doc, 'Smoking Habits', person.smokingHabits);
@@ -237,30 +281,30 @@ router.get("/person/:id/pdf", async (req, res) => {
     addField(doc, 'Horoscope', person.horoscope);
 
     // Family details
-    addSectionHeader(doc, ' FAMILY DETAILS');
-    addField(doc, 'Father Name', person.fatherName);
-    addField(doc, 'Father Occupation', person.fatherOccupation);
-    addField(doc, 'Father Office', person.fatherOffice);
-    addField(doc, 'Mother Name', person.motherName);
+    addSectionHeader(doc, 'FAMILY DETAILS');
+    addField(doc, 'Father', person.fatherName);
+    addField(doc, 'Father Occupation Detail', person.fatherOccupation);
+    addField(doc, 'Father Office Detail', person.fatherOffice);
+    addField(doc, 'Mother', person.motherName);
     addField(doc, 'Mother Occupation', person.motherOccupation);
     addField(doc, 'Residence', person.residence);
     addField(doc, 'Other Property', person.otherProperty);
 
     // Education section
-    addSectionHeader(doc, ' EDUCATION');
+    addSectionHeader(doc, 'EDUCATION');
     addField(doc, 'Higher Qualification', person.higherQualification);
     addField(doc, 'Graduation', person.graduation);
     addField(doc, 'Schooling', person.schooling);
 
     // Professional details
-    addSectionHeader(doc, ' PROFESSION & INCOME');
+    addSectionHeader(doc, 'PROFESSION & INCOME');
     addField(doc, 'Occupation', person.occupation);
     addField(doc, 'Personal Income', person.personalIncome);
     addField(doc, 'Family Income', person.familyIncome);
 
     // 👫 SIBLINGS SECTION (FIXED - Now shows full details)
     if (person.siblings && person.siblings.length > 0) {
-      addSectionHeader(doc, '👫 SIBLINGS');
+      addSectionHeader(doc, 'SIBLINGS & FAMILY DETAILS');
       
       person.siblings.forEach((sibling, index) => {
         doc.fontSize(12)
@@ -278,6 +322,9 @@ router.get("/person/:id/pdf", async (req, res) => {
         doc.moveDown(0.5);
       });
     }
+
+    // ✅ ADD IMPORTANT NOTE with matching style from your screenshot
+    addImportantNote(doc);
 
     // Footer
     doc.fontSize(10)
@@ -316,7 +363,7 @@ router.get("/person/:id/pdf", async (req, res) => {
   }
 });
 
-// 🔧 FIXED: Bulk PDF with memory optimization
+// 🔧 FIXED: Bulk PDF with memory optimization and note
 router.post("/bulk", async (req, res) => {
   let doc = null;
   
@@ -378,6 +425,9 @@ router.post("/bulk", async (req, res) => {
       addField(doc, 'Phone', person.phoneNumber);
       addField(doc, 'Occupation', person.occupation);
     });
+
+    // Add note to bulk PDF as well
+    addImportantNote(doc);
 
     doc.end();
     console.log("✅ Bulk PDF completed");

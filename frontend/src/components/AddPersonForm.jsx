@@ -1,570 +1,709 @@
-// src/components/AddPersonFormModal.jsx - COMPLETE FIXED VERSION
-import React, { useState } from "react";
-import api from "../api";
-import "../css/addPerson.css";
+// routes/pdfRoutes.js - FIXED VERSION with Working Images
+const express = require("express");
+const PDFDocument = require('pdfkit');
+const Person = require("../models/personModel");
+const path = require("path");
+const fs = require("fs");
 
-const AddPersonForm = ({ onClose, onPersonAdded }) => {
-  const [formData, setFormData] = useState({
-    // Personal Details
-    name: "",
-    gender: "",
-    maritalStatus: "",
-    dob: "",
-    birthPlaceTime: "",
-    nativePlace: "",
-    gotra: "",
-    religion: "",
-    phoneNumber: "",
-    height: "",
-    complexion: "",
-    horoscope: "",
-    eatingHabits: "",
-    drinkingHabits: "",
-    smokingHabits: "",
-    disability: "",
-    nri: "",
-    vehicle: "",
-    // Family Details
-    fatherName: "",
-    fatherOccupation: "",
-    fatherOffice: "",
-    motherName: "",
-    motherOccupation: "",
-    residence: "",
-    otherProperty: "",
-    // Education
-    higherQualification: "",
-    graduation: "",
-    schooling: "",
-    // Profession & Income
-    occupation: "",
-    personalIncome: "",
-    familyIncome: "",
+const router = express.Router();
+
+console.log("📄 Loading FIXED PDFKit PDF routes...");
+
+// Helper function to format date
+const formatDate = (dateString) => {
+  if (!dateString) return "—";
+  const date = new Date(dateString);
+  if (isNaN(date)) return "—";
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "2-digit", 
+    year: "numeric",
   });
-
-  const [siblings, setSiblings] = useState([]);
-  const [photos, setPhotos] = useState([]);
-  const [error, setError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  // ✅ FIXED: Proper photo handler
-  const handlePhotoChange = (e) => {
-    const files = Array.from(e.target.files);
-    console.log("📸 Files selected:", files.length);
-    console.log(
-      "📸 File details:",
-      files.map((f) => ({ name: f.name, size: f.size, type: f.type }))
-    );
-    setPhotos(files);
-    setError(""); // Clear any previous photo errors
-  };
-
-  const handleSiblingChange = (index, field, value) => {
-    const updated = [...siblings];
-    updated[index][field] = value;
-    setSiblings(updated);
-  };
-
-  const addSibling = () => {
-    setSiblings([
-      ...siblings,
-      { name: "", relation: "", age: "", profession: "", maritalStatus: "" },
-    ]);
-  };
-
-  const removeSibling = (index) => {
-    setSiblings(siblings.filter((_, i) => i !== index));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setIsSubmitting(true);
-
-    try {
-      // ✅ Basic validation
-      if (!formData.name.trim()) {
-        setError("Name is required");
-        return;
-      }
-      if (!formData.religion.trim()) {
-        setError("Religion is required");
-        return;
-      }
-      if (!formData.phoneNumber?.trim()) {
-        setError("Phone Number is required");
-        return;
-      }
-      if (!/^\d{1,10}$/.test(formData.phoneNumber.trim())) {
-        setError("Phone Number must be numeric and max 10 digits");
-        return;
-      }
-
-      // ✅ IMPROVED Photo validation with detailed logging
-      console.log("📸 Photo validation - Current photos:", photos);
-      console.log("📸 Photos length:", photos.length);
-      console.log("📸 Photos array:", Array.isArray(photos));
-
-      if (!photos || !Array.isArray(photos) || photos.length < 3) {
-        setError(
-          `Please upload at least 3 photos. Currently selected: ${
-            photos ? photos.length : 0
-          }`
-        );
-        return;
-      }
-      if (photos.length > 4) {
-        setError("You can upload a maximum of 4 photos.");
-        return;
-      }
-
-      // ✅ Validate file types
-      const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif"];
-      const invalidFiles = photos.filter(
-        (photo) => !validTypes.includes(photo.type)
-      );
-      if (invalidFiles.length > 0) {
-        setError("Please upload only image files (JPEG, PNG, GIF)");
-        return;
-      }
-
-      // ✅ Validate file sizes (max 5MB each)
-      const maxSize = 5 * 1024 * 1024; // 5MB
-      const oversizedFiles = photos.filter((photo) => photo.size > maxSize);
-      if (oversizedFiles.length > 0) {
-        setError("Each photo must be less than 5MB");
-        return;
-      }
-
-      const data = new FormData();
-
-      // Append form data
-      Object.keys(formData).forEach((key) => {
-        data.append(key, formData[key]);
-      });
-
-      // ✅ Handle siblings
-      if (siblings.length > 0) {
-        data.append("siblings", JSON.stringify(siblings));
-      } else {
-        data.append("siblings", JSON.stringify([]));
-      }
-
-      // ✅ IMPROVED: Append photos with detailed logging
-      console.log("📤 Appending photos to FormData:");
-      photos.forEach((photo, index) => {
-        console.log(`📸 Photo ${index + 1}:`, {
-          name: photo.name,
-          size: `${(photo.size / 1024 / 1024).toFixed(2)}MB`,
-          type: photo.type,
-        });
-        data.append("photos", photo);
-      });
-
-      // ✅ Debug: Log FormData contents
-      console.log("📤 FormData contents:");
-      for (let [key, value] of data.entries()) {
-        if (key === "photos") {
-          console.log(key, "FILE:", value.name, value.size, value.type);
-        } else {
-          console.log(key, value);
-        }
-      }
-
-      console.log("📤 Sending request to /people endpoint...");
-      const response = await api.post("/people", data, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        timeout: 60000, // 60 second timeout for file upload
-      });
-
-      console.log("✅ Person added successfully:", response.data);
-      onPersonAdded();
-      onClose();
-    } catch (err) {
-      console.error("❌ API Error Details:", {
-        status: err.response?.status,
-        statusText: err.response?.statusText,
-        data: err.response?.data,
-        message: err.message,
-      });
-
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else if (err.response?.status === 400) {
-        setError("Invalid data provided. Please check all fields.");
-      } else if (err.response?.status === 413) {
-        setError("Files too large. Please reduce image sizes.");
-      } else {
-        setError("Failed to add person. Please try again.");
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="modal-overlay">
-      <div className="modal-container">
-        <div className="modal-header">
-          <h2>Add New Person</h2>
-          <button className="close-btn" onClick={onClose}>
-            ×
-          </button>
-        </div>
-
-        {error && <div className="error-text">{error}</div>}
-
-        <form onSubmit={handleSubmit} className="modal-form">
-          {/* Personal Details */}
-          <h3>Personal Details</h3>
-          <input
-            name="name"
-            placeholder="Name *"
-            value={formData.name}
-            onChange={handleChange}
-            required
-          />
-          <select name="gender" value={formData.gender} onChange={handleChange}>
-            <option value="">Gender</option>
-            <option>Male</option>
-            <option>Female</option>
-          </select>
-          <select
-            name="maritalStatus"
-            value={formData.maritalStatus}
-            onChange={handleChange}
-          >
-            <option value="">Marital Status</option>
-            <option>Never Married</option>
-            <option>Married</option>
-            <option>Divorced</option>
-            <option>Widowed</option>
-          </select>
-          <input
-            type="date"
-            name="dob"
-            value={formData.dob}
-            onChange={handleChange}
-          />
-          <input
-            name="birthPlaceTime"
-            placeholder="Place of Birth & Time"
-            value={formData.birthPlaceTime}
-            onChange={handleChange}
-          />
-          <input
-            name="nativePlace"
-            placeholder="Native Place"
-            value={formData.nativePlace}
-            onChange={handleChange}
-          />
-          <input
-            name="gotra"
-            placeholder="Gotra"
-            value={formData.gotra}
-            onChange={handleChange}
-          />
-          <input
-            name="religion"
-            placeholder="Religion *"
-            value={formData.religion}
-            onChange={handleChange}
-            required
-          />
-          <input
-            name="phoneNumber"
-            placeholder="Ph No *"
-            value={formData.phoneNumber}
-            onChange={handleChange}
-            required
-          />
-          <input
-            name="height"
-            placeholder="Height"
-            value={formData.height}
-            onChange={handleChange}
-          />
-          <input
-            name="complexion"
-            placeholder="Complexion"
-            value={formData.complexion}
-            onChange={handleChange}
-          />
-          <select
-            name="horoscope"
-            value={formData.horoscope}
-            onChange={(e) =>
-              setFormData({ ...formData, horoscope: e.target.value === "true" })
-            }
-          >
-            <option value="">Believe in Horoscopes?</option>
-            <option value="true">Yes</option>
-            <option value="false">No</option>
-          </select>
-          <input
-            name="eatingHabits"
-            placeholder="Eating Habits"
-            value={formData.eatingHabits}
-            onChange={handleChange}
-          />
-          <input
-            name="drinkingHabits"
-            placeholder="Drinking Habits"
-            value={formData.drinkingHabits}
-            onChange={handleChange}
-          />
-          <input
-            name="smokingHabits"
-            placeholder="Smoking Habits"
-            value={formData.smokingHabits}
-            onChange={handleChange}
-          />
-          <input
-            name="disability"
-            placeholder="Physical Disability"
-            value={formData.disability}
-            onChange={handleChange}
-          />
-          <select
-            name="nri"
-            value={formData.nri}
-            onChange={(e) =>
-              setFormData({ ...formData, nri: e.target.value === "true" })
-            }
-          >
-            <option value="">NRI?</option>
-            <option value="true">Yes</option>
-            <option value="false">No</option>
-          </select>
-
-          <select
-            name="vehicle"
-            value={formData.vehicle}
-            onChange={(e) =>
-              setFormData({ ...formData, vehicle: e.target.value === "true" })
-            }
-          >
-            <option value="">Vehicle?</option>
-            <option value="true">Yes</option>
-            <option value="false">No</option>
-          </select>
-
-          {/* Family Details */}
-          <h3>Family Details</h3>
-          <input
-            name="fatherName"
-            placeholder="Father Name"
-            value={formData.fatherName}
-            onChange={handleChange}
-          />
-          <input
-            name="fatherOccupation"
-            placeholder="Father Occupation Detail"
-            value={formData.fatherOccupation}
-            onChange={handleChange}
-          />
-          <input
-            name="fatherOffice"
-            placeholder="Father Office Detail"
-            value={formData.fatherOffice}
-            onChange={handleChange}
-          />
-          <input
-            name="motherName"
-            placeholder="Mother Name"
-            value={formData.motherName}
-            onChange={handleChange}
-          />
-          <input
-            name="motherOccupation"
-            placeholder="Mother Occupation"
-            value={formData.motherOccupation}
-            onChange={handleChange}
-          />
-          <input
-            name="residence"
-            placeholder="Residence"
-            value={formData.residence}
-            onChange={handleChange}
-          />
-          <input
-            name="otherProperty"
-            placeholder="Other Property"
-            value={formData.otherProperty}
-            onChange={handleChange}
-          />
-
-          {/* Siblings */}
-          <h4>Siblings & Family Members</h4>
-          {siblings.map((s, idx) => (
-            <div key={idx} className="sibling-row">
-              <input
-                placeholder="Name"
-                value={s.name}
-                onChange={(e) =>
-                  handleSiblingChange(idx, "name", e.target.value)
-                }
-              />
-              <input
-                placeholder="Relation"
-                value={s.relation}
-                onChange={(e) =>
-                  handleSiblingChange(idx, "relation", e.target.value)
-                }
-              />
-              <input
-                placeholder="Age"
-                value={s.age}
-                onChange={(e) =>
-                  handleSiblingChange(idx, "age", e.target.value)
-                }
-              />
-              <input
-                placeholder="Profession"
-                value={s.profession}
-                onChange={(e) =>
-                  handleSiblingChange(idx, "profession", e.target.value)
-                }
-              />
-              <input
-                placeholder="Marital Status"
-                value={s.maritalStatus}
-                onChange={(e) =>
-                  handleSiblingChange(idx, "maritalStatus", e.target.value)
-                }
-              />
-              <button type="button" onClick={() => removeSibling(idx)}>
-                ❌
-              </button>
-            </div>
-          ))}
-          <button
-            type="button"
-            onClick={addSibling}
-            className="add-sibling-btn"
-          >
-            + Add Sibling
-          </button>
-
-          {/* Education */}
-          <h3>Education</h3>
-          <input
-            name="higherQualification"
-            placeholder="Higher Qualification"
-            value={formData.higherQualification}
-            onChange={handleChange}
-          />
-          <input
-            name="graduation"
-            placeholder="Graduation"
-            value={formData.graduation}
-            onChange={handleChange}
-          />
-          <input
-            name="schooling"
-            placeholder="Schooling"
-            value={formData.schooling}
-            onChange={handleChange}
-          />
-
-          {/* Profession & Income */}
-          <h3>Profession & Income</h3>
-          <textarea
-            name="occupation"
-            placeholder="Occupation / Business Details"
-            value={formData.occupation}
-            onChange={handleChange}
-          ></textarea>
-          <input
-            name="personalIncome"
-            placeholder="Personal Income"
-            value={formData.personalIncome}
-            onChange={handleChange}
-          />
-          <input
-            name="familyIncome"
-            placeholder="Family Income"
-            value={formData.familyIncome}
-            onChange={handleChange}
-          />
-
-          {/* ✅ IMPROVED Photos Section */}
-          <h3>Photos (Minimum 3 required) *</h3>
-          <div className="photo-upload-section">
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              onChange={handlePhotoChange}
-              className="photo-input"
-              required
-            />
-
-            {photos.length > 0 && (
-              <div className="selected-photos-info">
-                <p className="photos-count">
-                  ✅ Selected: {photos.length} photo(s)
-                  {photos.length >= 3 && photos.length <= 4 && " (Valid)"}
-                </p>
-                <ul className="photos-list">
-                  {Array.from(photos).map((file, index) => (
-                    <li key={index} className="photo-item">
-                      📸 {file.name} ({(file.size / 1024 / 1024).toFixed(2)}MB)
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <div className="photo-requirements">
-              <p
-                className={`requirement ${
-                  photos.length >= 3 ? "valid" : "invalid"
-                }`}
-              >
-                • Minimum 3 photos required {photos.length >= 3 ? "✅" : "❌"}
-              </p>
-              <p
-                className={`requirement ${
-                  photos.length <= 4 ? "valid" : "invalid"
-                }`}
-              >
-                • Maximum 4 photos allowed {photos.length <= 4 ? "✅" : "❌"}
-              </p>
-              <p className="requirement-note">
-                • Supported formats: JPEG, PNG, GIF (Max 5MB each)
-              </p>
-            </div>
-          </div>
-
-          <div className="form-actions">
-            <button
-              type="button"
-              onClick={onClose}
-              className="cancel-btn"
-              disabled={isSubmitting}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="submit-btn"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Adding..." : "Submit"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
 };
 
-export default AddPersonForm;
+// ✅ Helper function to add field to PDF with proper spacing
+const addField = (doc, label, value, options = {}) => {
+  const { fontSize = 11, indent = 0, bold = false } = options;
+  
+  doc.fontSize(fontSize);
+  
+  if (bold) {
+    doc.font('Helvetica-Bold');
+  } else {
+    doc.font('Helvetica');
+  }
+  
+  const x = 50 + indent;
+  const labelWidth = 120;
+  
+  // Add label
+  doc.text(label + ':', x, doc.y, { width: labelWidth, continued: true });
+  
+  // Add value
+  doc.font('Helvetica').text(' ' + (value || '—'), { width: 400 - labelWidth });
+  doc.moveDown(0.3);
+};
+
+// 🔧 FIXED: Helper function to add profile photo with correct path handling
+const addProfilePhoto = async (doc, photoPath) => {
+  try {
+    if (!photoPath) {
+      console.log("📸 No photo path provided");
+      return false;
+    }
+    
+    console.log("📸 Original photo path:", photoPath);
+    
+    // 🔧 FIX 1: Handle different path formats
+    let fullPath;
+    
+    if (photoPath.startsWith('http://') || photoPath.startsWith('https://')) {
+      // Handle URL paths (if you're storing URLs)
+      console.log("📸 Photo is a URL, cannot display in PDF");
+      return false;
+    } else if (photoPath.startsWith('/uploads/')) {
+      // Handle absolute path from root
+      fullPath = path.join(__dirname, '..', photoPath.substring(1));
+    } else if (photoPath.startsWith('uploads/')) {
+      // Handle relative path without leading slash
+      fullPath = path.join(__dirname, '..', photoPath);
+    } else if (photoPath.includes('uploads')) {
+      // Handle any path containing uploads
+      const uploadsIndex = photoPath.indexOf('uploads');
+      const relativePath = photoPath.substring(uploadsIndex);
+      fullPath = path.join(__dirname, '..', relativePath);
+    } else {
+      // Assume it's in uploads directory
+      fullPath = path.join(__dirname, '..', 'uploads', photoPath);
+    }
+    
+    console.log("📸 Resolved full path:", fullPath);
+    
+    // 🔧 FIX 2: Check if file exists and is accessible
+    if (!fs.existsSync(fullPath)) {
+      console.log("❌ Photo file not found at:", fullPath);
+      
+      // 🔧 FIX 3: Try alternative paths
+      const alternatives = [
+        path.join(__dirname, '..', 'uploads', path.basename(photoPath)),
+        path.join(__dirname, 'uploads', path.basename(photoPath)),
+        path.join(process.cwd(), 'uploads', path.basename(photoPath)),
+        path.join(process.cwd(), photoPath)
+      ];
+      
+      for (const altPath of alternatives) {
+        console.log("🔍 Trying alternative path:", altPath);
+        if (fs.existsSync(altPath)) {
+          fullPath = altPath;
+          console.log("✅ Found image at alternative path:", fullPath);
+          break;
+        }
+      }
+      
+      if (!fs.existsSync(fullPath)) {
+        console.log("❌ Image not found in any location");
+        return false;
+      }
+    }
+    
+    // 🔧 FIX 4: Check file size and type
+    const stats = fs.statSync(fullPath);
+    console.log("📊 File stats:", {
+      size: `${(stats.size / 1024).toFixed(2)}KB`,
+      isFile: stats.isFile()
+    });
+    
+    if (!stats.isFile()) {
+      console.log("❌ Path is not a file");
+      return false;
+    }
+    
+    // 🔧 FIX 5: Validate image file type
+    const validExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
+    const ext = path.extname(fullPath).toLowerCase();
+    
+    if (!validExtensions.includes(ext)) {
+      console.log("❌ Invalid image file type:", ext);
+      return false;
+    }
+    
+    // 🔧 FIX 6: Add image with error handling
+    try {
+      doc.image(fullPath, 400, 100, { 
+        width: 120, 
+        height: 140,
+        align: 'center'
+      });
+      console.log("✅ Photo added successfully from:", fullPath);
+      return true;
+    } catch (imageError) {
+      console.error("❌ Error adding image to PDF:", imageError.message);
+      return false;
+    }
+    
+  } catch (error) {
+    console.error("❌ Error in addProfilePhoto:", error.message);
+    console.error("❌ Stack trace:", error.stack);
+    return false;
+  }
+};
+
+// 🔧 NEW: Helper function to get best available photo
+const getBestPhoto = (person) => {
+  // Priority order: profilePicture -> first photo in photos array
+  if (person.profilePicture) {
+    console.log("📸 Using profilePicture:", person.profilePicture);
+    return person.profilePicture;
+  }
+  
+  if (person.photos && Array.isArray(person.photos) && person.photos.length > 0) {
+    console.log("📸 Using first photo from photos array:", person.photos[0]);
+    return person.photos[0];
+  }
+  
+  console.log("📸 No photos available for person");
+  return null;
+};
+
+// ✅ Helper function to add section header with maroon background
+const addSectionHeader = (doc, title) => {
+  doc.moveDown(0.5);
+  
+  // Create maroon background rectangle
+  doc.rect(50, doc.y, 500, 25)
+     .fill('#8B1538'); // Maroon color matching your screenshot
+  
+  // Add white text on maroon background
+  doc.fontSize(14)
+     .font('Helvetica-Bold')
+     .fillColor('white')
+     .text(title, 60, doc.y - 20);
+  
+  // Reset color and move down
+  doc.fillColor('#000000').moveDown(0.8);
+};
+
+// ✅ Helper function to add the important note with matching style
+const addImportantNote = (doc) => {
+  const noteText = "NOTE: The above particulars have been provided to the best of our knowledge, as per information provided by the concerned party. We (Jodi No1) shall not be responsible for misrepresentation of any or all of the information herein. Amount will not be refunded in any case. All clients have to pay full maturity amount on ROKA CEREMONY.";
+  
+  // Add some space before the note
+  doc.moveDown(2);
+  
+  // Check if we need a new page for the note
+  if (doc.y > doc.page.height - 150) {
+    doc.addPage();
+  }
+  
+  // Create maroon header for the note
+  doc.rect(50, doc.y, 500, 25)
+     .fill('#8B1538'); // Same maroon color as other headers
+  
+  // Add "IMPORTANT NOTE" header text in white
+  doc.fontSize(12)
+     .font('Helvetica-Bold')
+     .fillColor('white')
+     .text('IMPORTANT NOTE', 60, doc.y - 18);
+  
+  // Move down and create light gray background for note content
+  doc.moveDown(0.5);
+  const noteHeight = 80; // Adjust based on text length
+  
+  doc.rect(50, doc.y, 500, noteHeight)
+     .fill('#F8F8F8') // Light gray background
+     .stroke('#8B1538'); // Maroon border
+  
+  // Add the note text in black
+  doc.fontSize(9)
+     .fillColor('black')
+     .font('Helvetica')
+     .text(noteText, 60, doc.y - noteHeight + 10, {
+       width: 480,
+       align: 'justify',
+       lineGap: 1
+     });
+};
+
+// 🔧 ENHANCED: Debug route to check photo paths
+router.get("/debug/person/:id/photos", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const person = await Person.findById(id);
+    
+    if (!person) {
+      return res.status(404).json({ message: "Person not found" });
+    }
+
+    const photoInfo = {
+      personName: person.name,
+      profilePicture: person.profilePicture,
+      photos: person.photos,
+      uploadsDir: path.join(__dirname, '..', 'uploads'),
+      checkedPaths: []
+    };
+
+    // Check all possible photo paths
+    const allPhotos = [person.profilePicture, ...(person.photos || [])].filter(Boolean);
+    
+    for (const photoPath of allPhotos) {
+      const alternatives = [
+        path.join(__dirname, '..', 'uploads', path.basename(photoPath)),
+        path.join(__dirname, '..', photoPath.startsWith('/') ? photoPath.substring(1) : photoPath),
+        path.join(process.cwd(), 'uploads', path.basename(photoPath))
+      ];
+      
+      for (const altPath of alternatives) {
+        const exists = fs.existsSync(altPath);
+        photoInfo.checkedPaths.push({
+          original: photoPath,
+          checked: altPath,
+          exists: exists,
+          isFile: exists ? fs.statSync(altPath).isFile() : false
+        });
+      }
+    }
+
+    res.json(photoInfo);
+    
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 🔧 FIXED VERSION: Simple test endpoint that won't crash
+router.get("/test-pdf", (req, res) => {
+  try {
+    console.log("🧪 Starting PDFKit test...");
+    
+    // Create a minimal PDF document
+    const doc = new PDFDocument({ 
+      margin: 50,
+      size: 'A4',
+      autoFirstPage: true,
+      bufferPages: false // Prevent memory issues
+    });
+    
+    // Set headers before piping
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="test.pdf"');
+    res.setHeader('Cache-Control', 'no-cache');
+    
+    // Pipe to response
+    doc.pipe(res);
+    
+    // Add minimal content
+    doc.fontSize(20).text('PDFKit Test - Success!', 100, 100);
+    doc.fontSize(12).text('If you can see this PDF, PDFKit is working correctly.', 100, 140);
+    doc.text('This means your PDF generation should work.', 100, 160);
+    doc.text(`Generated at: ${new Date().toISOString()}`, 100, 180);
+    
+    // End document immediately
+    doc.end();
+    
+    console.log("✅ PDFKit test completed successfully");
+    
+  } catch (error) {
+    console.error("❌ PDFKit test failed:", error);
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        message: "PDFKit test failed", 
+        error: error.message,
+        stack: error.stack 
+      });
+    }
+  }
+});
+
+// 🔧 MAIN FIX: Person PDF route with improved image handling
+router.get("/person/:id/pdf", async (req, res) => {
+  let doc = null;
+  
+  try {
+    const { id } = req.params;
+    console.log(`📄 Starting PDF generation for person ${id}`);
+    
+    // Step 1: Validate ID format
+    if (!id || id.length !== 24) {
+      console.log("❌ Invalid ID format:", id);
+      return res.status(400).json({ message: "Invalid person ID format" });
+    }
+    
+    // Step 2: Find the person with timeout
+    console.log("🔍 Searching for person in database...");
+    const person = await Person.findById(id).lean().exec();
+    
+    if (!person) {
+      console.log("❌ Person not found in database:", id);
+      return res.status(404).json({ message: "Person not found" });
+    }
+    
+    console.log("✅ Person found:", person.name || 'Unnamed');
+    console.log("📸 Person photo data:", {
+      profilePicture: person.profilePicture,
+      photos: person.photos,
+      photosLength: person.photos ? person.photos.length : 0
+    });
+
+    // Step 3: Set response headers BEFORE creating PDF
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 
+      `attachment; filename="${(person.name || 'profile').replace(/[^a-zA-Z0-9]/g, '_')}_profile.pdf"`
+    );
+    res.setHeader('Cache-Control', 'no-cache');
+
+    // Step 4: Create PDF document with memory optimization
+    doc = new PDFDocument({ 
+      margin: 50,
+      size: 'A4',
+      autoFirstPage: true,
+      bufferPages: false, // Critical: Don't buffer pages in memory
+      info: {
+        Title: `${person.name || 'Profile'} - JODI NO 1`,
+        Author: 'JODI NO 1',
+        Subject: 'Matrimonial Profile'
+      }
+    });
+
+    // Step 5: Pipe to response immediately
+    doc.pipe(res);
+
+    // Step 6: Add content efficiently
+    // Header
+    doc.fontSize(24)
+       .font('Helvetica-Bold')
+       .fillColor('#8B0000')
+       .text('JODI NO 1', 50, 50, { align: 'center' });
+
+    doc.fontSize(12)
+       .fillColor('#000000')
+       .font('Helvetica')
+       .text(' 9871080409 | jodino1@gmail.com', { align: 'left' })
+       .text(' Gurugram, Haryana, India', { align: 'left' })
+       .text(' G-25, Vardhman Premium Mall, Opp.Kali Mata Mandir', { align: 'left' });
+
+    doc.moveDown(1);
+
+    // Person name
+    doc.fontSize(20)
+       .font('Helvetica-Bold')
+       .fillColor('#8B0000')
+       .text(person.name || 'N/A', { align: 'center' });
+
+    doc.moveDown(1.5);
+
+    // 🔧 FIXED: Add profile photo with better path resolution
+    const bestPhoto = getBestPhoto(person);
+    if (bestPhoto) {
+      console.log("📸 Attempting to add photo:", bestPhoto);
+      const photoAdded = await addProfilePhoto(doc, bestPhoto);
+      if (photoAdded) {
+        doc.moveDown(1);
+      } else {
+        console.log("⚠️ Could not add photo, continuing without it");
+        // Add placeholder text where photo would be
+        doc.fontSize(10)
+           .fillColor('#666666')
+           .text('[Photo not available]', 400, 100, { width: 120, align: 'center' });
+        doc.fillColor('#000000');
+      }
+    } else {
+      console.log("📸 No photos available for this person");
+    }
+
+    // Personal details (REMOVED phone number from display but kept in data)
+    addSectionHeader(doc, 'PERSONAL DETAILS');
+    addField(doc, 'Name', person.name);
+    addField(doc, 'Gender', person.gender);
+    addField(doc, 'Marital Status', person.maritalStatus);
+    addField(doc, 'Date of Birth', formatDate(person.dob));
+    addField(doc, 'Birth Place & Time', person.birthPlaceTime);
+    addField(doc, 'Native Place', person.nativePlace);
+    addField(doc, 'Gotra', person.gotra);
+    addField(doc, 'Religion', person.religion);
+    addField(doc, 'Height', person.height);
+    addField(doc, 'Complexion', person.complexion);
+
+    // Lifestyle section
+    addSectionHeader(doc, 'LIFESTYLE');
+    addField(doc, 'Eating Habits', person.eatingHabits);
+    addField(doc, 'Drinking Habits', person.drinkingHabits);
+    addField(doc, 'Smoking Habits', person.smokingHabits);
+    addField(doc, 'Disability', person.disability);
+    addField(doc, 'NRI Status', person.nri ? 'Yes' : 'No');
+    addField(doc, 'Vehicle', person.vehicle);
+    addField(doc, 'Horoscope', person.horoscope);
+
+    // Family details
+    addSectionHeader(doc, 'FAMILY DETAILS');
+    addField(doc, 'Father', person.fatherName);
+    addField(doc, 'Father Occupation Detail', person.fatherOccupation);
+    addField(doc, 'Father Office Detail', person.fatherOffice);
+    addField(doc, 'Mother', person.motherName);
+    addField(doc, 'Mother Occupation', person.motherOccupation);
+    addField(doc, 'Residence', person.residence);
+    addField(doc, 'Other Property', person.otherProperty);
+
+    // Education section
+    addSectionHeader(doc, 'EDUCATION');
+    addField(doc, 'Higher Qualification', person.higherQualification);
+    addField(doc, 'Graduation', person.graduation);
+    addField(doc, 'Schooling', person.schooling);
+
+    // Professional details
+    addSectionHeader(doc, 'PROFESSION & INCOME');
+    addField(doc, 'Occupation', person.occupation);
+    addField(doc, 'Personal Income', person.personalIncome);
+    addField(doc, 'Family Income', person.familyIncome);
+
+    // 👫 SIBLINGS SECTION
+    if (person.siblings && person.siblings.length > 0) {
+      addSectionHeader(doc, 'SIBLINGS & FAMILY DETAILS');
+      
+      person.siblings.forEach((sibling, index) => {
+        doc.fontSize(12)
+           .font('Helvetica-Bold')
+           .fillColor('#2c3e50')
+           .text(`Sibling ${index + 1}:`, 50);
+        doc.moveDown(0.3);
+        
+        addField(doc, '  Name', sibling.name, { indent: 20 });
+        addField(doc, '  Relationship', sibling.relationship, { indent: 20 });
+        addField(doc, '  Age', sibling.age, { indent: 20 });
+        addField(doc, '  Marital Status', sibling.maritalStatus, { indent: 20 });
+        addField(doc, '  Occupation', sibling.occupation, { indent: 20 });
+        
+        doc.moveDown(0.5);
+      });
+    }
+
+    // ✅ ADD IMPORTANT NOTE
+    addImportantNote(doc);
+
+    // Footer
+    doc.fontSize(10)
+       .fillColor('#666666')
+       .text(`Generated on: ${new Date().toLocaleDateString('en-IN')} | JODI NO 1`, 
+             50, doc.page.height - 70, { align: 'center' });
+
+    // End document
+    doc.end();
+    
+    console.log("✅ PDF generated and streamed successfully");
+
+  } catch (error) {
+    console.error("❌ PDF generation error:", error);
+    console.error("❌ Error stack:", error.stack);
+    
+    // Clean up document if it exists
+    if (doc && !doc.ended) {
+      try {
+        doc.end();
+      } catch (e) {
+        console.error("❌ Error ending document:", e.message);
+      }
+    }
+    
+    if (!res.headersSent) {
+      res.status(500).json({
+        message: "PDF generation failed",
+        error: error.message,
+        details: {
+          type: error.name,
+          personId: req.params.id
+        }
+      });
+    }
+  }
+});
+
+// 🔧 FIXED: Bulk PDF with memory optimization and note
+router.post("/bulk", async (req, res) => {
+  let doc = null;
+  
+  try {
+    const { personIds } = req.body;
+    
+    if (!personIds || !Array.isArray(personIds) || personIds.length === 0) {
+      return res.status(400).json({ message: "Person IDs array is required" });
+    }
+    
+    // Limit bulk size to prevent memory issues
+    if (personIds.length > 50) {
+      return res.status(400).json({ 
+        message: "Too many profiles requested. Maximum 50 profiles per bulk export." 
+      });
+    }
+    
+    console.log(`📄 Generating bulk PDF for ${personIds.length} people`);
+    
+    // Find people with lean query
+    const people = await Person.find({ _id: { $in: personIds } }).lean().exec();
+    
+    if (people.length === 0) {
+      return res.status(404).json({ message: "No people found" });
+    }
+
+    // Set headers
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="bulk_profiles_${Date.now()}.pdf"`);
+    res.setHeader('Cache-Control', 'no-cache');
+
+    // Create document
+    doc = new PDFDocument({ 
+      margin: 50,
+      size: 'A4',
+      bufferPages: false
+    });
+
+    doc.pipe(res);
+
+    // Cover page
+    doc.fontSize(24).font('Helvetica-Bold').fillColor('#8B0000')
+       .text('JODI NO 1', { align: 'center' });
+    doc.fontSize(18).text(`Bulk Export - ${people.length} Profiles`, { align: 'center' });
+    doc.moveDown(2);
+
+    // Generate each profile with photos
+    for (let i = 0; i < people.length; i++) {
+      const person = people[i];
+      
+      if (i > 0) doc.addPage();
+      
+      doc.fontSize(18).font('Helvetica-Bold').fillColor('#8B0000')
+         .text(`${i + 1}. ${person.name || 'N/A'}`, 50);
+      doc.moveDown(1);
+
+      // Try to add photo for each person in bulk
+      const bestPhoto = getBestPhoto(person);
+      if (bestPhoto) {
+        await addProfilePhoto(doc, bestPhoto);
+      }
+      
+      // Key info only
+      addField(doc, 'Gender', person.gender);
+      addField(doc, 'DOB', formatDate(person.dob));
+      addField(doc, 'Religion', person.religion);
+      addField(doc, 'Phone', person.phoneNumber);
+      addField(doc, 'Occupation', person.occupation);
+    }
+
+    // Add note to bulk PDF as well
+    addImportantNote(doc);
+
+    doc.end();
+    console.log("✅ Bulk PDF completed");
+    
+  } catch (error) {
+    console.error("❌ Bulk PDF error:", error);
+    
+    if (doc && !doc.ended) {
+      try { doc.end(); } catch (e) {}
+    }
+    
+    if (!res.headersSent) {
+      res.status(500).json({ message: "Bulk PDF failed", error: error.message });
+    }
+  }
+});
+
+// ✅ Keep your existing HTML preview route
+router.get("/person/:id/html", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const person = await Person.findById(id).lean();
+    
+    if (!person) {
+      return res.status(404).json({ message: "Person not found" });
+    }
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>${person.name || 'Profile'} - JODI NO 1</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 50px; line-height: 1.6; }
+          .header { text-align: center; color: #8B0000; margin-bottom: 30px; }
+          .field { margin: 8px 0; display: flex; }
+          .field-label { font-weight: bold; width: 150px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>JODI NO 1</h1>
+          <p>9871080409 | jodino1@gmail.com</p>
+          <h2>${person.name || 'N/A'}</h2>
+        </div>
+        <div class="field"><div class="field-label">Name:</div><div>${person.name || '—'}</div></div>
+        <div class="field"><div class="field-label">Gender:</div><div>${person.gender || '—'}</div></div>
+        <div class="field"><div class="field-label">DOB:</div><div>${formatDate(person.dob)}</div></div>
+        <div class="field"><div class="field-label">Phone:</div><div>${person.phoneNumber || '—'}</div></div>
+      </body>
+      </html>
+    `;
+    
+    res.send(html);
+    
+  } catch (error) {
+    console.error("❌ HTML preview error:", error);
+    res.status(500).json({ message: "Failed to generate HTML", error: error.message });
+  }
+});
+
+// ✅ Route to check PDFKit installation
+router.get("/check-pdfkit", (req, res) => {
+  try {
+    const PDFDocument = require('pdfkit');
+    console.log("✅ PDFKit check successful");
+    res.json({
+      message: "✅ PDFKit is installed and working",
+      available: true,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error("❌ PDFKit check failed:", error);
+    res.status(500).json({
+      message: "❌ PDFKit not available",
+      error: error.message
+    });
+  }
+});
+
+// 🔧 NEW: Route to check uploads directory
+router.get("/debug/uploads", (req, res) => {
+  try {
+    const uploadsPath = path.join(__dirname, '..', 'uploads');
+    console.log("📁 Checking uploads directory:", uploadsPath);
+    
+    const exists = fs.existsSync(uploadsPath);
+    let files = [];
+    
+    if (exists) {
+      files = fs.readdirSync(uploadsPath).map(file => {
+        const filePath = path.join(uploadsPath, file);
+        const stats = fs.statSync(filePath);
+        return {
+          name: file,
+          size: stats.size,
+          isFile: stats.isFile(),
+          modified: stats.mtime
+        };
+      });
+    }
+    
+    res.json({
+      uploadsPath,
+      exists,
+      fileCount: files.length,
+      files: files.slice(0, 20) // Limit to first 20 files
+    });
+    
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+console.log("✅ FIXED PDFKit routes loaded with enhanced image support");
+
+module.exports = router;
