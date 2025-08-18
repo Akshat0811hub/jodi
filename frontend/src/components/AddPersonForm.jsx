@@ -13,6 +13,8 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
     birthPlaceTime: "",
     nativePlace: "",
     gotra: "",
+    religion: "",        // ✅ ADDED - ye missing tha
+    phoneNumber: "",     // ✅ ADDED - ye bhi missing tha
     height: "",
     complexion: "",
     horoscope: "",
@@ -88,9 +90,9 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
       return;
     }
 
-    // ✅ Photo validation (minimum 3)
-    if (photos.length < 1) {
-      setError("Please upload at least 1 photo.");
+    // ✅ Photo validation (minimum 3) - FIXED: 1 se 3 kiya
+    if (photos.length < 3) {
+      setError("Please upload at least 3 photos.");
       return;
     }
     if (photos.length > 4) {
