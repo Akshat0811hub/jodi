@@ -89,8 +89,12 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
     }
 
     // ✅ Photo validation (minimum 3)
-    if (photos.length < 3) {
-      setError("Please upload at least 3 photos.");
+    if (photos.length < 1) {
+      setError("Please upload at least 1 photo.");
+      return;
+    }
+    if (photos.length > 4) {
+      setError("You can upload a maximum of 4 photos.");
       return;
     }
 
