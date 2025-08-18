@@ -90,8 +90,12 @@ try {
   const authRoutes = require("./routes/authRoutes");
   console.log("✅ Auth routes loaded");
   app.use("/api/auth", authRoutes);
+  
+  // ✅ Test auth routes
+  console.log("🔧 Auth routes mounted at /api/auth");
 } catch (error) {
   console.error("❌ Error loading auth routes:", error.message);
+  console.error("❌ Stack:", error.stack);
 }
 
 try {
@@ -113,10 +117,11 @@ try {
 try {
   const pdfRoutes = require("./routes/pdfRoutes");
   console.log("✅ PDF routes loaded");
-  app.use("/api/pdf", pdfRoutes); // ✅ This should be /api/pdf, not /api/people
+  app.use("/api/pdf", pdfRoutes); // ✅ Changed from "/api/people" to "/api/pdf"
 } catch (error) {
   console.error("❌ Error loading PDF routes:", error.message);
 }
+
 // ✅ MongoDB Connection
 console.log("🔄 Connecting to MongoDB...");
 mongoose
