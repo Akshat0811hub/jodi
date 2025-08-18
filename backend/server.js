@@ -11,43 +11,76 @@ const app = express();
 
 console.log("🔄 Starting server setup...");
 
-// ✅ Basic middleware
+// ✅ Enhanced CORS configuration
 app.use(cors({
   origin: [
-    "https://jodi-iexr.vercel.app", 
+    "https://jodi-iexr.vercel.app",
     "http://localhost:3000",
-    "http://localhost:5173"
+    "http://localhost:5173",
+    "https://jodi-iexr.vercel.app/",
+    // Add any other frontend URLs you might use
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   credentials: true,
-  allowedHeaders: ["Content-Type", "Authorization"]
+  allowedHeaders: [
+    "Content-Type", 
+    "Authorization", 
+    "X-Requested-With",
+    "Accept",
+    "Origin"
+  ],
+  // Handle preflight requests
+  optionsSuccessStatus: 200
 }));
+
+// ✅ Handle preflight requests explicitly
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Allow-Credentials', true);
+  res.sendStatus(200);
+});
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// ✅ Security headers
+// ✅ Enhanced security headers
 app.use((req, res, next) => {
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   next();
 });
 
-// ✅ Static file serving
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/assets', express.static(path.join(__dirname, 'assets')));
+// ✅ Static file serving with proper headers
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  setHeaders: (res, path) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+}));
+
+app.use('/assets', express.static(path.join(__dirname, 'assets'), {
+  setHeaders: (res, path) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+}));
 
 // ✅ Health check
 app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'OK', 
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    cors: 'enabled'
   });
 });
 
 // ✅ Test route
 app.get('/api/test', (req, res) => {
-  res.json({ message: 'Server is working!' });
+  res.json({ message: 'Server is working!', cors: 'working' });
 });
 
 console.log("🔄 Loading routes...");
@@ -80,11 +113,10 @@ try {
 try {
   const pdfRoutes = require("./routes/pdfRoutes");
   console.log("✅ PDF routes loaded");
-  app.use("/api/people", pdfRoutes);
+  app.use("/api/pdf", pdfRoutes); // ✅ This should be /api/pdf, not /api/people
 } catch (error) {
   console.error("❌ Error loading PDF routes:", error.message);
 }
-
 // ✅ MongoDB Connection
 console.log("🔄 Connecting to MongoDB...");
 mongoose

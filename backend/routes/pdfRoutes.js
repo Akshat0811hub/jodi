@@ -5,46 +5,52 @@ const puppeteer = require("puppeteer-core");
 const ejs = require("ejs");
 const path = require("path");
 const fs = require("fs");
-const os = require("os");
 const Person = require("../models/personModel");
 
-router.get("/:id/pdf", async (req, res) => {
+// ✅ Updated route path - now accessible at /api/pdf/person/:id/pdf
+router.get("/person/:id/pdf", async (req, res) => {
   let browser = null;
   
   try {
+    console.log(`🔄 Generating PDF for person ID: ${req.params.id}`);
+    
     const { fields } = req.query;
     const selectedFields = fields ? fields.split(",") : [];
 
     const person = await Person.findById(req.params.id).lean();
     if (!person) {
+      console.log("❌ Person not found");
       return res.status(404).json({ message: "Person not found" });
     }
 
+    console.log("✅ Person found:", person.name);
+
     // ✅ Use BASE_URL if available, fallback to request URL
     const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
+    console.log("🔗 Using base URL:", baseUrl);
 
-    // ✅ Process photos - keep as filenames for database storage
+    // ✅ Process photos - ensure they're stored as filenames
     if (person.photos && Array.isArray(person.photos) && person.photos.length > 0) {
-      // Ensure photos are stored as filenames only
       person.photos = person.photos.map(photo => {
         if (photo.startsWith('http')) {
-          // Extract filename from full URL if it exists
           const urlParts = photo.split('/');
           return urlParts[urlParts.length - 1];
         }
         return photo;
       });
+      console.log("📸 Processed photos:", person.photos.length);
     } else {
       person.photos = [];
+      console.log("📸 No photos found");
     }
 
-    // ✅ Process profile picture - keep as filename
+    // ✅ Process profile picture
     if (person.profilePicture) {
       if (person.profilePicture.startsWith('http')) {
-        // Extract filename from full URL if it exists
         const urlParts = person.profilePicture.split('/');
         person.profilePicture = urlParts[urlParts.length - 1];
       }
+      console.log("👤 Profile picture:", person.profilePicture);
     }
 
     let filteredPerson = {
@@ -53,6 +59,7 @@ router.get("/:id/pdf", async (req, res) => {
       profilePicture: person.profilePicture || "",
     };
 
+    // ✅ Handle field filtering
     if (selectedFields.length > 0) {
       selectedFields.forEach((field) => {
         if (person[field] !== undefined) {
@@ -87,13 +94,11 @@ router.get("/:id/pdf", async (req, res) => {
       });
     }
 
-    // ✅ Logo path
-    const logoPath = `${baseUrl}/assets/logo.png`;
-
+    // ✅ Template data
     const templateData = {
       person: filteredPerson,
-      logoUrl: logoPath,
-      baseUrl, // ✅ Pass baseUrl to template for URL construction
+      logoUrl: `${baseUrl}/assets/logo.png`,
+      baseUrl,
       companyName: "Jodi No.1 by Mamta Aggarwal",
       PhoneNo: "9871080409, 9211729184, 9211729185, 9211729186",
       companyContact: "www.jodino1.com",
@@ -103,40 +108,62 @@ router.get("/:id/pdf", async (req, res) => {
     };
 
     console.log("🔄 Rendering EJS template...");
-    const html = await ejs.renderFile(
-      path.join(__dirname, "..", "templates", "person-pdf.ejs"),
-      templateData,
-      { async: true }
-    );
-
-    console.log("🔄 Starting Puppeteer...");
+    const templatePath = path.join(__dirname, "..", "templates", "person-pdf.ejs");
     
-    // ✅ Improved Puppeteer setup
-    let executablePath;
-    
-    if (process.env.NODE_ENV === 'production') {
-      executablePath = await chromium.executablePath();
-    } else {
-      // For local development, try to use local Chrome
-      executablePath = '/usr/bin/google-chrome' || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' || await chromium.executablePath();
+    // ✅ Check if template exists
+    if (!fs.existsSync(templatePath)) {
+      console.error("❌ Template not found:", templatePath);
+      return res.status(500).json({ message: "PDF template not found" });
     }
 
+    const html = await ejs.renderFile(templatePath, templateData, { async: true });
+    console.log("✅ Template rendered successfully");
+
+    // ✅ Puppeteer configuration
+    console.log("🔄 Starting Puppeteer...");
+    
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    let executablePath;
+    
+    if (isDevelopment) {
+      // For local development
+      const localChromePaths = [
+        '/usr/bin/google-chrome',
+        '/usr/bin/google-chrome-stable',
+        '/usr/bin/chromium-browser',
+        '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'
+      ];
+      
+      executablePath = localChromePaths.find(path => fs.existsSync(path)) || await chromium.executablePath();
+    } else {
+      executablePath = await chromium.executablePath();
+    }
+
+    console.log("🔧 Using Chrome executable:", executablePath);
+
+    const browserArgs = isDevelopment 
+      ? ['--no-sandbox', '--disable-setuid-sandbox']
+      : [
+          ...chromium.args,
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-web-security',
+          '--disable-features=VizDisplayCompositor',
+          '--disable-gpu',
+          '--single-process'
+        ];
+
     browser = await puppeteer.launch({
-      args: [
-        ...chromium.args,
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-web-security',
-        '--disable-features=VizDisplayCompositor',
-      ],
+      args: browserArgs,
       defaultViewport: chromium.defaultViewport,
       executablePath: executablePath,
       headless: chromium.headless || true,
+      timeout: 30000
     });
 
     const page = await browser.newPage();
-    
-    // ✅ Set longer timeout and better error handling
     page.setDefaultTimeout(30000);
     page.setDefaultNavigationTimeout(30000);
 
@@ -147,7 +174,6 @@ router.get("/:id/pdf", async (req, res) => {
     });
 
     console.log("🔄 Waiting for images to load...");
-    // ✅ Enhanced image loading with timeout
     await page.evaluate(async () => {
       const images = Array.from(document.images);
       console.log(`Found ${images.length} images to load`);
@@ -161,7 +187,7 @@ router.get("/:id/pdf", async (req, res) => {
           const timeout = setTimeout(() => {
             console.log(`Image timeout: ${img.src}`);
             resolve();
-          }, 10000); // 10 second timeout per image
+          }, 8000);
           
           img.onload = () => {
             clearTimeout(timeout);
@@ -192,7 +218,8 @@ router.get("/:id/pdf", async (req, res) => {
         left: "40px", 
         right: "40px" 
       },
-      timeout: 60000, // 60 second timeout
+      timeout: 60000,
+      preferCSSPageSize: true
     });
 
     await browser.close();
@@ -200,10 +227,15 @@ router.get("/:id/pdf", async (req, res) => {
 
     console.log("✅ PDF generated successfully");
 
+    // ✅ Set proper headers
+    const fileName = `${(person.name || "profile").replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+    
     res.set({
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${person.name || "profile"}.pdf"`,
+      "Content-Disposition": `attachment; filename="${fileName}"`,
       "Content-Length": pdfBuffer.length,
+      "Access-Control-Allow-Origin": req.headers.origin || "*",
+      "Access-Control-Allow-Credentials": "true"
     });
 
     res.send(pdfBuffer);
@@ -211,7 +243,6 @@ router.get("/:id/pdf", async (req, res) => {
   } catch (err) {
     console.error("❌ PDF generation error:", err);
     
-    // ✅ Clean up browser on error
     if (browser) {
       try {
         await browser.close();
@@ -223,9 +254,17 @@ router.get("/:id/pdf", async (req, res) => {
     res.status(500).json({ 
       message: "Failed to generate PDF", 
       error: err.message,
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+      details: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
   }
+});
+
+// ✅ Health check for PDF service
+router.get("/health", (req, res) => {
+  res.json({ 
+    status: "PDF service is running",
+    timestamp: new Date().toISOString()
+  });
 });
 
 module.exports = router;

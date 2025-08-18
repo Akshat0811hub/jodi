@@ -26,7 +26,7 @@ const fieldLabels = {
   religion: "Religion",
   caste: "Caste",
   maritalStatus: "Marital Status",
-  state: "state",
+  state: "State",
   area: "Area",
   dob: "Date of Birth",
   nativePlace: "Native Place",
@@ -41,6 +41,7 @@ const PeopleList = ({ filters }) => {
   const [loading, setLoading] = useState(false);
   const [showFieldSelection, setShowFieldSelection] = useState(false);
   const [selectedFields, setSelectedFields] = useState([...availableFields]);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   const fetchPeople = async () => {
     try {
@@ -109,13 +110,68 @@ const PeopleList = ({ filters }) => {
     );
   };
 
-  const handleDownloadStyledPDF = (personId) => {
-    if (selectedFields.length > 0) {
+  // ✅ Fixed PDF download function using the new endpoint
+  const handleDownloadStyledPDF = async (personId) => {
+    if (selectedFields.length === 0) {
+      alert("Please select at least one field to include in the PDF");
+      return;
+    }
+
+    try {
+      setPdfLoading(true);
+      console.log("🔄 Generating PDF for person:", personId);
+      
       const fieldsQuery = selectedFields.join(",");
-      const baseUrl = process.env.REACT_APP_API_URL || "http://localhost:5000";
-      const pdfUrl = `${baseUrl}/api/people/${personId}/pdf?fields=${fieldsQuery}`;
-      window.open(pdfUrl, "_blank");
+      
+      // ✅ Use the new PDF endpoint structure
+      const response = await api.get(`/pdf/person/${personId}/pdf?fields=${fieldsQuery}`, {
+        responseType: 'blob',
+        timeout: 60000, // 60 second timeout
+      });
+      
+      // ✅ Create blob and download
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      
+      // ✅ Get person name for filename
+      const person = people.find(p => p._id === personId);
+      const filename = `${(person?.name || 'profile').replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().getTime()}.pdf`;
+      
+      link.href = url;
+      link.download = filename;
+      
+      // ✅ Trigger download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // ✅ Cleanup
+      window.URL.revokeObjectURL(url);
+      
+      console.log("✅ PDF downloaded successfully");
+      alert("PDF downloaded successfully!");
       setShowFieldSelection(false);
+      
+    } catch (error) {
+      console.error("❌ PDF download failed:", error);
+      
+      let errorMessage = "Failed to generate PDF";
+      if (error.response) {
+        if (error.response.status === 404) {
+          errorMessage = "Person not found";
+        } else if (error.response.status === 500) {
+          errorMessage = "Server error while generating PDF";
+        } else if (error.response.data?.message) {
+          errorMessage = error.response.data.message;
+        }
+      } else if (error.request) {
+        errorMessage = "Network error - please check your connection";
+      }
+      
+      alert(`Error: ${errorMessage}`);
+    } finally {
+      setPdfLoading(false);
     }
   };
 
@@ -128,6 +184,12 @@ const PeopleList = ({ filters }) => {
       month: "2-digit",
       year: "numeric",
     });
+  };
+
+  // ✅ Get the correct base URL for images
+  const getImageUrl = (filename) => {
+    const baseUrl = process.env.REACT_APP_API_URL || "https://jodi-fi4e.onrender.com";
+    return `${baseUrl}/uploads/${filename}`;
   };
 
   return (
@@ -168,9 +230,12 @@ const PeopleList = ({ filters }) => {
                         <div className="expanded-details">
                           {person.photos?.length > 0 && (
                             <img
-                              src={`http://localhost:5000/uploads/${person.photos[0]}`}
+                              src={getImageUrl(person.photos[0])}
                               alt={person.name}
                               className="expanded-photo"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                              }}
                             />
                           )}
                           <div>
@@ -201,8 +266,9 @@ const PeopleList = ({ filters }) => {
                               )
                             }
                             className="pdf-btn"
+                            disabled={pdfLoading}
                           >
-                            📄 Download PDF
+                            {pdfLoading ? "🔄 Generating..." : "📄 Download PDF"}
                           </button>
                           <button
                             onClick={() => handleDelete(person._id)}
@@ -229,12 +295,21 @@ const PeopleList = ({ filters }) => {
                                 </label>
                               ))}
                             </div>
-                            <button
-                              onClick={() => handleDownloadStyledPDF(person._id)}
-                              className="generate-btn"
-                            >
-                              ✅ Generate PDF
-                            </button>
+                            <div className="pdf-actions">
+                              <button
+                                onClick={() => handleDownloadStyledPDF(person._id)}
+                                className="generate-btn"
+                                disabled={pdfLoading || selectedFields.length === 0}
+                              >
+                                {pdfLoading ? "🔄 Generating PDF..." : "✅ Generate PDF"}
+                              </button>
+                              <button
+                                onClick={() => setShowFieldSelection(false)}
+                                className="cancel-btn"
+                              >
+                                Cancel
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>
