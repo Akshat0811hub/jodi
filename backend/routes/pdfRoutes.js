@@ -151,6 +151,10 @@ const addPhotosSection = async (doc, person) => {
       }
     }
     
+    // Calculate final Y position after all photos
+    const finalPhotoY = currentY + photoHeight + 50;
+    doc.y = finalPhotoY;
+    
     return true;
     
   } catch (error) {
@@ -258,44 +262,55 @@ const resolvePhotoPath = (photoPath) => {
   return null;
 };
 
-// ✨ ENHANCED: Add beautiful important note
+// ✨ ENHANCED: Add beautiful important note with proper spacing
 const addEnhancedImportantNote = (doc) => {
   const noteText = "NOTE: The above particulars have been provided to the best of our knowledge, as per information provided by the concerned party. We (Jodi No1) shall not be responsible for misrepresentation of any or all of the information herein. Amount will not be refunded in any case. All clients have to pay full maturity amount on ROKA CEREMONY.";
   
-  doc.moveDown(2);
+  // Add extra spacing before the notice
+  doc.moveDown(3);
   
-  // Check if we need a new page
-  if (doc.y > doc.page.height - 150) {
+  // Check if we need more space or a new page
+  const requiredSpace = 150; // Space needed for the notice
+  const availableSpace = doc.page.height - doc.y - 70; // Available space minus footer
+  
+  if (availableSpace < requiredSpace) {
     doc.addPage();
+    doc.moveDown(2);
   }
   
-  // Create styled header
-  doc.rect(40, doc.y, 520, 35)
+  // Create styled header with more space
+  const headerY = doc.y;
+  doc.rect(40, headerY, 520, 35)
      .fill(colors.warning);
   
   // Add warning icon and text
   doc.fontSize(14)
      .font('Helvetica-Bold')
      .fillColor(colors.white)
-     .text('⚠️ IMPORTANT NOTICE', 55, doc.y - 25);
+     .text('⚠️ IMPORTANT NOTICE', 55, headerY + 10);
   
-  doc.moveDown(0.8);
+  // Move down after header
+  doc.y = headerY + 45;
   
-  // Create content box
-  const noteHeight = 90;
-  doc.rect(40, doc.y, 520, noteHeight)
+  // Create content box with proper height
+  const noteHeight = 100;
+  const contentY = doc.y;
+  doc.rect(40, contentY, 520, noteHeight)
      .fill('#FFF3CD')
      .stroke(colors.warning);
   
-  // Add note content
+  // Add note content with proper positioning
   doc.fontSize(10)
      .fillColor('#856404')
      .font('Helvetica')
-     .text(noteText, 55, doc.y - noteHeight + 15, {
+     .text(noteText, 55, contentY + 15, {
        width: 490,
        align: 'justify',
-       lineGap: 2
+       lineGap: 3
      });
+  
+  // Move doc.y to after the notice box
+  doc.y = contentY + noteHeight + 20;
 };
 
 // ✨ ENHANCED: Header with better styling
@@ -314,8 +329,8 @@ const addStyledHeader = (doc, person) => {
   doc.fontSize(11)
      .font('Helvetica')
      .fillColor(colors.light)
-     .text('📞 9871080409 | ✉️ jodino1@gmail.com', 50, 55)
-     .text('📍 G-25, Vardhman Premium Mall, Opp.Kali Mata Mandir, Gurugram, Haryana', 50, 70);
+     .text(' 9871080409 |  jodino1@gmail.com', 50, 55)
+     .text(' G-25, Vardhman Premium Mall, Opp.Kali Mata Mandir,Deepali enclave , Delhi-110034', 50, 70);
   
   doc.moveDown(3);
   
@@ -377,7 +392,7 @@ router.get("/person/:id/pdf", async (req, res) => {
     addStyledHeader(doc, person);
 
     // Personal Details Section
-    addStyledSectionHeader(doc, '👤 PERSONAL DETAILS');
+    addStyledSectionHeader(doc, ' PERSONAL DETAILS');
     addStyledField(doc, 'Full Name', person.name);
     addStyledField(doc, 'Gender', person.gender);
     addStyledField(doc, 'Marital Status', person.maritalStatus);
@@ -390,7 +405,7 @@ router.get("/person/:id/pdf", async (req, res) => {
     addStyledField(doc, 'Complexion', person.complexion);
 
     // Lifestyle Section
-    addStyledSectionHeader(doc, '🏃 LIFESTYLE & HABITS');
+    addStyledSectionHeader(doc, ' LIFESTYLE & HABITS');
     addStyledField(doc, 'Eating Habits', person.eatingHabits);
     addStyledField(doc, 'Drinking Habits', person.drinkingHabits);
     addStyledField(doc, 'Smoking Habits', person.smokingHabits);
@@ -400,7 +415,7 @@ router.get("/person/:id/pdf", async (req, res) => {
     addStyledField(doc, 'Horoscope Available', person.horoscope);
 
     // Family Details Section
-    addStyledSectionHeader(doc, '👨‍👩‍👧‍👦 FAMILY DETAILS');
+    addStyledSectionHeader(doc, ' FAMILY DETAILS');
     addStyledField(doc, 'Father\'s Name', person.fatherName);
     addStyledField(doc, 'Father\'s Occupation', person.fatherOccupation);
     addStyledField(doc, 'Father\'s Office Details', person.fatherOffice);
@@ -410,26 +425,26 @@ router.get("/person/:id/pdf", async (req, res) => {
     addStyledField(doc, 'Other Properties', person.otherProperty);
 
     // Education Section
-    addStyledSectionHeader(doc, '🎓 EDUCATIONAL QUALIFICATIONS');
+    addStyledSectionHeader(doc, ' EDUCATIONAL QUALIFICATIONS');
     addStyledField(doc, 'Highest Qualification', person.higherQualification);
     addStyledField(doc, 'Graduation Details', person.graduation);
     addStyledField(doc, 'School Education', person.schooling);
 
     // Professional Section
-    addStyledSectionHeader(doc, '💼 PROFESSION & INCOME');
+    addStyledSectionHeader(doc, ' PROFESSION & INCOME');
     addStyledField(doc, 'Current Occupation', person.occupation);
     addStyledField(doc, 'Personal Income', person.personalIncome);
     addStyledField(doc, 'Family Income', person.familyIncome);
 
     // Contact Information Section
-    addStyledSectionHeader(doc, '📞 CONTACT INFORMATION');
+    addStyledSectionHeader(doc, ' CONTACT INFORMATION');
     addStyledField(doc, 'Phone Number', person.phoneNumber);
     addStyledField(doc, 'Email Address', person.email);
     addStyledField(doc, 'Current Address', person.currentAddress);
 
     // Siblings Section
     if (person.siblings && person.siblings.length > 0) {
-      addStyledSectionHeader(doc, '👫 SIBLINGS INFORMATION');
+      addStyledSectionHeader(doc, 'SIBLINGS INFORMATION');
       
       person.siblings.forEach((sibling, index) => {
         doc.fontSize(13)
@@ -451,17 +466,18 @@ router.get("/person/:id/pdf", async (req, res) => {
     // Add photos section at the end
     await addPhotosSection(doc, person);
 
-    // Add important notice
+    // Add important notice with proper spacing
     addEnhancedImportantNote(doc);
 
-    // Footer
+    // Footer with proper positioning
+    const footerY = doc.page.height - 40;
     doc.fontSize(10)
        .fillColor('#7F8C8D')
        .text(`Generated on: ${new Date().toLocaleDateString('en-IN')} | JODI NO 1 Matrimonial Services`, 
-             50, doc.page.height - 50, { align: 'center' });
+             50, footerY, { align: 'center' });
 
     doc.end();
-    console.log("✅ Enhanced PDF generated successfully with photos at end");
+    console.log("✅ Enhanced PDF generated successfully with photos at end and proper spacing");
 
   } catch (error) {
     console.error("❌ Enhanced PDF generation error:", error);
