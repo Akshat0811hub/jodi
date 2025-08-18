@@ -1,20 +1,23 @@
-// routes/pdfRoutes.js
+// routes/pdfRoutes.js - LIGHTWEIGHT VERSION WITH html-pdf
 const express = require("express");
-const puppeteer = require("puppeteer");
 const ejs = require("ejs");
 const Person = require("../models/personModel");
 const path = require("path");
 const fs = require("fs");
 
+// ✅ Use html-pdf instead of puppeteer (much lighter for free hosting)
+// npm install html-pdf
+const pdf = require('html-pdf');
+
 const router = express.Router();
 
-console.log("📄 Loading PDF routes...");
+console.log("📄 Loading Lightweight PDF routes...");
 
 // Helper function to format date
 const formatDate = (dateString) => {
-  if (!dateString) return "-";
+  if (!dateString) return "—";
   const date = new Date(dateString);
-  if (isNaN(date)) return "-";
+  if (isNaN(date)) return "—";
   return date.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "2-digit",
@@ -22,11 +25,11 @@ const formatDate = (dateString) => {
   });
 };
 
-// GET /api/pdf/person/:id/pdf - Generate styled PDF using EJS template
+// ✅ LIGHTWEIGHT PDF GENERATION - Replace your existing PDF route
 router.get("/person/:id/pdf", async (req, res) => {
   try {
     const { id } = req.params;
-    console.log(`📄 Generating styled PDF for person ${id}`);
+    console.log(`📄 Generating lightweight PDF for person ${id}`);
     
     // Find the person
     const person = await Person.findById(id);
@@ -95,13 +98,14 @@ router.get("/person/:id/pdf", async (req, res) => {
       companyEmail: "jodino1@gmail.com",
       companyAddress: "Gurugram, Haryana, India",
       logoUrl: "", // Add if you have logo
-      baseUrl: process.env.BASE_URL || `${req.protocol}://${req.get('host')}`
+      baseUrl: process.env.BASE_URL || `${req.protocol}://${req.get('host')}`,
+      currentDate: new Date().toLocaleDateString('en-IN')
     };
 
     console.log("📊 Template data prepared with all fields");
 
     // ✅ Render EJS template
-    const templatePath = path.join(__dirname, '../views/pdf-person.ejs');
+    const templatePath = path.join(__dirname, '../views/pdf-person-lite.ejs');
     
     // Check if template exists
     if (!fs.existsSync(templatePath)) {
@@ -115,59 +119,51 @@ router.get("/person/:id/pdf", async (req, res) => {
     const html = await ejs.renderFile(templatePath, templateData);
     console.log("📝 HTML rendered successfully, length:", html.length);
 
-    // ✅ Launch Puppeteer with proper config
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-web-security',
-        '--allow-running-insecure-content',
-        '--disable-features=VizDisplayCompositor',
-        '--run-all-compositor-stages-before-draw',
-        '--disable-backgrounding-occluded-windows'
-      ]
-    });
-
-    const page = await browser.newPage();
-    
-    // ✅ Set viewport and emulate screen
-    await page.setViewport({ width: 1200, height: 1600, deviceScaleFactor: 2 });
-    
-    // ✅ Set content and wait for everything to load
-    await page.setContent(html, { 
-      waitUntil: ['networkidle0', 'domcontentloaded'],
-      timeout: 30000 
-    });
-
-    // ✅ Wait a bit more for fonts and styles to load
-    await page.waitForTimeout(2000);
-
-    // ✅ Generate PDF with optimal settings
-    const pdfBuffer = await page.pdf({
+    // ✅ html-pdf configuration (optimized for free hosting)
+    const options = {
       format: 'A4',
-      printBackground: true, // ✅ CRITICAL for your styling
-      margin: {
-        top: '0px',
-        right: '0px', 
-        bottom: '0px',
-        left: '0px'
+      border: {
+        top: "0.2in",
+        right: "0.3in",
+        bottom: "0.2in",
+        left: "0.3in"
       },
-      preferCSSPageSize: true,
-      displayHeaderFooter: false,
-      scale: 1,
-      quality: 100
+      timeout: 25000, // Reduced timeout
+      quality: '75', // Reduced quality for performance
+      zoomFactor: 0.9,
+      // Optimize for free hosting
+      phantomArgs: [
+        '--disk-cache=false', 
+        '--load-images=yes',
+        '--local-to-remote-url-access=yes',
+        '--ignore-ssl-errors=yes'
+      ],
+      // Additional optimizations
+      height: "11.7in",
+      width: "8.3in",
+      type: 'pdf'
+    };
+
+    // ✅ Generate PDF with html-pdf (much lighter than Puppeteer)
+    pdf.create(html, options).toBuffer((err, buffer) => {
+      if (err) {
+        console.error("❌ html-pdf error:", err);
+        return res.status(500).json({ 
+          message: "PDF generation failed", 
+          error: err.message 
+        });
+      }
+
+      console.log("✅ PDF generated successfully with html-pdf");
+
+      // ✅ Send PDF with proper headers
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 
+        `attachment; filename="${(person.name || 'profile').replace(/[^a-zA-Z0-9]/g, '_')}_detailed_profile.pdf"`
+      );
+      res.setHeader('Content-Length', buffer.length);
+      res.send(buffer);
     });
-
-    await browser.close();
-    console.log("✅ PDF generated successfully with styling");
-
-    // ✅ Send PDF with proper headers
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${(person.name || 'profile').replace(/[^a-zA-Z0-9]/g, '_')}_detailed_profile.pdf"`);
-    res.setHeader('Content-Length', pdfBuffer.length);
-    res.send(pdfBuffer);
 
   } catch (error) {
     console.error("❌ PDF generation error:", error);
@@ -182,7 +178,7 @@ router.get("/person/:id/pdf", async (req, res) => {
   }
 });
 
-// ✅ HTML preview endpoint for debugging (same data as PDF)
+// ✅ HTML preview endpoint (same as before but with lite template)
 router.get("/person/:id/html", async (req, res) => {
   try {
     const { id } = req.params;
@@ -195,7 +191,7 @@ router.get("/person/:id/html", async (req, res) => {
     // Same template data as PDF
     const templateData = {
       person: {
-        // Personal Details - ALL fields from form
+        // All fields exactly as in PDF route above
         name: person.name || "—",
         gender: person.gender || "—",
         maritalStatus: person.maritalStatus || "—",
@@ -214,8 +210,6 @@ router.get("/person/:id/html", async (req, res) => {
         disability: person.disability || "—",
         nri: person.nri || false,
         vehicle: person.vehicle || "—",
-        
-        // Family Details
         fatherName: person.fatherName || "—",
         fatherOccupation: person.fatherOccupation || "—",
         fatherOffice: person.fatherOffice || "—",
@@ -223,23 +217,15 @@ router.get("/person/:id/html", async (req, res) => {
         motherOccupation: person.motherOccupation || "—",
         residence: person.residence || "—",
         otherProperty: person.otherProperty || "—",
-        
-        // Education
         higherQualification: person.higherQualification || "—",
         graduation: person.graduation || "—",
         schooling: person.schooling || "—",
-        
-        // Profession & Income
         occupation: person.occupation || "—",
         personalIncome: person.personalIncome || "—",
         familyIncome: person.familyIncome || "—",
-        
-        // Photos and Siblings
         photos: person.photos || [],
         siblings: person.siblings || [],
         profilePicture: person.photos?.[0] || null,
-        
-        // Compatibility
         family: {
           father: person.fatherName || "—",
           mother: person.motherName || "—"
@@ -250,10 +236,11 @@ router.get("/person/:id/html", async (req, res) => {
       companyEmail: "jodino1@gmail.com",
       companyAddress: "Gurugram, Haryana, India",
       logoUrl: "",
-      baseUrl: process.env.BASE_URL || `${req.protocol}://${req.get('host')}`
+      baseUrl: process.env.BASE_URL || `${req.protocol}://${req.get('host')}`,
+      currentDate: new Date().toLocaleDateString('en-IN')
     };
 
-    const templatePath = path.join(__dirname, '../views/pdf-person.ejs');
+    const templatePath = path.join(__dirname, '../views/pdf-person-lite.ejs');
     const html = await ejs.renderFile(templatePath, templateData);
     
     res.send(html); // Send HTML to browser for preview
@@ -264,7 +251,7 @@ router.get("/person/:id/html", async (req, res) => {
   }
 });
 
-// POST /api/pdf/bulk - Generate bulk PDF for multiple people (keeping same functionality)
+// ✅ Lightweight bulk PDF (using html-pdf)
 router.post("/bulk", async (req, res) => {
   try {
     const { personIds, selectedFields } = req.body;
@@ -275,7 +262,7 @@ router.post("/bulk", async (req, res) => {
       });
     }
     
-    console.log(`📄 Generating bulk PDF for ${personIds.length} people`);
+    console.log(`📄 Generating lightweight bulk PDF for ${personIds.length} people`);
     
     // Find all people
     const people = await Person.find({ _id: { $in: personIds } });
@@ -286,19 +273,6 @@ router.post("/bulk", async (req, res) => {
       });
     }
 
-    // ✅ Use Puppeteer for bulk PDF as well for consistency
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage'
-      ]
-    });
-
-    const page = await browser.newPage();
-    await page.setViewport({ width: 1200, height: 1600, deviceScaleFactor: 2 });
-
     // ✅ Generate combined HTML for all people
     let combinedHtml = `
       <!DOCTYPE html>
@@ -307,20 +281,24 @@ router.post("/bulk", async (req, res) => {
         <meta charset="utf-8">
         <title>Bulk Profiles Export</title>
         <style>
-          @page { size: A4; margin: 0; }
-          body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+          @page { size: A4; margin: 0.5in; }
+          body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
           .bulk-header { text-align: center; margin-bottom: 30px; page-break-after: always; }
-          .person-page { page-break-before: always; padding: 40px; }
-          .person-title { font-size: 24px; color: maroon; margin-bottom: 20px; text-align: center; }
+          .person-page { page-break-before: always; padding: 20px 0; }
+          .person-title { font-size: 20px; color: maroon; margin-bottom: 20px; text-align: center; border-bottom: 2px solid maroon; padding-bottom: 10px; }
           .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-          .detail-item { padding: 8px; border-bottom: 1px solid #eee; }
-          .detail-label { font-weight: bold; color: #333; }
-          .detail-value { color: #666; }
+          .detail-item { padding: 8px; border-bottom: 1px solid #eee; display: flex; }
+          .detail-label { font-weight: bold; color: #333; width: 150px; flex-shrink: 0; }
+          .detail-value { color: #666; flex: 1; }
+          .company-header { color: maroon; font-size: 24px; font-weight: bold; }
         </style>
       </head>
       <body>
         <div class="bulk-header">
-          <h1 style="color: maroon;">JODI NO 1 - Bulk Profiles Export</h1>
+          <div class="company-header">JODI NO 1</div>
+          <p>📞 9871080409 | 📧 jodino1@gmail.com</p>
+          <p>📍 Gurugram, Haryana, India</p>
+          <h2>Bulk Profiles Export</h2>
           <p>Total Profiles: ${people.length}</p>
           <p>Generated on: ${new Date().toLocaleDateString('en-IN')}</p>
         </div>
@@ -355,6 +333,22 @@ router.post("/bulk", async (req, res) => {
               <div class="detail-label">Phone Number:</div>
               <div class="detail-value">${person.phoneNumber || "—"}</div>
             </div>
+            <div class="detail-item">
+              <div class="detail-label">Occupation:</div>
+              <div class="detail-value">${person.occupation || "—"}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Personal Income:</div>
+              <div class="detail-value">${person.personalIncome || "—"}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Father Name:</div>
+              <div class="detail-value">${person.fatherName || "—"}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Mother Name:</div>
+              <div class="detail-value">${person.motherName || "—"}</div>
+            </div>
           </div>
         </div>
       `;
@@ -362,21 +356,31 @@ router.post("/bulk", async (req, res) => {
 
     combinedHtml += `</body></html>`;
 
-    await page.setContent(combinedHtml, { waitUntil: 'networkidle0' });
-    
-    const pdfBuffer = await page.pdf({
+    // ✅ Generate PDF with html-pdf
+    const options = {
       format: 'A4',
-      printBackground: true,
-      margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' }
+      border: {
+        top: "0.5in",
+        right: "0.5in", 
+        bottom: "0.5in",
+        left: "0.5in"
+      },
+      timeout: 25000,
+      quality: '75'
+    };
+
+    pdf.create(combinedHtml, options).toBuffer((err, buffer) => {
+      if (err) {
+        console.error("❌ Bulk PDF error:", err);
+        return res.status(500).json({ message: "Failed to generate bulk PDF" });
+      }
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="bulk_profiles_${Date.now()}.pdf"`);
+      res.send(buffer);
+      
+      console.log("✅ Bulk PDF generated successfully");
     });
-
-    await browser.close();
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="bulk_profiles_${Date.now()}.pdf"`);
-    res.send(pdfBuffer);
-    
-    console.log("✅ Bulk PDF generated successfully");
     
   } catch (error) {
     console.error("❌ Bulk PDF generation error:", error);
@@ -390,6 +394,6 @@ router.post("/bulk", async (req, res) => {
   }
 });
 
-console.log("✅ PDF routes loaded successfully");
+console.log("✅ Lightweight PDF routes loaded successfully");
 
 module.exports = router;

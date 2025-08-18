@@ -1,600 +1,533 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title><%= person.name || 'Profile' %> - Profile</title>
-  <style>
-    /* PDF-specific styles */
-    @page { 
-      size: A4; 
-      margin: 0;
-    }
-    
-    * {
-      box-sizing: border-box;
-    }
-    
-    html, body {
-      margin: 0; 
-      padding: 0;
-      font-family: "Helvetica", Arial, sans-serif;
-      color: #111;
-      font-size: 14px;
-      line-height: 1.4;
-      /* Critical for PDF rendering */
-      -webkit-print-color-adjust: exact !important;
-      color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    
-    .page { 
-      box-sizing: border-box; 
-      padding: 110px 40px 110px 40px;
-      min-height: 100vh;
-      position: relative;
-    }
-
-    /* HEADER - Fixed positioning for PDF */
-    header {
-      position: fixed;
-      top: 0; 
-      left: 0; 
-      right: 0;
-      height: 90px; 
-      padding: 12px 40px;
-      border-bottom: 2px solid #444 !important;
-      display: flex; 
-      align-items: center; 
-      justify-content: space-between;
-      background: #fff !important;
-      z-index: 1000;
-    }
-    
-    .header-left { 
-      display: flex; 
-      gap: 16px; 
-      align-items: center; 
-    }
-    
-    .logo { 
-      height: 70px; 
-      width: auto; 
-      object-fit: contain;
-      max-width: 200px;
-    }
-    
-    .company-meta {
-      font-size: 14px; 
-      line-height: 1.3; 
-      color: #000;
-    }
-    
-    .company-meta strong {
-      font-size: 20px;
-      font-weight: 700;
-      color: maroon !important;
-    }
-    
-    .header-right {
-      text-align: right;
-      font-size: 14px;
-      font-weight: 600;
-      color: #000;
-    }
-
-    /* FOOTER */
-    footer {
-      position: fixed;
-      bottom: 0; 
-      left: 0; 
-      right: 0;
-      height: 90px; 
-      padding: 12px 40px;
-      border-top: 1px solid #ddd !important;
-      font-size: 11px; 
-      color: #444; 
-      background: #fff !important;
-      z-index: 1000;
-    }
-
-    /* MAIN CONTENT */
-    h1.title {
-      font-size: 22px;
-      margin: 0 0 20px 0;
-      letter-spacing: 0.5px;
-      font-weight: 700;
-      color: maroon !important;
-      text-align: center;
-      padding-bottom: 10px;
-      border-bottom: 2px solid maroon;
-    }
-    
-    .profile-top { 
-      display: flex; 
-      gap: 18px; 
-      margin-bottom: 25px;
-      page-break-inside: avoid;
-    }
-    
-    .profile-pic {
-      width: 180px; 
-      height: 220px;
-      object-fit: cover;
-      border-radius: 4px; 
-      border: 2px solid #ccc !important;
-      background: #f5f5f5 !important;
-      flex-shrink: 0;
-    }
-    
-    .personal-details { 
-      flex: 1; 
-    }
-    
-    .detail-row {
-      display: flex; 
-      gap: 12px; 
-      margin-bottom: 8px;
-      font-size: 14px;
-      padding: 4px 0;
-      border-bottom: 1px solid #f0f0f0;
-    }
-    
-    .label { 
-      width: 180px; 
-      font-weight: 700; 
-      color: #222; 
-      flex-shrink: 0;
-    }
-    
-    .value { 
-      flex: 1;
-      color: #444;
-    }
-
-    /* SECTIONS */
-    .section { 
-      margin-top: 25px; 
-      page-break-inside: avoid; 
-    }
-    
-    .section h2 {
-      font-size: 16px;
-      margin: 15px 0 10px 0;
-      border-bottom: 2px solid #eee !important;
-      padding-bottom: 8px;
-      font-weight: 700;
-      color: maroon !important;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    
-    /* TABLES */
-    .family-table, .siblings-table {
-      width: 100%; 
-      border-collapse: collapse; 
-      margin-top: 10px;
-      margin-bottom: 15px;
-    }
-    
-    .family-table td, .siblings-table td {
-      padding: 10px 12px;
-      border: 1px solid #ddd !important;
-      vertical-align: top;
-      font-size: 13px;
-      background: #fff !important;
-    }
-    
-    .family-table thead td, .siblings-table thead td {
-      background: #f8f8f8 !important;
-      font-weight: 700;
-      color: #000;
-    }
-    
-    .family-table td strong, .siblings-table td strong {
-      color: maroon !important;
-      font-weight: 700;
-    }
-
-    /* PHOTOS */
-    .photo-grid {
-      display: flex; 
-      flex-wrap: wrap; 
-      gap: 15px;
-      margin-top: 15px;
-      page-break-inside: avoid;
-    }
-    
-    .photo-grid img {
-      width: 180px;
-      height: 220px;
-      border: 2px solid #ccc !important;
-      border-radius: 4px;
-      object-fit: cover;
-      background: #f5f5f5 !important;
-    }
-
-    .photo-placeholder {
-      width: 180px;
-      height: 220px;
-      border: 2px solid #ccc !important;
-      border-radius: 4px;
-      background: #f5f5f5 !important;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #999;
-      font-size: 14px;
-      text-align: center;
-      flex-direction: column;
-    }
-
-    /* DISCLAIMER */
-    .disclaimer {
-      font-size: 11px; 
-      color: #666;
-      margin-top: 20px; 
-      line-height: 1.4;
-      padding: 15px;
-      background: #f9f9f9 !important;
-      border: 1px solid #e0e0e0 !important;
-      border-radius: 4px;
-    }
-
-    /* NOTE PAGE */
-    .note-page {
-      page-break-before: always; 
-      padding: 80px 40px; 
-      text-align: center;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .note-content {
-      font-size: 18px; 
-      font-weight: 700; 
-      margin-top: 32px; 
-      line-height: 1.6; 
-      background-color: maroon !important; 
-      color: white !important; 
-      padding: 30px; 
-      border-radius: 8px;
-      max-width: 600px;
-    }
-
-    /* Force colors for PDF */
-    .force-color {
-      color: maroon !important;
-    }
-    
-    .force-border {
-      border-color: #444 !important;
-    }
-
-    /* Print optimizations */
-    @media print {
-      * {
-        -webkit-print-color-adjust: exact !important;
-        color-adjust: exact !important;
-      }
-      
-      .page {
-        page-break-inside: avoid;
-      }
-      
-      .section {
-        page-break-inside: avoid;
-      }
-    }
-
-    /* Grid layout for better organization */
-    .detail-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 15px;
-    }
-
-    .detail-grid .detail-row {
-      margin-bottom: 0;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= person.name || 'Profile' %> - Detailed Profile</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 0.2in 0.3in;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.4;
+            color: #333;
+            background: white;
+        }
+        
+        .profile-container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 15px;
+        }
+        
+        /* Header Section */
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 3px solid maroon;
+            padding-bottom: 15px;
+        }
+        
+        .company-name {
+            font-size: 28px;
+            font-weight: bold;
+            color: maroon;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+        
+        .company-details {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .profile-title {
+            font-size: 22px;
+            color: #2c3e50;
+            margin-top: 15px;
+            font-weight: 600;
+        }
+        
+        /* Main Content Layout */
+        .main-content {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 25px;
+            margin-bottom: 20px;
+        }
+        
+        /* Profile Picture Section */
+        .photo-section {
+            text-align: center;
+        }
+        
+        .profile-photo {
+            width: 200px;
+            height: 240px;
+            border: 3px solid maroon;
+            border-radius: 8px;
+            object-fit: cover;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .photo-placeholder {
+            width: 200px;
+            height: 240px;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        
+        .photo-caption {
+            font-size: 11px;
+            color: #777;
+            font-style: italic;
+        }
+        
+        /* Details Sections */
+        .details-container {
+            flex: 1;
+        }
+        
+        .section {
+            margin-bottom: 20px;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .section-header {
+            background: maroon;
+            color: white;
+            padding: 10px 15px;
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .section-content {
+            padding: 15px;
+        }
+        
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .detail-item {
+            display: flex;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+        
+        .detail-label {
+            font-weight: 600;
+            color: #2c3e50;
+            width: 140px;
+            flex-shrink: 0;
+            font-size: 12px;
+        }
+        
+        .detail-value {
+            color: #555;
+            flex: 1;
+            font-size: 12px;
+            word-wrap: break-word;
+        }
+        
+        /* Full Width Items */
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        
+        /* Siblings Section */
+        .siblings-list {
+            margin-top: 10px;
+        }
+        
+        .sibling-item {
+            background: #f8f9fa;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            border-left: 3px solid maroon;
+        }
+        
+        .sibling-name {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+        
+        .sibling-details {
+            font-size: 11px;
+            color: #666;
+        }
+        
+        /* Footer */
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            padding-top: 15px;
+            border-top: 2px solid #eee;
+            font-size: 11px;
+            color: #888;
+        }
+        
+        /* Status Indicators */
+        .status-positive {
+            color: #27ae60;
+            font-weight: 600;
+        }
+        
+        .status-negative {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+        
+        .status-neutral {
+            color: #f39c12;
+            font-weight: 600;
+        }
+        
+        /* Responsive adjustments for PDF */
+        @media print {
+            .profile-container {
+                padding: 10px;
+            }
+            
+            .main-content {
+                gap: 20px;
+            }
+            
+            .section {
+                break-inside: avoid;
+            }
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <div class="header-left">
-      <% if (logoUrl) { %>
-        <img src="<%= logoUrl %>" alt="Logo" class="logo" />
-      <% } %>
-      <div class="company-meta">
-        <strong class="force-color"><%= companyName %></strong><br/>
-        <span>📞 <%= PhoneNo %></span><br/>
-        <span>📧 <%= companyEmail %></span><br/>
-        <small>📍 <%= companyAddress %></small>
-      </div>
-    </div>
-    <div class="header-right">
-      Date: <span><%= new Date().toLocaleDateString('en-IN') %></span>
-    </div>
-  </header>
-
-  <div class="page">
-    <h1 class="title"><%= person.name || 'Profile' %> - Detailed Profile</h1>
-
-    <div class="profile-top">
-      <% if (person.profilePicture) { %>
-        <img src="<%= baseUrl %>/uploads/<%= person.profilePicture %>" alt="Profile Picture" class="profile-pic" />
-      <% } else { %>
-        <div class="photo-placeholder">
-          <div>📷</div>
-          <div>Profile Picture</div>
+    <div class="profile-container">
+        <!-- Header Section -->
+        <div class="header">
+            <div class="company-name"><%= companyName %></div>
+            <div class="company-details">📞 <%= PhoneNo %> | 📧 <%= companyEmail %></div>
+            <div class="company-details">📍 <%= companyAddress %></div>
+            <div class="profile-title">Detailed Matrimonial Profile</div>
         </div>
-      <% } %>
-      
-      <div class="personal-details">
-        <h2 style="color: maroon; margin-bottom: 15px;">Personal Information</h2>
-        <div class="detail-grid">
-          <div class="detail-row">
-            <div class="label">Name :</div>
-            <div class="value"><%= person.name %></div>
-          </div>
-          <div class="detail-row">
-            <div class="label">Gender :</div>
-            <div class="value"><%= person.gender %></div>
-          </div>
-          <div class="detail-row">
-            <div class="label">Marital Status :</div>
-            <div class="value"><%= person.maritalStatus %></div>
-          </div>
-          <div class="detail-row">
-            <div class="label">Date Of Birth :</div>
-            <div class="value"><%= person.dob ? new Date(person.dob).toLocaleDateString('en-IN') : '—' %></div>
-          </div>
-          <div class="detail-row">
-            <div class="label">Birth Place & Time :</div>
-            <div class="value"><%= person.birthPlaceTime %></div>
-          </div>
-          <div class="detail-row">
-            <div class="label">Native Place :</div>
-            <div class="value"><%= person.nativePlace %></div>
-          </div>
-          <div class="detail-row">
-            <div class="label">Gotra :</div>
-            <div class="value"><%= person.gotra %></div>
-          </div>
-          <div class="detail-row">
-            <div class="label">Religion :</div>
-            <div class="value"><%= person.religion %></div>
-          </div>
-          <div class="detail-row">
-            <div class="label">Phone Number :</div>
-            <div class="value"><%= person.phoneNumber %></div>
-          </div>
-          <div class="detail-row">
-            <div class="label">Height :</div>
-            <div class="value"><%= person.height %></div>
-          </div>
-          <div class="detail-row">
-            <div class="label">Complexion :</div>
-            <div class="value"><%= person.complexion %></div>
-          </div>
-          <div class="detail-row">
-            <div class="label">Horoscope :</div>
-            <div class="value"><%= person.horoscope === true ? 'Yes' : person.horoscope === false ? 'No' : person.horoscope %></div>
-          </div>
-          <div class="detail-row">
-            <div class="label">Eating Habits :</div>
-            <div class="value"><%= person.eatingHabits %></div>
-          </div>
-          <div class="detail-row">
-            <div class="label">Drinking Habits :</div>
-            <div class="value"><%= person.drinkingHabits %></div>
-          </div>
-          <div class="detail-row">
-            <div class="label">Smoking Habits :</div>
-            <div class="value"><%= person.smokingHabits %></div>
-          </div>
-          <div class="detail-row">
-            <div class="label">Physical Disability :</div>
-            <div class="value"><%= person.disability %></div>
-          </div>
-          <div class="detail-row">
-            <div class="label">NRI :</div>
-            <div class="value"><%= person.nri === true ? 'Yes' : person.nri === false ? 'No' : person.nri %></div>
-          </div>
-          <div class="detail-row">
-            <div class="label">Vehicle :</div>
-            <div class="value"><%= person.vehicle === true ? 'Yes' : person.vehicle === false ? 'No' : person.vehicle %></div>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Education Section -->
-    <div class="section">
-      <h2>Educational Qualifications</h2>
-      <div class="detail-grid">
-        <div class="detail-row">
-          <div class="label">Higher Qualification :</div>
-          <div class="value"><%= person.higherQualification %></div>
-        </div>
-        <div class="detail-row">
-          <div class="label">Graduation :</div>
-          <div class="value"><%= person.graduation %></div>
-        </div>
-        <div class="detail-row">
-          <div class="label">Schooling :</div>
-          <div class="value"><%= person.schooling %></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Profession & Income Section -->
-    <div class="section">
-      <h2>Profession & Income</h2>
-      <div class="detail-row">
-        <div class="label">Occupation :</div>
-        <div class="value"><%= person.occupation %></div>
-      </div>
-      <div class="detail-row">
-        <div class="label">Personal Income :</div>
-        <div class="value"><%= person.personalIncome %></div>
-      </div>
-      <div class="detail-row">
-        <div class="label">Family Income :</div>
-        <div class="value"><%= person.familyIncome %></div>
-      </div>
-      <div class="detail-row">
-        <div class="label">Residence :</div>
-        <div class="value"><%= person.residence %></div>
-      </div>
-      <div class="detail-row">
-        <div class="label">Other Property :</div>
-        <div class="value"><%= person.otherProperty %></div>
-      </div>
-    </div>
-
-    <!-- Family Details Section -->
-    <div class="section">
-      <h2>Family Details</h2>
-      <table class="family-table">
-        <thead>
-          <tr>
-            <td><strong>Father Details</strong></td>
-            <td></td>
-            <td><strong>Mother Details</strong></td>
-            <td></td>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>Name</strong></td>
-            <td><%= person.fatherName %></td>
-            <td><strong>Name</strong></td>
-            <td><%= person.motherName %></td>
-          </tr>
-          <tr>
-            <td><strong>Occupation</strong></td>
-            <td><%= person.fatherOccupation %></td>
-            <td><strong>Occupation</strong></td>
-            <td><%= person.motherOccupation %></td>
-          </tr>
-          <tr>
-            <td><strong>Office Detail</strong></td>
-            <td><%= person.fatherOffice %></td>
-            <td></td>
-            <td></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Siblings Section -->
-    <% if (person.siblings && person.siblings.length > 0) { %>
-    <div class="section">
-      <h2>Siblings & Family Members</h2>
-      <table class="siblings-table">
-        <thead>
-          <tr>
-            <td><strong>Name</strong></td>
-            <td><strong>Relation</strong></td>
-            <td><strong>Age</strong></td>
-            <td><strong>Profession</strong></td>
-            <td><strong>Marital Status</strong></td>
-          </tr>
-        </thead>
-        <tbody>
-          <% person.siblings.forEach(function(sibling) { %>
-          <tr>
-            <td><%= sibling.name || '—' %></td>
-            <td><%= sibling.relation || '—' %></td>
-            <td><%= sibling.age || '—' %></td>
-            <td><%= sibling.profession || '—' %></td>
-            <td><%= sibling.maritalStatus || '—' %></td>
-          </tr>
-          <% }); %>
-        </tbody>
-      </table>
-    </div>
-    <% } else { %>
-    <div class="section">
-      <h2>Siblings & Family Members</h2>
-      <p style="color: #666; font-style: italic;">No sibling information provided</p>
-    </div>
-    <% } %>
-
-    <!-- Photos Section -->
-    <div class="section">
-      <h2>Additional Photos</h2>
-      <% if (person.photos && person.photos.length > 0) { %>
-        <div class="photo-grid">
-          <% person.photos.forEach(function(photo, index) { %>
-            <% if (index > 0) { %> <!-- Skip first photo as it's already shown as profile picture -->
-              <img src="<%= baseUrl %>/uploads/<%= photo %>" alt="Photo <%= index + 1 %>" onerror="this.style.display='none'" />
-            <% } %>
-          <% }); %>
-          
-          <!-- Fill remaining slots with placeholders if less than 3 additional photos -->
-          <% 
-            let additionalPhotos = person.photos.length - 1; // Subtract profile picture
-            if (additionalPhotos < 0) additionalPhotos = 0;
-            for (let i = additionalPhotos; i < 3; i++) { 
-          %>
-            <div class="photo-placeholder">
-              <div>📷</div>
-              <div>Photo <%= i + 2 %></div>
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Photo Section -->
+            <div class="photo-section">
+                <% if (person.profilePicture) { %>
+                    <img src="<%= baseUrl %><%= person.profilePicture %>" alt="<%= person.name %>'s Photo" class="profile-photo">
+                <% } else { %>
+                    <div class="photo-placeholder">
+                        📷<br>Photo Not Available
+                    </div>
+                <% } %>
+                <div class="photo-caption">Profile Picture</div>
             </div>
-          <% } %>
+
+            <!-- Details Container -->
+            <div class="details-container">
+                <!-- Personal Information -->
+                <div class="section">
+                    <div class="section-header">Personal Information</div>
+                    <div class="section-content">
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <div class="detail-label">Full Name:</div>
+                                <div class="detail-value"><%= person.name %></div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Gender:</div>
+                                <div class="detail-value"><%= person.gender %></div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Date of Birth:</div>
+                                <div class="detail-value"><%= person.dob %></div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Marital Status:</div>
+                                <div class="detail-value"><%= person.maritalStatus %></div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Height:</div>
+                                <div class="detail-value"><%= person.height %></div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Complexion:</div>
+                                <div class="detail-value"><%= person.complexion %></div>
+                            </div>
+                            <div class="detail-item full-width">
+                                <div class="detail-label">Birth Place & Time:</div>
+                                <div class="detail-value"><%= person.birthPlaceTime %></div>
+                            </div>
+                            <div class="detail-item full-width">
+                                <div class="detail-label">Native Place:</div>
+                                <div class="detail-value"><%= person.nativePlace %></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Religious & Cultural Details -->
+                <div class="section">
+                    <div class="section-header">Religious & Cultural Details</div>
+                    <div class="section-content">
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <div class="detail-label">Religion:</div>
+                                <div class="detail-value"><%= person.religion %></div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Gotra:</div>
+                                <div class="detail-value"><%= person.gotra %></div>
+                            </div>
+                            <div class="detail-item full-width">
+                                <div class="detail-label">Horoscope:</div>
+                                <div class="detail-value"><%= person.horoscope %></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-      <% } else { %>
-        <div class="photo-grid">
-          <div class="photo-placeholder">
-            <div>📷</div>
-            <div>Photo 1</div>
-          </div>
-          <div class="photo-placeholder">
-            <div>📷</div>
-            <div>Photo 2</div>
-          </div>
-          <div class="photo-placeholder">
-            <div>📷</div>
-            <div>Photo 3</div>
-          </div>
+
+        <!-- Contact Information -->
+        <div class="section">
+            <div class="section-header">Contact Information</div>
+            <div class="section-content">
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">Phone Number:</div>
+                        <div class="detail-value"><%= person.phoneNumber %></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">NRI Status:</div>
+                        <div class="detail-value">
+                            <% if (person.nri) { %>
+                                <span class="status-positive">Yes</span>
+                            <% } else { %>
+                                <span class="status-negative">No</span>
+                            <% } %>
+                        </div>
+                    </div>
+                    <div class="detail-item full-width">
+                        <div class="detail-label">Current Residence:</div>
+                        <div class="detail-value"><%= person.residence %></div>
+                    </div>
+                </div>
+            </div>
         </div>
-      <% } %>
-    </div>
 
-    <div class="disclaimer">
-      <strong>Disclaimer:</strong> The above particulars have been provided to the best of our knowledge, 
-      as per information provided by the concerned party. We (<%= companyName %>) shall not be responsible for 
-      misrepresentation of any or all of the information herein.
-    </div>
-  </div>
+        <!-- Educational Background -->
+        <div class="section">
+            <div class="section-header">Educational Background</div>
+            <div class="section-content">
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">Higher Qualification:</div>
+                        <div class="detail-value"><%= person.higherQualification %></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Graduation:</div>
+                        <div class="detail-value"><%= person.graduation %></div>
+                    </div>
+                    <div class="detail-item full-width">
+                        <div class="detail-label">Schooling:</div>
+                        <div class="detail-value"><%= person.schooling %></div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-  <!-- Note Page -->
-  <div class="note-page">
-    <div class="note-content">
-      NOTE: The above particulars have been provided to the best of our knowledge, as per
-      information provided by the concerned party.<br/><br/>
-      We (<%= companyName %>) shall not be responsible for misrepresentation of any or all of
-      the information herein. Amount will not be refunded in any case.<br/><br/>
-      All clients have to pay full maturity amount on ROKA CEREMONY.<br/><br/>
-      Contact: <%= PhoneNo %> | <%= companyEmail %>
-    </div>
-  </div>
+        <!-- Professional & Financial Details -->
+        <div class="section">
+            <div class="section-header">Professional & Financial Details</div>
+            <div class="section-content">
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">Occupation:</div>
+                        <div class="detail-value"><%= person.occupation %></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Personal Income:</div>
+                        <div class="detail-value"><%= person.personalIncome %></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Family Income:</div>
+                        <div class="detail-value"><%= person.familyIncome %></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Vehicle:</div>
+                        <div class="detail-value"><%= person.vehicle %></div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-  <footer>
-    <div style="display:flex;justify-content:space-between;align-items:center;">
-      <div>
-        <strong class="force-color"><%= companyName %></strong><br/>
-        <small><%= PhoneNo %> | <%= companyAddress %></small>
-      </div>
-      <div style="text-align:right;">
-        <small>By Mamta Aggarwal, <%= PhoneNo %>, 9211729184, 9211729185, 9211729186</small><br/>
-        <small><%= companyEmail %></small>
-      </div>
+        <!-- Family Background -->
+        <div class="section">
+            <div class="section-header">Family Background</div>
+            <div class="section-content">
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">Father's Name:</div>
+                        <div class="detail-value"><%= person.fatherName %></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Father's Occupation:</div>
+                        <div class="detail-value"><%= person.fatherOccupation %></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Mother's Name:</div>
+                        <div class="detail-value"><%= person.motherName %></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Mother's Occupation:</div>
+                        <div class="detail-value"><%= person.motherOccupation %></div>
+                    </div>
+                    <div class="detail-item full-width">
+                        <div class="detail-label">Father's Office:</div>
+                        <div class="detail-value"><%= person.fatherOffice %></div>
+                    </div>
+                    <div class="detail-item full-width">
+                        <div class="detail-label">Other Property:</div>
+                        <div class="detail-value"><%= person.otherProperty %></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lifestyle & Preferences -->
+        <div class="section">
+            <div class="section-header">Lifestyle & Preferences</div>
+            <div class="section-content">
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">Eating Habits:</div>
+                        <div class="detail-value">
+                            <% if (person.eatingHabits && person.eatingHabits.toLowerCase().includes('veg')) { %>
+                                <span class="status-positive"><%= person.eatingHabits %></span>
+                            <% } else { %>
+                                <%= person.eatingHabits %>
+                            <% } %>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Drinking Habits:</div>
+                        <div class="detail-value">
+                            <% if (person.drinkingHabits && person.drinkingHabits.toLowerCase().includes('no')) { %>
+                                <span class="status-positive"><%= person.drinkingHabits %></span>
+                            <% } else { %>
+                                <%= person.drinkingHabits %>
+                            <% } %>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Smoking Habits:</div>
+                        <div class="detail-value">
+                            <% if (person.smokingHabits && person.smokingHabits.toLowerCase().includes('no')) { %>
+                                <span class="status-positive"><%= person.smokingHabits %></span>
+                            <% } else { %>
+                                <%= person.smokingHabits %>
+                            <% } %>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Disability:</div>
+                        <div class="detail-value">
+                            <% if (person.disability && person.disability.toLowerCase().includes('no')) { %>
+                                <span class="status-positive"><%= person.disability %></span>
+                            <% } else { %>
+                                <%= person.disability %>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Siblings Information -->
+        <% if (person.siblings && person.siblings.length > 0) { %>
+        <div class="section">
+            <div class="section-header">Siblings Information</div>
+            <div class="section-content">
+                <div class="siblings-list">
+                    <% person.siblings.forEach((sibling, index) => { %>
+                        <div class="sibling-item">
+                            <div class="sibling-name">
+                                <%= index + 1 %>. <%= sibling.name || 'Name not provided' %>
+                            </div>
+                            <div class="sibling-details">
+                                <% if (sibling.age) { %>Age: <%= sibling.age %> | <% } %>
+                                <% if (sibling.occupation) { %>Occupation: <%= sibling.occupation %> | <% } %>
+                                <% if (sibling.maritalStatus) { %>Status: <%= sibling.maritalStatus %><% } %>
+                            </div>
+                        </div>
+                    <% }); %>
+                </div>
+            </div>
+        </div>
+        <% } %>
+
+        <!-- Additional Photos -->
+        <% if (person.photos && person.photos.length > 1) { %>
+        <div class="section">
+            <div class="section-header">Additional Photos</div>
+            <div class="section-content">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; text-align: center;">
+                    <% person.photos.slice(1, 4).forEach((photo, index) => { %>
+                        <div>
+                            <img src="<%= baseUrl %><%= photo %>" alt="Photo <%= index + 2 %>" 
+                                 style="width: 120px; height: 140px; object-fit: cover; border: 2px solid #ddd; border-radius: 4px;">
+                            <div style="font-size: 10px; color: #777; margin-top: 5px;">Photo <%= index + 2 %></div>
+                        </div>
+                    <% }); %>
+                </div>
+            </div>
+        </div>
+        <% } %>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div style="margin-bottom: 8px;">
+                <strong><%= companyName %></strong> - Your Trusted Matrimonial Partner
+            </div>
+            <div>
+                Generated on <%= currentDate %> | Contact: <%= PhoneNo %> | Email: <%= companyEmail %>
+            </div>
+            <div style="margin-top: 8px; font-size: 10px;">
+                This profile is confidential and intended for matrimonial purposes only.
+            </div>
+        </div>
     </div>
-  </footer>
 </body>
 </html>
