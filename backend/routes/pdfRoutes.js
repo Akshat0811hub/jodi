@@ -1,4 +1,4 @@
-// routes/pdfRoutes.js - FIXED VERSION with Working Images
+// routes/pdfRoutes.js - ENHANCED VERSION with Photos at End & Better Styling
 const express = require("express");
 const PDFDocument = require('pdfkit');
 const Person = require("../models/personModel");
@@ -7,7 +7,23 @@ const fs = require("fs");
 
 const router = express.Router();
 
-console.log("📄 Loading FIXED PDFKit PDF routes...");
+console.log("📄 Loading ENHANCED PDFKit PDF routes with photos at end...");
+
+// Color scheme for better styling
+const colors = {
+  primary: '#2C3E50',      // Dark blue-gray
+  secondary: '#34495E',     // Lighter blue-gray
+  accent: '#3498DB',        // Blue
+  success: '#27AE60',       // Green
+  warning: '#F39C12',       // Orange
+  danger: '#E74C3C',        // Red
+  light: '#ECF0F1',         // Light gray
+  dark: '#2C3E50',          // Dark
+  white: '#FFFFFF',
+  text: '#2C3E50',
+  label: '#5D6D7E',
+  value: '#34495E'
+};
 
 // Helper function to format date
 const formatDate = (dateString) => {
@@ -21,342 +37,333 @@ const formatDate = (dateString) => {
   });
 };
 
-// ✅ Helper function to add field to PDF with proper spacing
-const addField = (doc, label, value, options = {}) => {
-  const { fontSize = 11, indent = 0, bold = false } = options;
-  
-  doc.fontSize(fontSize);
-  
-  if (bold) {
-    doc.font('Helvetica-Bold');
-  } else {
-    doc.font('Helvetica');
-  }
+// ✨ ENHANCED: Helper function to add styled field
+const addStyledField = (doc, label, value, options = {}) => {
+  const { fontSize = 11, indent = 0, labelColor = colors.label, valueColor = colors.value } = options;
   
   const x = 50 + indent;
-  const labelWidth = 120;
+  const labelWidth = 140;
   
-  // Add label
-  doc.text(label + ':', x, doc.y, { width: labelWidth, continued: true });
+  // Add label with styling
+  doc.fontSize(fontSize + 1)
+     .font('Helvetica-Bold')
+     .fillColor(labelColor)
+     .text(label + ':', x, doc.y, { width: labelWidth, continued: true });
   
-  // Add value
-  doc.font('Helvetica').text(' ' + (value || '—'), { width: 400 - labelWidth });
-  doc.moveDown(0.3);
+  // Add value with styling
+  doc.fontSize(fontSize)
+     .font('Helvetica')
+     .fillColor(valueColor)
+     .text(' ' + (value || '—'), { width: 400 - labelWidth });
+  
+  doc.moveDown(0.4);
 };
 
-// 🔧 FIXED: Helper function to add profile photo with correct path handling
-const addProfilePhoto = async (doc, photoPath) => {
+// ✨ ENHANCED: Beautiful section header with gradient-like effect
+const addStyledSectionHeader = (doc, title) => {
+  doc.moveDown(1);
+  
+  // Create main header rectangle with rounded corners effect
+  const headerY = doc.y;
+  
+  // Background rectangle
+  doc.rect(40, headerY, 520, 30)
+     .fill(colors.primary);
+  
+  // Add subtle border effect
+  doc.rect(40, headerY, 520, 2)
+     .fill(colors.accent);
+  
+  // Add icon-like decoration
+  doc.circle(55, headerY + 15, 8)
+     .fill(colors.accent);
+  
+  // Add title text
+  doc.fontSize(16)
+     .font('Helvetica-Bold')
+     .fillColor(colors.white)
+     .text(title, 75, headerY + 8);
+  
+  // Reset and move down
+  doc.fillColor(colors.text).moveDown(1.2);
+};
+
+// ✨ ENHANCED: Add all photos at the end with styling
+const addPhotosSection = async (doc, person) => {
   try {
-    if (!photoPath) {
-      console.log("📸 No photo path provided");
-      return false;
+    // Collect all available photos
+    const allPhotos = [];
+    
+    if (person.profilePicture) {
+      allPhotos.push(person.profilePicture);
     }
     
-    console.log("📸 Original photo path:", photoPath);
-    
-    // 🔧 FIX 1: Handle different path formats
-    let fullPath;
-    
-    if (photoPath.startsWith('http://') || photoPath.startsWith('https://')) {
-      // Handle URL paths (if you're storing URLs)
-      console.log("📸 Photo is a URL, cannot display in PDF");
-      return false;
-    } else if (photoPath.startsWith('/uploads/')) {
-      // Handle absolute path from root
-      fullPath = path.join(__dirname, '..', photoPath.substring(1));
-    } else if (photoPath.startsWith('uploads/')) {
-      // Handle relative path without leading slash
-      fullPath = path.join(__dirname, '..', photoPath);
-    } else if (photoPath.includes('uploads')) {
-      // Handle any path containing uploads
-      const uploadsIndex = photoPath.indexOf('uploads');
-      const relativePath = photoPath.substring(uploadsIndex);
-      fullPath = path.join(__dirname, '..', relativePath);
-    } else {
-      // Assume it's in uploads directory
-      fullPath = path.join(__dirname, '..', 'uploads', photoPath);
+    if (person.photos && Array.isArray(person.photos)) {
+      allPhotos.push(...person.photos);
     }
     
-    console.log("📸 Resolved full path:", fullPath);
+    // Remove duplicates and limit to 3
+    const uniquePhotos = [...new Set(allPhotos)].slice(0, 3);
     
-    // 🔧 FIX 2: Check if file exists and is accessible
-    if (!fs.existsSync(fullPath)) {
-      console.log("❌ Photo file not found at:", fullPath);
+    if (uniquePhotos.length === 0) {
+      console.log("📸 No photos available for photos section");
+      return;
+    }
+    
+    console.log(`📸 Adding ${uniquePhotos.length} photos to end of PDF`);
+    
+    // Add new page for photos
+    doc.addPage();
+    
+    // Photos section header
+    addStyledSectionHeader(doc, '📸 PHOTOGRAPHS');
+    
+    // Calculate layout for photos
+    const pageWidth = doc.page.width - 100; // 50 margin on each side
+    const photoWidth = Math.min(150, (pageWidth - 40) / 3); // Max 150px or fit 3 in a row
+    const photoHeight = photoWidth * 1.2; // Slightly taller than wide
+    
+    let currentX = 50;
+    let currentY = doc.y + 20;
+    let photosInCurrentRow = 0;
+    
+    for (let i = 0; i < uniquePhotos.length; i++) {
+      const photoPath = uniquePhotos[i];
       
-      // 🔧 FIX 3: Try alternative paths
-      const alternatives = [
-        path.join(__dirname, '..', 'uploads', path.basename(photoPath)),
-        path.join(__dirname, 'uploads', path.basename(photoPath)),
-        path.join(process.cwd(), 'uploads', path.basename(photoPath)),
-        path.join(process.cwd(), photoPath)
-      ];
-      
-      for (const altPath of alternatives) {
-        console.log("🔍 Trying alternative path:", altPath);
-        if (fs.existsSync(altPath)) {
-          fullPath = altPath;
-          console.log("✅ Found image at alternative path:", fullPath);
-          break;
-        }
+      // Check if we need a new row (max 2 photos per row for better visibility)
+      if (photosInCurrentRow >= 2) {
+        currentY += photoHeight + 60;
+        currentX = 50;
+        photosInCurrentRow = 0;
       }
       
-      if (!fs.existsSync(fullPath)) {
-        console.log("❌ Image not found in any location");
-        return false;
+      // Try to add the photo
+      const photoAdded = await addSinglePhoto(doc, photoPath, currentX, currentY, photoWidth, photoHeight, i + 1);
+      
+      if (photoAdded) {
+        currentX += photoWidth + 60; // Space between photos
+        photosInCurrentRow++;
+      } else {
+        // Add placeholder if photo fails
+        addPhotoPlaceholder(doc, currentX, currentY, photoWidth, photoHeight, i + 1);
+        currentX += photoWidth + 60;
+        photosInCurrentRow++;
       }
     }
     
-    // 🔧 FIX 4: Check file size and type
-    const stats = fs.statSync(fullPath);
-    console.log("📊 File stats:", {
-      size: `${(stats.size / 1024).toFixed(2)}KB`,
-      isFile: stats.isFile()
-    });
-    
-    if (!stats.isFile()) {
-      console.log("❌ Path is not a file");
-      return false;
-    }
-    
-    // 🔧 FIX 5: Validate image file type
-    const validExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
-    const ext = path.extname(fullPath).toLowerCase();
-    
-    if (!validExtensions.includes(ext)) {
-      console.log("❌ Invalid image file type:", ext);
-      return false;
-    }
-    
-    // 🔧 FIX 6: Add image with error handling
-    try {
-      doc.image(fullPath, 400, 100, { 
-        width: 120, 
-        height: 140,
-        align: 'center'
-      });
-      console.log("✅ Photo added successfully from:", fullPath);
-      return true;
-    } catch (imageError) {
-      console.error("❌ Error adding image to PDF:", imageError.message);
-      return false;
-    }
+    return true;
     
   } catch (error) {
-    console.error("❌ Error in addProfilePhoto:", error.message);
-    console.error("❌ Stack trace:", error.stack);
+    console.error("❌ Error in addPhotosSection:", error);
     return false;
   }
 };
 
-// 🔧 NEW: Helper function to get best available photo
-const getBestPhoto = (person) => {
-  // Priority order: profilePicture -> first photo in photos array
-  if (person.profilePicture) {
-    console.log("📸 Using profilePicture:", person.profilePicture);
-    return person.profilePicture;
+// ✨ Helper function to add single photo with styling
+const addSinglePhoto = async (doc, photoPath, x, y, width, height, photoNumber) => {
+  try {
+    if (!photoPath) return false;
+    
+    console.log(`📸 Processing photo ${photoNumber}:`, photoPath);
+    
+    // Resolve photo path
+    let fullPath = resolvePhotoPath(photoPath);
+    
+    if (!fullPath || !fs.existsSync(fullPath)) {
+      console.log(`❌ Photo ${photoNumber} not found:`, fullPath);
+      return false;
+    }
+    
+    // Validate image
+    const validExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
+    const ext = path.extname(fullPath).toLowerCase();
+    
+    if (!validExtensions.includes(ext)) {
+      console.log(`❌ Invalid image type for photo ${photoNumber}:`, ext);
+      return false;
+    }
+    
+    // Add decorative frame
+    doc.rect(x - 5, y - 5, width + 10, height + 35)
+       .fill(colors.light)
+       .stroke(colors.primary);
+    
+    // Add photo
+    doc.image(fullPath, x, y, { 
+      width: width, 
+      height: height,
+      align: 'center'
+    });
+    
+    // Add photo label
+    doc.fontSize(10)
+       .font('Helvetica-Bold')
+       .fillColor(colors.primary)
+       .text(`Photo ${photoNumber}`, x, y + height + 10, { width: width, align: 'center' });
+    
+    console.log(`✅ Photo ${photoNumber} added successfully`);
+    return true;
+    
+  } catch (error) {
+    console.error(`❌ Error adding photo ${photoNumber}:`, error);
+    return false;
+  }
+};
+
+// ✨ Helper function to add photo placeholder
+const addPhotoPlaceholder = (doc, x, y, width, height, photoNumber) => {
+  // Add frame
+  doc.rect(x - 5, y - 5, width + 10, height + 35)
+     .fill('#F8F9FA')
+     .stroke(colors.primary);
+  
+  // Add placeholder content
+  doc.rect(x, y, width, height)
+     .fill('#E9ECEF')
+     .stroke('#DEE2E6');
+  
+  // Add icon/text
+  doc.fontSize(12)
+     .font('Helvetica')
+     .fillColor('#6C757D')
+     .text('📷', x + width/2 - 10, y + height/2 - 20, { align: 'center' });
+  
+  doc.fontSize(9)
+     .text('Photo Not Available', x, y + height/2, { width: width, align: 'center' });
+  
+  // Add label
+  doc.fontSize(10)
+     .font('Helvetica-Bold')
+     .fillColor(colors.primary)
+     .text(`Photo ${photoNumber}`, x, y + height + 10, { width: width, align: 'center' });
+};
+
+// ✨ Helper function to resolve photo path
+const resolvePhotoPath = (photoPath) => {
+  if (!photoPath) return null;
+  
+  const alternatives = [
+    path.join(__dirname, '..', 'uploads', path.basename(photoPath)),
+    path.join(__dirname, '..', photoPath.startsWith('/') ? photoPath.substring(1) : photoPath),
+    path.join(process.cwd(), 'uploads', path.basename(photoPath)),
+    path.join(__dirname, 'uploads', path.basename(photoPath))
+  ];
+  
+  for (const altPath of alternatives) {
+    if (fs.existsSync(altPath)) {
+      return altPath;
+    }
   }
   
-  if (person.photos && Array.isArray(person.photos) && person.photos.length > 0) {
-    console.log("📸 Using first photo from photos array:", person.photos[0]);
-    return person.photos[0];
-  }
-  
-  console.log("📸 No photos available for person");
   return null;
 };
 
-// ✅ Helper function to add section header with maroon background
-const addSectionHeader = (doc, title) => {
-  doc.moveDown(0.5);
-  
-  // Create maroon background rectangle
-  doc.rect(50, doc.y, 500, 25)
-     .fill('#8B1538'); // Maroon color matching your screenshot
-  
-  // Add white text on maroon background
-  doc.fontSize(14)
-     .font('Helvetica-Bold')
-     .fillColor('white')
-     .text(title, 60, doc.y - 20);
-  
-  // Reset color and move down
-  doc.fillColor('#000000').moveDown(0.8);
-};
-
-// ✅ Helper function to add the important note with matching style
-const addImportantNote = (doc) => {
+// ✨ ENHANCED: Add beautiful important note
+const addEnhancedImportantNote = (doc) => {
   const noteText = "NOTE: The above particulars have been provided to the best of our knowledge, as per information provided by the concerned party. We (Jodi No1) shall not be responsible for misrepresentation of any or all of the information herein. Amount will not be refunded in any case. All clients have to pay full maturity amount on ROKA CEREMONY.";
   
-  // Add some space before the note
   doc.moveDown(2);
   
-  // Check if we need a new page for the note
+  // Check if we need a new page
   if (doc.y > doc.page.height - 150) {
     doc.addPage();
   }
   
-  // Create maroon header for the note
-  doc.rect(50, doc.y, 500, 25)
-     .fill('#8B1538'); // Same maroon color as other headers
+  // Create styled header
+  doc.rect(40, doc.y, 520, 35)
+     .fill(colors.warning);
   
-  // Add "IMPORTANT NOTE" header text in white
-  doc.fontSize(12)
+  // Add warning icon and text
+  doc.fontSize(14)
      .font('Helvetica-Bold')
-     .fillColor('white')
-     .text('IMPORTANT NOTE', 60, doc.y - 18);
+     .fillColor(colors.white)
+     .text('⚠️ IMPORTANT NOTICE', 55, doc.y - 25);
   
-  // Move down and create light gray background for note content
-  doc.moveDown(0.5);
-  const noteHeight = 80; // Adjust based on text length
+  doc.moveDown(0.8);
   
-  doc.rect(50, doc.y, 500, noteHeight)
-     .fill('#F8F8F8') // Light gray background
-     .stroke('#8B1538'); // Maroon border
+  // Create content box
+  const noteHeight = 90;
+  doc.rect(40, doc.y, 520, noteHeight)
+     .fill('#FFF3CD')
+     .stroke(colors.warning);
   
-  // Add the note text in black
-  doc.fontSize(9)
-     .fillColor('black')
+  // Add note content
+  doc.fontSize(10)
+     .fillColor('#856404')
      .font('Helvetica')
-     .text(noteText, 60, doc.y - noteHeight + 10, {
-       width: 480,
+     .text(noteText, 55, doc.y - noteHeight + 15, {
+       width: 490,
        align: 'justify',
-       lineGap: 1
+       lineGap: 2
      });
 };
 
-// 🔧 ENHANCED: Debug route to check photo paths
-router.get("/debug/person/:id/photos", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const person = await Person.findById(id);
-    
-    if (!person) {
-      return res.status(404).json({ message: "Person not found" });
-    }
+// ✨ ENHANCED: Header with better styling
+const addStyledHeader = (doc, person) => {
+  // Company header background
+  doc.rect(0, 0, doc.page.width, 80)
+     .fill(colors.primary);
+  
+  // Company name
+  doc.fontSize(28)
+     .font('Helvetica-Bold')
+     .fillColor(colors.white)
+     .text('JODI NO 1', 50, 25);
+  
+  // Contact info
+  doc.fontSize(11)
+     .font('Helvetica')
+     .fillColor(colors.light)
+     .text('📞 9871080409 | ✉️ jodino1@gmail.com', 50, 55)
+     .text('📍 G-25, Vardhman Premium Mall, Opp.Kali Mata Mandir, Gurugram, Haryana', 50, 70);
+  
+  doc.moveDown(3);
+  
+  // Person name with styled background
+  doc.rect(40, doc.y, 520, 40)
+     .fill(colors.accent);
+  
+  doc.fontSize(22)
+     .font('Helvetica-Bold')
+     .fillColor(colors.white)
+     .text(person.name || 'N/A', 50, doc.y - 28, { align: 'center' });
+  
+  doc.moveDown(2);
+  doc.fillColor(colors.text);
+};
 
-    const photoInfo = {
-      personName: person.name,
-      profilePicture: person.profilePicture,
-      photos: person.photos,
-      uploadsDir: path.join(__dirname, '..', 'uploads'),
-      checkedPaths: []
-    };
-
-    // Check all possible photo paths
-    const allPhotos = [person.profilePicture, ...(person.photos || [])].filter(Boolean);
-    
-    for (const photoPath of allPhotos) {
-      const alternatives = [
-        path.join(__dirname, '..', 'uploads', path.basename(photoPath)),
-        path.join(__dirname, '..', photoPath.startsWith('/') ? photoPath.substring(1) : photoPath),
-        path.join(process.cwd(), 'uploads', path.basename(photoPath))
-      ];
-      
-      for (const altPath of alternatives) {
-        const exists = fs.existsSync(altPath);
-        photoInfo.checkedPaths.push({
-          original: photoPath,
-          checked: altPath,
-          exists: exists,
-          isFile: exists ? fs.statSync(altPath).isFile() : false
-        });
-      }
-    }
-
-    res.json(photoInfo);
-    
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// 🔧 FIXED VERSION: Simple test endpoint that won't crash
-router.get("/test-pdf", (req, res) => {
-  try {
-    console.log("🧪 Starting PDFKit test...");
-    
-    // Create a minimal PDF document
-    const doc = new PDFDocument({ 
-      margin: 50,
-      size: 'A4',
-      autoFirstPage: true,
-      bufferPages: false // Prevent memory issues
-    });
-    
-    // Set headers before piping
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'inline; filename="test.pdf"');
-    res.setHeader('Cache-Control', 'no-cache');
-    
-    // Pipe to response
-    doc.pipe(res);
-    
-    // Add minimal content
-    doc.fontSize(20).text('PDFKit Test - Success!', 100, 100);
-    doc.fontSize(12).text('If you can see this PDF, PDFKit is working correctly.', 100, 140);
-    doc.text('This means your PDF generation should work.', 100, 160);
-    doc.text(`Generated at: ${new Date().toISOString()}`, 100, 180);
-    
-    // End document immediately
-    doc.end();
-    
-    console.log("✅ PDFKit test completed successfully");
-    
-  } catch (error) {
-    console.error("❌ PDFKit test failed:", error);
-    if (!res.headersSent) {
-      res.status(500).json({ 
-        message: "PDFKit test failed", 
-        error: error.message,
-        stack: error.stack 
-      });
-    }
-  }
-});
-
-// 🔧 MAIN FIX: Person PDF route with improved image handling
+// ✨ MAIN ENHANCED PDF ROUTE
 router.get("/person/:id/pdf", async (req, res) => {
   let doc = null;
   
   try {
     const { id } = req.params;
-    console.log(`📄 Starting PDF generation for person ${id}`);
+    console.log(`📄 Starting ENHANCED PDF generation for person ${id}`);
     
-    // Step 1: Validate ID format
+    // Validate and find person
     if (!id || id.length !== 24) {
-      console.log("❌ Invalid ID format:", id);
       return res.status(400).json({ message: "Invalid person ID format" });
     }
     
-    // Step 2: Find the person with timeout
-    console.log("🔍 Searching for person in database...");
     const person = await Person.findById(id).lean().exec();
     
     if (!person) {
-      console.log("❌ Person not found in database:", id);
       return res.status(404).json({ message: "Person not found" });
     }
     
     console.log("✅ Person found:", person.name || 'Unnamed');
-    console.log("📸 Person photo data:", {
-      profilePicture: person.profilePicture,
-      photos: person.photos,
-      photosLength: person.photos ? person.photos.length : 0
-    });
 
-    // Step 3: Set response headers BEFORE creating PDF
+    // Set response headers
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 
       `attachment; filename="${(person.name || 'profile').replace(/[^a-zA-Z0-9]/g, '_')}_profile.pdf"`
     );
-    res.setHeader('Cache-Control', 'no-cache');
 
-    // Step 4: Create PDF document with memory optimization
+    // Create PDF with enhanced settings
     doc = new PDFDocument({ 
       margin: 50,
       size: 'A4',
-      autoFirstPage: true,
-      bufferPages: false, // Critical: Don't buffer pages in memory
+      bufferPages: false,
       info: {
         Title: `${person.name || 'Profile'} - JODI NO 1`,
         Author: 'JODI NO 1',
@@ -364,346 +371,135 @@ router.get("/person/:id/pdf", async (req, res) => {
       }
     });
 
-    // Step 5: Pipe to response immediately
     doc.pipe(res);
 
-    // Step 6: Add content efficiently
-    // Header
-    doc.fontSize(24)
-       .font('Helvetica-Bold')
-       .fillColor('#8B0000')
-       .text('JODI NO 1', 50, 50, { align: 'center' });
+    // Add styled header
+    addStyledHeader(doc, person);
 
-    doc.fontSize(12)
-       .fillColor('#000000')
-       .font('Helvetica')
-       .text(' 9871080409 | jodino1@gmail.com', { align: 'left' })
-       .text(' Gurugram, Haryana, India', { align: 'left' })
-       .text(' G-25, Vardhman Premium Mall, Opp.Kali Mata Mandir', { align: 'left' });
+    // Personal Details Section
+    addStyledSectionHeader(doc, '👤 PERSONAL DETAILS');
+    addStyledField(doc, 'Full Name', person.name);
+    addStyledField(doc, 'Gender', person.gender);
+    addStyledField(doc, 'Marital Status', person.maritalStatus);
+    addStyledField(doc, 'Date of Birth', formatDate(person.dob));
+    addStyledField(doc, 'Birth Place & Time', person.birthPlaceTime);
+    addStyledField(doc, 'Native Place', person.nativePlace);
+    addStyledField(doc, 'Gotra', person.gotra);
+    addStyledField(doc, 'Religion', person.religion);
+    addStyledField(doc, 'Height', person.height);
+    addStyledField(doc, 'Complexion', person.complexion);
 
-    doc.moveDown(1);
+    // Lifestyle Section
+    addStyledSectionHeader(doc, '🏃 LIFESTYLE & HABITS');
+    addStyledField(doc, 'Eating Habits', person.eatingHabits);
+    addStyledField(doc, 'Drinking Habits', person.drinkingHabits);
+    addStyledField(doc, 'Smoking Habits', person.smokingHabits);
+    addStyledField(doc, 'Any Disability', person.disability);
+    addStyledField(doc, 'NRI Status', person.nri ? 'Yes' : 'No');
+    addStyledField(doc, 'Vehicle Owned', person.vehicle);
+    addStyledField(doc, 'Horoscope Available', person.horoscope);
 
-    // Person name
-    doc.fontSize(20)
-       .font('Helvetica-Bold')
-       .fillColor('#8B0000')
-       .text(person.name || 'N/A', { align: 'center' });
+    // Family Details Section
+    addStyledSectionHeader(doc, '👨‍👩‍👧‍👦 FAMILY DETAILS');
+    addStyledField(doc, 'Father\'s Name', person.fatherName);
+    addStyledField(doc, 'Father\'s Occupation', person.fatherOccupation);
+    addStyledField(doc, 'Father\'s Office Details', person.fatherOffice);
+    addStyledField(doc, 'Mother\'s Name', person.motherName);
+    addStyledField(doc, 'Mother\'s Occupation', person.motherOccupation);
+    addStyledField(doc, 'Residence Type', person.residence);
+    addStyledField(doc, 'Other Properties', person.otherProperty);
 
-    doc.moveDown(1.5);
+    // Education Section
+    addStyledSectionHeader(doc, '🎓 EDUCATIONAL QUALIFICATIONS');
+    addStyledField(doc, 'Highest Qualification', person.higherQualification);
+    addStyledField(doc, 'Graduation Details', person.graduation);
+    addStyledField(doc, 'School Education', person.schooling);
 
-    // 🔧 FIXED: Add profile photo with better path resolution
-    const bestPhoto = getBestPhoto(person);
-    if (bestPhoto) {
-      console.log("📸 Attempting to add photo:", bestPhoto);
-      const photoAdded = await addProfilePhoto(doc, bestPhoto);
-      if (photoAdded) {
-        doc.moveDown(1);
-      } else {
-        console.log("⚠️ Could not add photo, continuing without it");
-        // Add placeholder text where photo would be
-        doc.fontSize(10)
-           .fillColor('#666666')
-           .text('[Photo not available]', 400, 100, { width: 120, align: 'center' });
-        doc.fillColor('#000000');
-      }
-    } else {
-      console.log("📸 No photos available for this person");
-    }
+    // Professional Section
+    addStyledSectionHeader(doc, '💼 PROFESSION & INCOME');
+    addStyledField(doc, 'Current Occupation', person.occupation);
+    addStyledField(doc, 'Personal Income', person.personalIncome);
+    addStyledField(doc, 'Family Income', person.familyIncome);
 
-    // Personal details (REMOVED phone number from display but kept in data)
-    addSectionHeader(doc, 'PERSONAL DETAILS');
-    addField(doc, 'Name', person.name);
-    addField(doc, 'Gender', person.gender);
-    addField(doc, 'Marital Status', person.maritalStatus);
-    addField(doc, 'Date of Birth', formatDate(person.dob));
-    addField(doc, 'Birth Place & Time', person.birthPlaceTime);
-    addField(doc, 'Native Place', person.nativePlace);
-    addField(doc, 'Gotra', person.gotra);
-    addField(doc, 'Religion', person.religion);
-    addField(doc, 'Height', person.height);
-    addField(doc, 'Complexion', person.complexion);
+    // Contact Information Section
+    addStyledSectionHeader(doc, '📞 CONTACT INFORMATION');
+    addStyledField(doc, 'Phone Number', person.phoneNumber);
+    addStyledField(doc, 'Email Address', person.email);
+    addStyledField(doc, 'Current Address', person.currentAddress);
 
-    // Lifestyle section
-    addSectionHeader(doc, 'LIFESTYLE');
-    addField(doc, 'Eating Habits', person.eatingHabits);
-    addField(doc, 'Drinking Habits', person.drinkingHabits);
-    addField(doc, 'Smoking Habits', person.smokingHabits);
-    addField(doc, 'Disability', person.disability);
-    addField(doc, 'NRI Status', person.nri ? 'Yes' : 'No');
-    addField(doc, 'Vehicle', person.vehicle);
-    addField(doc, 'Horoscope', person.horoscope);
-
-    // Family details
-    addSectionHeader(doc, 'FAMILY DETAILS');
-    addField(doc, 'Father', person.fatherName);
-    addField(doc, 'Father Occupation Detail', person.fatherOccupation);
-    addField(doc, 'Father Office Detail', person.fatherOffice);
-    addField(doc, 'Mother', person.motherName);
-    addField(doc, 'Mother Occupation', person.motherOccupation);
-    addField(doc, 'Residence', person.residence);
-    addField(doc, 'Other Property', person.otherProperty);
-
-    // Education section
-    addSectionHeader(doc, 'EDUCATION');
-    addField(doc, 'Higher Qualification', person.higherQualification);
-    addField(doc, 'Graduation', person.graduation);
-    addField(doc, 'Schooling', person.schooling);
-
-    // Professional details
-    addSectionHeader(doc, 'PROFESSION & INCOME');
-    addField(doc, 'Occupation', person.occupation);
-    addField(doc, 'Personal Income', person.personalIncome);
-    addField(doc, 'Family Income', person.familyIncome);
-
-    // 👫 SIBLINGS SECTION
+    // Siblings Section
     if (person.siblings && person.siblings.length > 0) {
-      addSectionHeader(doc, 'SIBLINGS & FAMILY DETAILS');
+      addStyledSectionHeader(doc, '👫 SIBLINGS INFORMATION');
       
       person.siblings.forEach((sibling, index) => {
-        doc.fontSize(12)
+        doc.fontSize(13)
            .font('Helvetica-Bold')
-           .fillColor('#2c3e50')
+           .fillColor(colors.accent)
            .text(`Sibling ${index + 1}:`, 50);
         doc.moveDown(0.3);
         
-        addField(doc, '  Name', sibling.name, { indent: 20 });
-        addField(doc, '  Relationship', sibling.relationship, { indent: 20 });
-        addField(doc, '  Age', sibling.age, { indent: 20 });
-        addField(doc, '  Marital Status', sibling.maritalStatus, { indent: 20 });
-        addField(doc, '  Occupation', sibling.occupation, { indent: 20 });
+        addStyledField(doc, '  Name', sibling.name, { indent: 20, labelColor: colors.secondary });
+        addStyledField(doc, '  Relationship', sibling.relationship, { indent: 20, labelColor: colors.secondary });
+        addStyledField(doc, '  Age', sibling.age, { indent: 20, labelColor: colors.secondary });
+        addStyledField(doc, '  Marital Status', sibling.maritalStatus, { indent: 20, labelColor: colors.secondary });
+        addStyledField(doc, '  Occupation', sibling.occupation, { indent: 20, labelColor: colors.secondary });
         
         doc.moveDown(0.5);
       });
     }
 
-    // ✅ ADD IMPORTANT NOTE
-    addImportantNote(doc);
+    // Add photos section at the end
+    await addPhotosSection(doc, person);
+
+    // Add important notice
+    addEnhancedImportantNote(doc);
 
     // Footer
     doc.fontSize(10)
-       .fillColor('#666666')
-       .text(`Generated on: ${new Date().toLocaleDateString('en-IN')} | JODI NO 1`, 
-             50, doc.page.height - 70, { align: 'center' });
-
-    // End document
-    doc.end();
-    
-    console.log("✅ PDF generated and streamed successfully");
-
-  } catch (error) {
-    console.error("❌ PDF generation error:", error);
-    console.error("❌ Error stack:", error.stack);
-    
-    // Clean up document if it exists
-    if (doc && !doc.ended) {
-      try {
-        doc.end();
-      } catch (e) {
-        console.error("❌ Error ending document:", e.message);
-      }
-    }
-    
-    if (!res.headersSent) {
-      res.status(500).json({
-        message: "PDF generation failed",
-        error: error.message,
-        details: {
-          type: error.name,
-          personId: req.params.id
-        }
-      });
-    }
-  }
-});
-
-// 🔧 FIXED: Bulk PDF with memory optimization and note
-router.post("/bulk", async (req, res) => {
-  let doc = null;
-  
-  try {
-    const { personIds } = req.body;
-    
-    if (!personIds || !Array.isArray(personIds) || personIds.length === 0) {
-      return res.status(400).json({ message: "Person IDs array is required" });
-    }
-    
-    // Limit bulk size to prevent memory issues
-    if (personIds.length > 50) {
-      return res.status(400).json({ 
-        message: "Too many profiles requested. Maximum 50 profiles per bulk export." 
-      });
-    }
-    
-    console.log(`📄 Generating bulk PDF for ${personIds.length} people`);
-    
-    // Find people with lean query
-    const people = await Person.find({ _id: { $in: personIds } }).lean().exec();
-    
-    if (people.length === 0) {
-      return res.status(404).json({ message: "No people found" });
-    }
-
-    // Set headers
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="bulk_profiles_${Date.now()}.pdf"`);
-    res.setHeader('Cache-Control', 'no-cache');
-
-    // Create document
-    doc = new PDFDocument({ 
-      margin: 50,
-      size: 'A4',
-      bufferPages: false
-    });
-
-    doc.pipe(res);
-
-    // Cover page
-    doc.fontSize(24).font('Helvetica-Bold').fillColor('#8B0000')
-       .text('JODI NO 1', { align: 'center' });
-    doc.fontSize(18).text(`Bulk Export - ${people.length} Profiles`, { align: 'center' });
-    doc.moveDown(2);
-
-    // Generate each profile with photos
-    for (let i = 0; i < people.length; i++) {
-      const person = people[i];
-      
-      if (i > 0) doc.addPage();
-      
-      doc.fontSize(18).font('Helvetica-Bold').fillColor('#8B0000')
-         .text(`${i + 1}. ${person.name || 'N/A'}`, 50);
-      doc.moveDown(1);
-
-      // Try to add photo for each person in bulk
-      const bestPhoto = getBestPhoto(person);
-      if (bestPhoto) {
-        await addProfilePhoto(doc, bestPhoto);
-      }
-      
-      // Key info only
-      addField(doc, 'Gender', person.gender);
-      addField(doc, 'DOB', formatDate(person.dob));
-      addField(doc, 'Religion', person.religion);
-      addField(doc, 'Phone', person.phoneNumber);
-      addField(doc, 'Occupation', person.occupation);
-    }
-
-    // Add note to bulk PDF as well
-    addImportantNote(doc);
+       .fillColor('#7F8C8D')
+       .text(`Generated on: ${new Date().toLocaleDateString('en-IN')} | JODI NO 1 Matrimonial Services`, 
+             50, doc.page.height - 50, { align: 'center' });
 
     doc.end();
-    console.log("✅ Bulk PDF completed");
-    
+    console.log("✅ Enhanced PDF generated successfully with photos at end");
+
   } catch (error) {
-    console.error("❌ Bulk PDF error:", error);
+    console.error("❌ Enhanced PDF generation error:", error);
     
     if (doc && !doc.ended) {
       try { doc.end(); } catch (e) {}
     }
     
     if (!res.headersSent) {
-      res.status(500).json({ message: "Bulk PDF failed", error: error.message });
-    }
-  }
-});
-
-// ✅ Keep your existing HTML preview route
-router.get("/person/:id/html", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const person = await Person.findById(id).lean();
-    
-    if (!person) {
-      return res.status(404).json({ message: "Person not found" });
-    }
-
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>${person.name || 'Profile'} - JODI NO 1</title>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 50px; line-height: 1.6; }
-          .header { text-align: center; color: #8B0000; margin-bottom: 30px; }
-          .field { margin: 8px 0; display: flex; }
-          .field-label { font-weight: bold; width: 150px; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>JODI NO 1</h1>
-          <p>9871080409 | jodino1@gmail.com</p>
-          <h2>${person.name || 'N/A'}</h2>
-        </div>
-        <div class="field"><div class="field-label">Name:</div><div>${person.name || '—'}</div></div>
-        <div class="field"><div class="field-label">Gender:</div><div>${person.gender || '—'}</div></div>
-        <div class="field"><div class="field-label">DOB:</div><div>${formatDate(person.dob)}</div></div>
-        <div class="field"><div class="field-label">Phone:</div><div>${person.phoneNumber || '—'}</div></div>
-      </body>
-      </html>
-    `;
-    
-    res.send(html);
-    
-  } catch (error) {
-    console.error("❌ HTML preview error:", error);
-    res.status(500).json({ message: "Failed to generate HTML", error: error.message });
-  }
-});
-
-// ✅ Route to check PDFKit installation
-router.get("/check-pdfkit", (req, res) => {
-  try {
-    const PDFDocument = require('pdfkit');
-    console.log("✅ PDFKit check successful");
-    res.json({
-      message: "✅ PDFKit is installed and working",
-      available: true,
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error("❌ PDFKit check failed:", error);
-    res.status(500).json({
-      message: "❌ PDFKit not available",
-      error: error.message
-    });
-  }
-});
-
-// 🔧 NEW: Route to check uploads directory
-router.get("/debug/uploads", (req, res) => {
-  try {
-    const uploadsPath = path.join(__dirname, '..', 'uploads');
-    console.log("📁 Checking uploads directory:", uploadsPath);
-    
-    const exists = fs.existsSync(uploadsPath);
-    let files = [];
-    
-    if (exists) {
-      files = fs.readdirSync(uploadsPath).map(file => {
-        const filePath = path.join(uploadsPath, file);
-        const stats = fs.statSync(filePath);
-        return {
-          name: file,
-          size: stats.size,
-          isFile: stats.isFile(),
-          modified: stats.mtime
-        };
+      res.status(500).json({
+        message: "Enhanced PDF generation failed",
+        error: error.message
       });
     }
+  }
+});
+
+// Keep existing routes (test, debug, etc.)
+router.get("/test-pdf", (req, res) => {
+  try {
+    const doc = new PDFDocument({ margin: 50 });
     
-    res.json({
-      uploadsPath,
-      exists,
-      fileCount: files.length,
-      files: files.slice(0, 20) // Limit to first 20 files
-    });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="test.pdf"');
+    
+    doc.pipe(res);
+    
+    doc.fontSize(20).fillColor(colors.primary).text('Enhanced PDFKit Test - Success!', 100, 100);
+    doc.fontSize(12).fillColor(colors.text).text('Enhanced styling is working correctly.', 100, 140);
+    
+    doc.end();
     
   } catch (error) {
+    console.error("❌ Test PDF failed:", error);
     res.status(500).json({ error: error.message });
   }
 });
 
-console.log("✅ FIXED PDFKit routes loaded with enhanced image support");
+console.log("✅ Enhanced PDFKit routes loaded with photos at end and beautiful styling");
 
 module.exports = router;
