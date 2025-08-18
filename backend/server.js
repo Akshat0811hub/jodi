@@ -13,55 +13,84 @@ console.log("🔄 Starting server setup...");
 console.log("🌍 Environment:", process.env.NODE_ENV || "development");
 console.log("📡 Port:", process.env.PORT || 5000);
 
-// ✅ SIMPLIFIED AND FIXED CORS Configuration
+// ✅ RENDER-SPECIFIC CORS FIX - This addresses the Render CORS issue
+const allowedOrigins = [
+  "https://jodi-iexr.vercel.app",
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "http://localhost:3001"
+];
+
+// ✅ CRITICAL FIX: Custom CORS middleware for Render
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  
+  // Always set CORS headers, regardless of origin
+  if (origin && allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  } else if (process.env.NODE_ENV === 'development') {
+    // In development, allow any origin
+    res.header('Access-Control-Allow-Origin', origin || '*');
+  } else {
+    // In production, set the main frontend origin as default
+    res.header('Access-Control-Allow-Origin', 'https://jodi-iexr.vercel.app');
+  }
+  
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, X-HTTP-Method-Override');
+  res.header('Access-Control-Expose-Headers', 'Content-Length, X-Foo, X-Bar');
+  res.header('Access-Control-Max-Age', '86400'); // 24 hours
+  
+  console.log(`🔄 CORS Headers Set for: ${req.method} ${req.url} from origin: ${origin}`);
+  
+  // Handle preflight requests immediately
+  if (req.method === 'OPTIONS') {
+    console.log(`✅ Preflight handled for: ${req.url}`);
+    return res.sendStatus(200);
+  }
+  
+  next();
+});
+
+// ✅ Apply standard CORS as backup
 const corsOptions = {
-  origin: [
-    "https://jodi-iexr.vercel.app",
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "http://localhost:3001"
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      console.log("✅ CORS - Origin allowed:", origin);
+      callback(null, true);
+    } else {
+      console.log("⚠️ CORS - Origin not in allowlist but allowing:", origin);
+      // For debugging - still allow but log
+      callback(null, true);
+    }
+  },
+  credentials: true,
+  optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: [
     'Origin',
-    'X-Requested-With', 
+    'X-Requested-With',
     'Content-Type',
     'Accept',
     'Authorization',
-    'Cache-Control'
-  ],
-  credentials: true,
-  optionsSuccessStatus: 200
+    'Cache-Control',
+    'X-HTTP-Method-Override'
+  ]
 };
 
-// Apply CORS middleware FIRST
 app.use(cors(corsOptions));
 
-// ✅ Explicit OPTIONS handler for all routes
-app.options('*', (req, res) => {
-  console.log(`✅ OPTIONS request for: ${req.path} from origin: ${req.headers.origin}`);
-  res.header('Access-Control-Allow-Origin', req.headers.origin);
-  res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.sendStatus(200);
-});
-
-// ✅ Body parsing middleware with increased limits for file uploads
+// ✅ Body parsing middleware with increased limits
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // ✅ Request logging middleware
 app.use((req, res, next) => {
   console.log(`📥 ${new Date().toISOString()} - ${req.method} ${req.url} from ${req.headers.origin || 'unknown'}`);
-  
-  // Add CORS headers to every response
-  const origin = req.headers.origin;
-  if (corsOptions.origin.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-  }
-  res.header('Access-Control-Allow-Credentials', 'true');
-  
   next();
 });
 
@@ -69,7 +98,6 @@ app.use((req, res, next) => {
 const uploadsPath = path.join(__dirname, 'uploads');
 const assetsPath = path.join(__dirname, 'assets');
 
-// Create directories if they don't exist
 const fs = require('fs');
 if (!fs.existsSync(uploadsPath)) {
   fs.mkdirSync(uploadsPath, { recursive: true });
@@ -87,6 +115,7 @@ app.get("/", (req, res) => {
     timestamp: new Date().toISOString(),
     version: "1.0.0",
     cors: "enabled",
+    environment: process.env.NODE_ENV || "development",
     endpoints: {
       health: "/health",
       api: "/api",
@@ -107,7 +136,19 @@ app.get("/health", (req, res) => {
     mongodb: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
     uptime: Math.floor(process.uptime()),
     memory: Math.floor(process.memoryUsage().heapUsed / 1024 / 1024) + "MB",
-    routes: "loaded"
+    routes: "loaded",
+    allowedOrigins: allowedOrigins
+  });
+});
+
+// ✅ CORS test endpoint
+app.get("/cors-test", (req, res) => {
+  console.log("🧪 CORS test endpoint hit from:", req.headers.origin);
+  res.status(200).json({
+    message: "✅ CORS is working!",
+    origin: req.headers.origin,
+    timestamp: new Date().toISOString(),
+    headers: req.headers
   });
 });
 
@@ -142,9 +183,20 @@ try {
   console.log("✅ Auth routes mounted at /api/auth");
 } catch (error) {
   console.error("❌ Failed to load auth routes:", error.message);
-  // Create basic fallback routes
+  
+  // Create basic fallback auth routes
   app.post("/api/auth/login", (req, res) => {
-    res.status(501).json({ message: "Auth routes not implemented yet" });
+    res.status(501).json({ 
+      message: "Auth routes not implemented yet",
+      error: "Auth module not found" 
+    });
+  });
+  
+  app.post("/api/auth/register", (req, res) => {
+    res.status(501).json({ 
+      message: "Auth routes not implemented yet",
+      error: "Auth module not found" 
+    });
   });
 }
 
@@ -181,6 +233,13 @@ try {
       });
     }
   });
+  
+  app.post("/api/people", (req, res) => {
+    res.status(501).json({ 
+      message: "Person creation not available", 
+      error: "Person routes not loaded" 
+    });
+  });
 }
 
 // PDF routes
@@ -195,7 +254,7 @@ try {
   });
 }
 
-// ✅ MongoDB Connection with better error handling
+// ✅ MongoDB Connection
 console.log("🔄 Connecting to MongoDB...");
 
 const connectDB = async (retries = 5) => {
@@ -216,11 +275,9 @@ const connectDB = async (retries = 5) => {
     console.log("✅ MongoDB connected successfully");
     console.log("🗃️ Database:", mongoose.connection.name);
 
-    // Test database connection
     await mongoose.connection.db.admin().ping();
     console.log("🏓 MongoDB ping successful");
 
-    // Seed admin users
     await seedAdminUsers();
     
   } catch (err) {
@@ -236,7 +293,7 @@ const connectDB = async (retries = 5) => {
   }
 };
 
-// Admin user seeding function
+// Admin user seeding
 async function seedAdminUsers() {
   try {
     const bcrypt = require("bcrypt");
@@ -267,7 +324,6 @@ async function seedAdminUsers() {
   }
 }
 
-// Start database connection
 connectDB();
 
 // ✅ MongoDB event listeners
@@ -292,9 +348,9 @@ app.use((err, req, res, next) => {
     method: req.method,
   });
 
-  // Ensure CORS headers are present even in error responses
+  // Ensure CORS headers in error responses
   const origin = req.headers.origin;
-  if (corsOptions.origin.includes(origin)) {
+  if (origin && allowedOrigins.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Credentials', 'true');
   }
@@ -310,9 +366,8 @@ app.use((err, req, res, next) => {
 app.use("*", (req, res) => {
   console.log(`❌ 404: ${req.method} ${req.originalUrl}`);
   
-  // Ensure CORS headers
   const origin = req.headers.origin;
-  if (corsOptions.origin.includes(origin)) {
+  if (origin && allowedOrigins.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Credentials', 'true');
   }
@@ -325,6 +380,7 @@ app.use("*", (req, res) => {
     availableRoutes: [
       "GET /",
       "GET /health", 
+      "GET /cors-test",
       "GET /api/test",
       "POST /api/auth/login",
       "POST /api/auth/register",
@@ -355,11 +411,12 @@ const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`\n🚀 Server running on port ${PORT}`);
   console.log(`🔗 Health: http://localhost:${PORT}/health`);
+  console.log(`🧪 CORS Test: http://localhost:${PORT}/cors-test`);
   console.log(`🧪 API Test: http://localhost:${PORT}/api/test`);
   console.log(`🔐 Auth: http://localhost:${PORT}/api/auth`);
   console.log(`👥 People: http://localhost:${PORT}/api/people`);
   console.log(`📄 PDF: http://localhost:${PORT}/api/pdf`);
-  console.log(`📊 CORS enabled for: ${corsOptions.origin.join(', ')}`);
+  console.log(`📊 CORS enabled for: ${allowedOrigins.join(', ')}`);
   console.log(`💓 Keep-alive: http://localhost:${PORT}/keep-alive`);
   console.log(`🎯 Ready to accept connections!\n`);
 });
@@ -373,7 +430,6 @@ server.on("error", (err) => {
   }
 });
 
-// ✅ Handle server timeout
 server.timeout = 120000; // 2 minutes
 
 module.exports = app;
