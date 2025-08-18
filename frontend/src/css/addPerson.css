@@ -256,7 +256,7 @@
 
 /* Enhanced Sibling Rows */
 .sibling-row {
-  display: grid;
+  display: column;
   grid-template-columns: 1fr 1fr 80px 1fr 120px 50px;
   gap: 12px;
   margin-bottom: 15px;
