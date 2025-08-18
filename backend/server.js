@@ -1,42 +1,104 @@
-// /backend/server.js
 const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const path = require("path");
 
-const pdfRoutes = require("./routes/pdfRoutes");
-const authRoutes = require("./routes/authRoutes");
-const userRoutes = require("./routes/userRoutes");
-const personRoutes = require("./routes/personRoutes");
-
+// Load environment variables first
 dotenv.config();
 
 const app = express();
 
-// ✅ CORS setup for frontend (Vercel)
+console.log("🔄 Starting server setup...");
+
+// ✅ Basic middleware
 app.use(cors({
-  origin: ["https://jodi-iexr.vercel.app"], // frontend domain
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
+  origin: [
+    "https://jodi-iexr.vercel.app", 
+    "http://localhost:3000",
+    "http://localhost:5173"
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// ✅ Serve uploaded images
+// ✅ Security headers
+app.use((req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
+  next();
+});
+
+// ✅ Static file serving
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use("/assets", express.static(path.join(__dirname, "assets"))); // if using assets for logo
+app.use('/assets', express.static(path.join(__dirname, 'assets')));
 
-// ✅ MongoDB Connection (Atlas Ready)
+// ✅ Health check
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString()
+  });
+});
+
+// ✅ Test route
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'Server is working!' });
+});
+
+console.log("🔄 Loading routes...");
+
+// ✅ Import routes one by one to identify the problematic one
+try {
+  const authRoutes = require("./routes/authRoutes");
+  console.log("✅ Auth routes loaded");
+  app.use("/api/auth", authRoutes);
+} catch (error) {
+  console.error("❌ Error loading auth routes:", error.message);
+}
+
+try {
+  const userRoutes = require("./routes/userRoutes");
+  console.log("✅ User routes loaded");
+  app.use("/api/users", userRoutes);
+} catch (error) {
+  console.error("❌ Error loading user routes:", error.message);
+}
+
+try {
+  const personRoutes = require("./routes/personRoutes");
+  console.log("✅ Person routes loaded");
+  app.use("/api/people", personRoutes);
+} catch (error) {
+  console.error("❌ Error loading person routes:", error.message);
+}
+
+try {
+  const pdfRoutes = require("./routes/pdfRoutes");
+  console.log("✅ PDF routes loaded");
+  app.use("/api/people", pdfRoutes);
+} catch (error) {
+  console.error("❌ Error loading PDF routes:", error.message);
+}
+
+// ✅ MongoDB Connection
+console.log("🔄 Connecting to MongoDB...");
 mongoose
   .connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
+    maxPoolSize: 10,
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
   })
   .then(async () => {
     console.log("✅ MongoDB connected");
 
-    // ===== ADMIN USER SEEDING =====
+    // Admin user seeding
     try {
       const bcrypt = require("bcrypt");
       const User = require("./models/userModel");
@@ -63,33 +125,29 @@ mongoose
     } catch (err) {
       console.error("❌ Error seeding admin users:", err.message);
     }
-    // =============================
-
   })
   .catch((err) => {
     console.error("❌ MongoDB connection error:", err.message);
-    process.exit(1); // stop server if DB fails
+    process.exit(1);
   });
 
-// ✅ TEST ROUTE (Temporary - Delete after testing)
-app.get("/api/test-insert", async (req, res) => {
-  try {
-    const TestSchema = new mongoose.Schema({ name: String, age: Number });
-    const TestModel = mongoose.model("TestUser", TestSchema);
-    const newDoc = new TestModel({ name: "Test User", age: 25 });
-    await newDoc.save();
-    res.json({ message: "✅ Test document inserted" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+// ✅ Global error handler
+app.use((err, req, res, next) => {
+  console.error('Global error:', err);
+  res.status(500).json({ 
+    message: 'Internal server error', 
+    error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+  });
 });
 
-app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/people", personRoutes);
-app.use("/api/people", pdfRoutes); // ✅ Only once
+// ✅ 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({ message: 'Route not found' });
+});
 
 const PORT = process.env.PORT || 5000;
-console.log(`🌍 BASE_URL set to: ${process.env.BASE_URL || `http://localhost:${PORT}`}`);
+console.log(`🌍 Starting server on port ${PORT}...`);
 
-app.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
+});

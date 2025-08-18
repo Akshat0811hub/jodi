@@ -10,6 +10,7 @@
       font-family: "Helvetica", Arial, sans-serif;
       color: #111;
       -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
     .page { box-sizing: border-box; padding: 110px 40px 110px 40px; }
 
@@ -21,9 +22,13 @@
       border-bottom: 2px solid #444;
       display:flex; align-items:center; justify-content:space-between;
       background: #fff;
+      z-index: 1000;
     }
     .header-left { display:flex; gap:16px; align-items:center; }
-    .logo { height:70px; width:auto; object-fit:contain; }
+    .logo { 
+      height:70px; width:auto; object-fit:contain;
+      max-width: 200px;
+    }
     .company-meta {
       font-size:14px; line-height:1.3; color:#000;
     }
@@ -44,6 +49,7 @@
       height: 90px; padding: 12px 40px;
       border-top: 1px solid #ddd;
       font-size:11px; color:#444; background:#fff;
+      z-index: 1000;
     }
 
     h1.title {
@@ -58,6 +64,7 @@
       width:180px; height:220px;
       object-fit:cover;
       border-radius:4px; border:1px solid #ccc;
+      background: #f5f5f5;
     }
     .personal-details { flex:1; }
     .detail-row {
@@ -95,21 +102,41 @@
     }
 
     /* Photos Grid */
+    .photo-grid {
+      display:flex; 
+      flex-wrap:wrap; 
+      gap:10px;
+      margin-top: 10px;
+    }
     .photo-grid img {
       width:180px;
       height:auto;
+      max-height: 220px;
       border:1px solid #ccc;
       border-radius:4px;
+      object-fit:cover;
+      background: #f5f5f5;
+    }
+
+    img {
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: optimize-contrast;
+    }
+
+    .section, .profile-top, .photo-grid {
+      page-break-inside: avoid;
     }
   </style>
 </head>
 <body>
   <header>
     <div class="header-left">
-      <img src="<%= logoUrl %>" class="logo" alt="logo" />
+      <% if (typeof logoUrl !== 'undefined' && logoUrl) { %>
+        <img src="<%= logoUrl %>" class="logo" alt="Company Logo" onerror="this.style.display='none'" />
+      <% } %>
       <div class="company-meta">
         <strong><%= companyName %></strong><br/>
-        <span>📞 <%= companyContact %></span><br/>
+        <span>📞 <%= PhoneNo %></span><br/>
         <span>📧 <%= companyEmail || "—" %></span><br/>
         <small>📍 <%= companyAddress %></small>
       </div>
@@ -122,26 +149,56 @@
   <div class="page">
     <h1 class="title">Profile Detail</h1>
 
-    <div class="personal-details">
-      <div class="detail-row"><div class="label">Name :</div><div class="value"><%= person.name || "—" %></div></div>
-      <div class="detail-row"><div class="label">Gender :</div><div class="value"><%= person.gender || "—" %></div></div>
-      <div class="detail-row"><div class="label">Marital Status :</div><div class="value"><%= person.maritalStatus || "—" %></div></div>
-      <div class="detail-row"><div class="label">Date Of Birth :</div><div class="value"><%= person.dob || "—" %></div></div>
-      <div class="detail-row"><div class="label">Native Place :</div><div class="value"><%= person.nativePlace || "—" %></div></div>
-      <div class="detail-row"><div class="label">Height :</div><div class="value"><%= person.height || "—" %></div></div>
-      <div class="detail-row"><div class="label">Complexion :</div><div class="value"><%= person.complexion || "—" %></div></div>
-      <div class="detail-row"><div class="label">Eating Habits :</div><div class="value"><%= person.eatingHabits || "—" %></div></div>
-      <div class="detail-row"><div class="label">NRI :</div><div class="value"><%= person.nri ? "Yes" : "No" %></div></div>
+    <div class="profile-top">
+      <% if (person.profilePicture) { %>
+        <%
+          let profilePicUrl = '';
+          if (person.profilePicture.startsWith('http')) {
+            profilePicUrl = person.profilePicture;
+          } else {
+            profilePicUrl = baseUrl + '/uploads/' + person.profilePicture;
+          }
+        %>
+        <img src="<%= profilePicUrl %>" class="profile-pic" alt="Profile Picture" 
+             onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgwIiBoZWlnaHQ9IjIyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='" />
+      <% } else { %>
+        <div class="profile-pic" style="display:flex; align-items:center; justify-content:center; background:#f5f5f5; color:#999; font-size:14px;">
+          No Profile Picture
+        </div>
+      <% } %>
+      
+      <div class="personal-details">
+        <div class="detail-row"><div class="label">Name :</div><div class="value"><%= person.name || "—" %></div></div>
+        <div class="detail-row"><div class="label">Gender :</div><div class="value"><%= person.gender || "—" %></div></div>
+        <div class="detail-row"><div class="label">Marital Status :</div><div class="value"><%= person.maritalStatus || "—" %></div></div>
+        <div class="detail-row"><div class="label">Date Of Birth :</div><div class="value"><%= person.dob || "—" %></div></div>
+        <div class="detail-row"><div class="label">Native Place :</div><div class="value"><%= person.nativePlace || "—" %></div></div>
+        <div class="detail-row"><div class="label">Height :</div><div class="value"><%= person.height || "—" %></div></div>
+        <div class="detail-row"><div class="label">Complexion :</div><div class="value"><%= person.complexion || "—" %></div></div>
+        <div class="detail-row"><div class="label">Eating Habits :</div><div class="value"><%= person.eatingHabits || "—" %></div></div>
+        <div class="detail-row"><div class="label">NRI :</div><div class="value"><%= person.nri ? "Yes" : "No" %></div></div>
+      </div>
     </div>
 
-    <!-- Uploaded Photos (Grid only, no separate pages) -->
-    <% if (person.photos && person.photos.length > 0) { %>
+    <!-- Uploaded Photos -->
+    <% if (person.photos && Array.isArray(person.photos) && person.photos.length > 0) { %>
       <div class="section">
         <h2>Uploaded Photos</h2>
-        <div class="photo-grid" style="display:flex; flex-wrap:wrap; gap:10px;">
+        <div class="photo-grid">
           <% person.photos.forEach((photo, idx) => { %>
             <div>
-              <img src="<%= makeAbsolute(photo) %>" alt="Photo <%= idx+1 %>">
+              <%
+                let photoUrl = '';
+                if (photo) {
+                  if (photo.startsWith('http')) {
+                    photoUrl = photo;
+                  } else {
+                    photoUrl = baseUrl + '/uploads/' + photo;
+                  }
+                }
+              %>
+              <img src="<%= photoUrl %>" alt="Photo <%= idx+1 %>" 
+                   onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIE5vdCBGb3VuZDwvdGV4dD48L3N2Zz4='" />
             </div>
           <% }) %>
         </div>
@@ -150,9 +207,9 @@
 
     <div class="section">
       <h2>Educational & Profession</h2>
-      <div class="detail-row"><div class="label">Higher Qualification :</div><div class="value"><%= person.education || "—" %></div></div>
+      <div class="detail-row"><div class="label">Higher Qualification :</div><div class="value"><%= person.higherQualification || person.education || "—" %></div></div>
       <div class="detail-row"><div class="label">Occupation :</div><div class="value"><%= person.occupation || "—" %></div></div>
-      <div class="detail-row"><div class="label">Personal Income :</div><div class="value"><%= person.income || "—" %></div></div>
+      <div class="detail-row"><div class="label">Personal Income :</div><div class="value"><%= person.personalIncome || person.income || "—" %></div></div>
       <div class="detail-row"><div class="label">Residence :</div><div class="value"><%= person.residence || "—" %></div></div>
     </div>
 
@@ -188,14 +245,14 @@
               </tr>
             <% }) %>
           <% } else { %>
-            <tr><td colspan="5">No sibling details</td></tr>
+            <tr><td colspan="5">No sibling details available</td></tr>
           <% } %>
         </tbody>
       </table>
     </div>
   </div>
 
-  <!-- Last Page NOTE (only this will be added at the end) -->
+  <!-- Last Page NOTE -->
   <div style="page-break-before: always; padding: 80px 40px; text-align: center;">
     <div style="font-size: 20px; font-weight: bold; margin-top: 32px; line-height: 1.6; background-color: maroon; color: white; padding: 20px; border-radius: 6px;">
       NOTE : The above particulars have been provided to the best of our knowledge, as per
@@ -210,7 +267,7 @@
     <div style="display:flex;justify-content:space-between;align-items:center;">
       <div>
         <strong><%= companyName %></strong><br/>
-        <small><%= companyContact %> | <%= companyAddress %></small>
+        <small><%= PhoneNo %> | <%= companyAddress %></small>
       </div>
       <div style="text-align:right;">
         <small>By Mamta Aggarwal, 9871080409, 9211729184, 9211729185, 9211729186</small><br/>
