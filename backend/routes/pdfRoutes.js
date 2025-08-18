@@ -193,8 +193,8 @@ router.get("/person/:id/pdf", async (req, res) => {
     doc.fontSize(12)
        .fillColor('#000000')
        .font('Helvetica')
-       .text('📞 9871080409 | 📧 jodino1@gmail.com', { align: 'center' })
-       .text('📍 Gurugram, Haryana, India', { align: 'center' });
+       .text(' 9871080409 | jodino1@gmail.com', { align: 'center' })
+       .text(' Gurugram, Haryana, India', { align: 'center' });
 
     doc.moveDown(1);
 
@@ -214,7 +214,7 @@ router.get("/person/:id/pdf", async (req, res) => {
     }
 
     // Personal details (REMOVED phone number)
-    addSectionHeader(doc, '👤 PERSONAL DETAILS');
+    addSectionHeader(doc, ' PERSONAL DETAILS');
     addField(doc, 'Name', person.name);
     addField(doc, 'Gender', person.gender);
     addField(doc, 'Marital Status', person.maritalStatus);
@@ -227,7 +227,7 @@ router.get("/person/:id/pdf", async (req, res) => {
     addField(doc, 'Complexion', person.complexion);
 
     // Lifestyle section
-    addSectionHeader(doc, '🍽️ LIFESTYLE');
+    addSectionHeader(doc, ' LIFESTYLE');
     addField(doc, 'Eating Habits', person.eatingHabits);
     addField(doc, 'Drinking Habits', person.drinkingHabits);
     addField(doc, 'Smoking Habits', person.smokingHabits);
@@ -237,7 +237,7 @@ router.get("/person/:id/pdf", async (req, res) => {
     addField(doc, 'Horoscope', person.horoscope);
 
     // Family details
-    addSectionHeader(doc, '👨‍👩‍👧‍👦 FAMILY DETAILS');
+    addSectionHeader(doc, ' FAMILY DETAILS');
     addField(doc, 'Father Name', person.fatherName);
     addField(doc, 'Father Occupation', person.fatherOccupation);
     addField(doc, 'Father Office', person.fatherOffice);
@@ -247,13 +247,13 @@ router.get("/person/:id/pdf", async (req, res) => {
     addField(doc, 'Other Property', person.otherProperty);
 
     // Education section
-    addSectionHeader(doc, '🎓 EDUCATION');
+    addSectionHeader(doc, ' EDUCATION');
     addField(doc, 'Higher Qualification', person.higherQualification);
     addField(doc, 'Graduation', person.graduation);
     addField(doc, 'Schooling', person.schooling);
 
     // Professional details
-    addSectionHeader(doc, '💼 PROFESSION & INCOME');
+    addSectionHeader(doc, ' PROFESSION & INCOME');
     addField(doc, 'Occupation', person.occupation);
     addField(doc, 'Personal Income', person.personalIncome);
     addField(doc, 'Family Income', person.familyIncome);
@@ -421,7 +421,7 @@ router.get("/person/:id/html", async (req, res) => {
       <body>
         <div class="header">
           <h1>JODI NO 1</h1>
-          <p>📞 9871080409 | 📧 jodino1@gmail.com</p>
+          <p>9871080409 | jodino1@gmail.com</p>
           <h2>${person.name || 'N/A'}</h2>
         </div>
         <div class="field"><div class="field-label">Name:</div><div>${person.name || '—'}</div></div>
