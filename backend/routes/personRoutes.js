@@ -44,6 +44,57 @@ const upload = multer({
   }
 });
 
+// ✅ CRITICAL FIX: Statistics route MUST come BEFORE /:id route
+router.get("/stats/overview", async (req, res) => {
+  try {
+    console.log("📊 Fetching people statistics");
+    
+    const totalPeople = await Person.countDocuments();
+    const genderStats = await Person.aggregate([
+      { $group: { _id: "$gender", count: { $sum: 1 } } }
+    ]);
+    const religionStats = await Person.aggregate([
+      { $group: { _id: "$religion", count: { $sum: 1 } } }
+    ]);
+    const maritalStatusStats = await Person.aggregate([
+      { $group: { _id: "$maritalStatus", count: { $sum: 1 } } }
+    ]);
+    
+    res.status(200).json({
+      total: totalPeople,
+      gender: genderStats,
+      religion: religionStats,
+      maritalStatus: maritalStatusStats
+    });
+  } catch (error) {
+    console.error("❌ Error fetching statistics:", error);
+    res.status(500).json({
+      message: "Failed to fetch statistics",
+      error: error.message
+    });
+  }
+});
+
+// ✅ Test route for debugging
+router.get("/test/connection", async (req, res) => {
+  try {
+    const count = await Person.countDocuments();
+    res.status(200).json({
+      message: "✅ Person routes are working perfectly!",
+      totalPeople: count,
+      timestamp: new Date().toISOString(),
+      database: "connected",
+      cors: "enabled"
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "❌ Database connection issue",
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // GET /api/people - Get all people with optional filtering
 router.get("/", async (req, res) => {
   try {
@@ -346,37 +397,6 @@ router.delete("/:id/photo/:filename", async (req, res) => {
     console.error("❌ Error deleting photo:", error);
     res.status(500).json({
       message: "Failed to delete photo",
-      error: error.message
-    });
-  }
-});
-
-// GET /api/people/stats - Get statistics
-router.get("/stats/overview", async (req, res) => {
-  try {
-    console.log("📊 Fetching people statistics");
-    
-    const totalPeople = await Person.countDocuments();
-    const genderStats = await Person.aggregate([
-      { $group: { _id: "$gender", count: { $sum: 1 } } }
-    ]);
-    const religionStats = await Person.aggregate([
-      { $group: { _id: "$religion", count: { $sum: 1 } } }
-    ]);
-    const maritalStatusStats = await Person.aggregate([
-      { $group: { _id: "$maritalStatus", count: { $sum: 1 } } }
-    ]);
-    
-    res.status(200).json({
-      total: totalPeople,
-      gender: genderStats,
-      religion: religionStats,
-      maritalStatus: maritalStatusStats
-    });
-  } catch (error) {
-    console.error("❌ Error fetching statistics:", error);
-    res.status(500).json({
-      message: "Failed to fetch statistics",
       error: error.message
     });
   }
