@@ -1,4 +1,4 @@
-// src/components/AddPersonFormModal.jsx - FIXED VERSION (1-4 Photos Support)
+// src/components/AddPersonFormModal.jsx - ENHANCED RICH MODERN VERSION
 import React, { useState } from "react";
 import api from "../api";
 import "../css/addPerson.css";
@@ -52,7 +52,6 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // ✅ FIXED: Photo handler for 1-4 photos
   const handlePhotoChange = (e) => {
     const files = Array.from(e.target.files);
     console.log("📸 Files selected:", files.length);
@@ -61,7 +60,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
       files.map((f) => ({ name: f.name, size: f.size, type: f.type }))
     );
     setPhotos(files);
-    setError(""); // Clear any previous photo errors
+    setError("");
   };
 
   const handleSiblingChange = (index, field, value) => {
@@ -87,7 +86,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
     setIsSubmitting(true);
 
     try {
-      // ✅ Basic validation
+      // Validation
       if (!formData.name.trim()) {
         setError("Name is required");
         return;
@@ -105,11 +104,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
         return;
       }
 
-      // ✅ FIXED: Photo validation for 1-4 photos (minimum 1, maximum 4)
-      console.log("📸 Photo validation - Current photos:", photos);
-      console.log("📸 Photos length:", photos.length);
-      console.log("📸 Photos array:", Array.isArray(photos));
-
+      // Photo validation
       if (!photos || !Array.isArray(photos) || photos.length < 1) {
         setError(
           `Please upload at least 1 photo. Currently selected: ${
@@ -123,7 +118,6 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
         return;
       }
 
-      // ✅ Validate file types
       const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif"];
       const invalidFiles = photos.filter(
         (photo) => !validTypes.includes(photo.type)
@@ -133,8 +127,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
         return;
       }
 
-      // ✅ Validate file sizes (max 5MB each)
-      const maxSize = 5 * 1024 * 1024; // 5MB
+      const maxSize = 5 * 1024 * 1024;
       const oversizedFiles = photos.filter((photo) => photo.size > maxSize);
       if (oversizedFiles.length > 0) {
         setError("Each photo must be less than 5MB");
@@ -143,20 +136,16 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
 
       const data = new FormData();
 
-      // Append form data
       Object.keys(formData).forEach((key) => {
         data.append(key, formData[key]);
       });
 
-      // ✅ Handle siblings
       if (siblings.length > 0) {
         data.append("siblings", JSON.stringify(siblings));
       } else {
         data.append("siblings", JSON.stringify([]));
       }
 
-      // ✅ IMPROVED: Append photos with detailed logging
-      console.log("📤 Appending photos to FormData:");
       photos.forEach((photo, index) => {
         console.log(`📸 Photo ${index + 1}:`, {
           name: photo.name,
@@ -166,22 +155,12 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
         data.append("photos", photo);
       });
 
-      // ✅ Debug: Log FormData contents
-      console.log("📤 FormData contents:");
-      for (let [key, value] of data.entries()) {
-        if (key === "photos") {
-          console.log(key, "FILE:", value.name, value.size, value.type);
-        } else {
-          console.log(key, value);
-        }
-      }
-
       console.log("📤 Sending request to /people endpoint...");
       const response = await api.post("/people", data, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
-        timeout: 60000, // 60 second timeout for file upload
+        timeout: 60000,
       });
 
       console.log("✅ Person added successfully:", response.data);
@@ -213,7 +192,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
     <div className="modal-overlay">
       <div className="modal-container">
         <div className="modal-header">
-          <h2>Add New Person</h2>
+          <h2>✨ Add New Person</h2>
           <button className="close-btn" onClick={onClose}>
             ×
           </button>
@@ -222,186 +201,274 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
         {error && <div className="error-text">{error}</div>}
 
         <form onSubmit={handleSubmit} className="modal-form">
-          {/* Personal Details */}
-          <h3>Personal Details</h3>
-          <input
-            name="name"
-            placeholder="Name *"
-            value={formData.name}
-            onChange={handleChange}
-            required
-          />
-          <select name="gender" value={formData.gender} onChange={handleChange}>
-            <option value="">Gender</option>
-            <option>Male</option>
-            <option>Female</option>
-          </select>
-          <select
-            name="maritalStatus"
-            value={formData.maritalStatus}
-            onChange={handleChange}
-          >
-            <option value="">Marital Status</option>
-            <option>Never Married</option>
-            <option>Married</option>
-            <option>Divorced</option>
-            <option>Widowed</option>
-          </select>
-          <input
-            type="date"
-            name="dob"
-            value={formData.dob}
-            onChange={handleChange}
-          />
-          <input
-            name="birthPlaceTime"
-            placeholder="Place of Birth & Time"
-            value={formData.birthPlaceTime}
-            onChange={handleChange}
-          />
-          <input
-            name="nativePlace"
-            placeholder="Native Place"
-            value={formData.nativePlace}
-            onChange={handleChange}
-          />
-          <input
-            name="gotra"
-            placeholder="Gotra"
-            value={formData.gotra}
-            onChange={handleChange}
-          />
-          <input
-            name="religion"
-            placeholder="Religion *"
-            value={formData.religion}
-            onChange={handleChange}
-            required
-          />
-          <input
-            name="phoneNumber"
-            placeholder="Ph No *"
-            value={formData.phoneNumber}
-            onChange={handleChange}
-            required
-          />
-          <input
-            name="height"
-            placeholder="Height"
-            value={formData.height}
-            onChange={handleChange}
-          />
-          <input
-            name="complexion"
-            placeholder="Complexion"
-            value={formData.complexion}
-            onChange={handleChange}
-          />
-          <select
-            name="horoscope"
-            value={formData.horoscope}
-            onChange={(e) =>
-              setFormData({ ...formData, horoscope: e.target.value === "true" })
-            }
-          >
-            <option value="">Believe in Horoscopes?</option>
-            <option value="true">Yes</option>
-            <option value="false">No</option>
-          </select>
-          <input
-            name="eatingHabits"
-            placeholder="Eating Habits"
-            value={formData.eatingHabits}
-            onChange={handleChange}
-          />
-          <input
-            name="drinkingHabits"
-            placeholder="Drinking Habits"
-            value={formData.drinkingHabits}
-            onChange={handleChange}
-          />
-          <input
-            name="smokingHabits"
-            placeholder="Smoking Habits"
-            value={formData.smokingHabits}
-            onChange={handleChange}
-          />
-          <input
-            name="disability"
-            placeholder="Physical Disability"
-            value={formData.disability}
-            onChange={handleChange}
-          />
-          <select
-            name="nri"
-            value={formData.nri}
-            onChange={(e) =>
-              setFormData({ ...formData, nri: e.target.value === "true" })
-            }
-          >
-            <option value="">NRI?</option>
-            <option value="true">Yes</option>
-            <option value="false">No</option>
-          </select>
+          {/* Personal Details Section */}
+          <h3>👤 Personal Details</h3>
+          
+          <div className="form-row">
+            <div className="form-group">
+              <input
+                name="name"
+                placeholder="Full Name *"
+                value={formData.name}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <select name="gender" value={formData.gender} onChange={handleChange}>
+                <option value="">Select Gender</option>
+                <option>Male</option>
+                <option>Female</option>
+                <option>Other</option>
+              </select>
+            </div>
+          </div>
 
-          <select
-            name="vehicle"
-            value={formData.vehicle}
-            onChange={(e) =>
-              setFormData({ ...formData, vehicle: e.target.value === "true" })
-            }
-          >
-            <option value="">Vehicle?</option>
-            <option value="true">Yes</option>
-            <option value="false">No</option>
-          </select>
+          <div className="form-row">
+            <div className="form-group">
+              <select
+                name="maritalStatus"
+                value={formData.maritalStatus}
+                onChange={handleChange}
+              >
+                <option value="">Marital Status</option>
+                <option>Never Married</option>
+                <option>Married</option>
+                <option>Divorced</option>
+                <option>Widowed</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <input
+                type="date"
+                name="dob"
+                value={formData.dob}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
 
-          {/* Family Details */}
-          <h3>Family Details</h3>
-          <input
-            name="fatherName"
-            placeholder="Father Name"
-            value={formData.fatherName}
-            onChange={handleChange}
-          />
-          <input
-            name="fatherOccupation"
-            placeholder="Father Occupation Detail"
-            value={formData.fatherOccupation}
-            onChange={handleChange}
-          />
-          <input
-            name="fatherOffice"
-            placeholder="Father Office Detail"
-            value={formData.fatherOffice}
-            onChange={handleChange}
-          />
-          <input
-            name="motherName"
-            placeholder="Mother Name"
-            value={formData.motherName}
-            onChange={handleChange}
-          />
-          <input
-            name="motherOccupation"
-            placeholder="Mother Occupation"
-            value={formData.motherOccupation}
-            onChange={handleChange}
-          />
-          <input
-            name="residence"
-            placeholder="Residence"
-            value={formData.residence}
-            onChange={handleChange}
-          />
-          <input
-            name="otherProperty"
-            placeholder="Other Property"
-            value={formData.otherProperty}
-            onChange={handleChange}
-          />
+          <div className="form-row">
+            <div className="form-group">
+              <input
+                name="birthPlaceTime"
+                placeholder="Place of Birth & Time"
+                value={formData.birthPlaceTime}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="form-group">
+              <input
+                name="nativePlace"
+                placeholder="Native Place"
+                value={formData.nativePlace}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
 
-          {/* Siblings */}
+          <div className="form-row">
+            <div className="form-group">
+              <input
+                name="gotra"
+                placeholder="Gotra"
+                value={formData.gotra}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="form-group">
+              <input
+                name="religion"
+                placeholder="Religion *"
+                value={formData.religion}
+                onChange={handleChange}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <input
+                name="phoneNumber"
+                placeholder="Phone Number *"
+                value={formData.phoneNumber}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <input
+                name="height"
+                placeholder="Height (e.g., 5'8'')"
+                value={formData.height}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <input
+                name="complexion"
+                placeholder="Complexion"
+                value={formData.complexion}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="form-group">
+              <select
+                name="horoscope"
+                value={formData.horoscope}
+                onChange={(e) =>
+                  setFormData({ ...formData, horoscope: e.target.value === "true" })
+                }
+              >
+                <option value="">Believe in Horoscopes?</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <input
+                name="eatingHabits"
+                placeholder="Eating Habits (Veg/Non-Veg)"
+                value={formData.eatingHabits}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="form-group">
+              <input
+                name="drinkingHabits"
+                placeholder="Drinking Habits"
+                value={formData.drinkingHabits}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <input
+                name="smokingHabits"
+                placeholder="Smoking Habits"
+                value={formData.smokingHabits}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="form-group">
+              <input
+                name="disability"
+                placeholder="Physical Disability (if any)"
+                value={formData.disability}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <select
+                name="nri"
+                value={formData.nri}
+                onChange={(e) =>
+                  setFormData({ ...formData, nri: e.target.value === "true" })
+                }
+              >
+                <option value="">NRI Status</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <select
+                name="vehicle"
+                value={formData.vehicle}
+                onChange={(e) =>
+                  setFormData({ ...formData, vehicle: e.target.value === "true" })
+                }
+              >
+                <option value="">Own Vehicle?</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Family Details Section */}
+          <h3>👨‍👩‍👧‍👦 Family Details</h3>
+          
+          <div className="form-row">
+            <div className="form-group">
+              <input
+                name="fatherName"
+                placeholder="Father's Name"
+                value={formData.fatherName}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="form-group">
+              <input
+                name="fatherOccupation"
+                placeholder="Father's Occupation"
+                value={formData.fatherOccupation}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <input
+                name="fatherOffice"
+                placeholder="Father's Office/Business"
+                value={formData.fatherOffice}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="form-group">
+              <input
+                name="motherName"
+                placeholder="Mother's Name"
+                value={formData.motherName}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <input
+                name="motherOccupation"
+                placeholder="Mother's Occupation"
+                value={formData.motherOccupation}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="form-group">
+              <input
+                name="residence"
+                placeholder="Current Residence"
+                value={formData.residence}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <textarea
+              name="otherProperty"
+              placeholder="Other Properties/Assets"
+              value={formData.otherProperty}
+              onChange={handleChange}
+              rows="3"
+            />
+          </div>
+
+          {/* Siblings Section */}
           <h4>Siblings & Family Members</h4>
           {siblings.map((s, idx) => (
             <div key={idx} className="sibling-row">
@@ -421,6 +488,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
               />
               <input
                 placeholder="Age"
+                type="number"
                 value={s.age}
                 onChange={(e) =>
                   handleSiblingChange(idx, "age", e.target.value)
@@ -433,15 +501,18 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                   handleSiblingChange(idx, "profession", e.target.value)
                 }
               />
-              <input
-                placeholder="Marital Status"
+              <select
                 value={s.maritalStatus}
                 onChange={(e) =>
                   handleSiblingChange(idx, "maritalStatus", e.target.value)
                 }
-              />
+              >
+                <option value="">Status</option>
+                <option>Single</option>
+                <option>Married</option>
+              </select>
               <button type="button" onClick={() => removeSibling(idx)}>
-                ❌
+                🗑️
               </button>
             </div>
           ))}
@@ -450,53 +521,74 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
             onClick={addSibling}
             className="add-sibling-btn"
           >
-            + Add Sibling
+            Add Family Member
           </button>
 
-          {/* Education */}
-          <h3>Education</h3>
-          <input
-            name="higherQualification"
-            placeholder="Higher Qualification"
-            value={formData.higherQualification}
-            onChange={handleChange}
-          />
-          <input
-            name="graduation"
-            placeholder="Graduation"
-            value={formData.graduation}
-            onChange={handleChange}
-          />
-          <input
-            name="schooling"
-            placeholder="Schooling"
-            value={formData.schooling}
-            onChange={handleChange}
-          />
+          {/* Education Section */}
+          <h3>🎓 Education</h3>
+          
+          <div className="form-group">
+            <input
+              name="higherQualification"
+              placeholder="Higher Qualification (Masters, PhD, etc.)"
+              value={formData.higherQualification}
+              onChange={handleChange}
+            />
+          </div>
 
-          {/* Profession & Income */}
-          <h3>Profession & Income</h3>
-          <textarea
-            name="occupation"
-            placeholder="Occupation / Business Details"
-            value={formData.occupation}
-            onChange={handleChange}
-          ></textarea>
-          <input
-            name="personalIncome"
-            placeholder="Personal Income"
-            value={formData.personalIncome}
-            onChange={handleChange}
-          />
-          <input
-            name="familyIncome"
-            placeholder="Family Income"
-            value={formData.familyIncome}
-            onChange={handleChange}
-          />
+          <div className="form-row">
+            <div className="form-group">
+              <input
+                name="graduation"
+                placeholder="Graduation Details"
+                value={formData.graduation}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="form-group">
+              <input
+                name="schooling"
+                placeholder="School/Board"
+                value={formData.schooling}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
 
-          {/* ✅ FIXED: Photos Section (1-4 photos) */}
-          <h3>Photos (1-4 photos allowed) *</h3>
+          {/* Profession & Income Section */}
+          <h3>💼 Profession & Income</h3>
+          
+          <div className="form-group">
+            <textarea
+              name="occupation"
+              placeholder="Occupation/Business Details"
+              value={formData.occupation}
+              onChange={handleChange}
+              rows="4"
+            />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <input
+                name="personalIncome"
+                placeholder="Personal Income (Annual)"
+                value={formData.personalIncome}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="form-group">
+              <input
+                name="familyIncome"
+                placeholder="Family Income (Annual)"
+                value={formData.familyIncome}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+
+          {/* Photos Section */}
+          <h3>📸 Photos (1-4 photos required) *</h3>
           <div className="photo-upload-section">
             <input
               type="file"
@@ -510,13 +602,13 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
             {photos.length > 0 && (
               <div className="selected-photos-info">
                 <p className="photos-count">
-                  ✅ Selected: {photos.length} photo(s)
-                  {photos.length >= 1 && photos.length <= 4 && " (Valid)"}
+                  📷 Selected: {photos.length} photo(s)
+                  {photos.length >= 1 && photos.length <= 4 && " ✨ Perfect!"}
                 </p>
                 <ul className="photos-list">
                   {Array.from(photos).map((file, index) => (
                     <li key={index} className="photo-item">
-                      📸 {file.name} ({(file.size / 1024 / 1024).toFixed(2)}MB)
+                      🖼️ {file.name} ({(file.size / 1024 / 1024).toFixed(2)}MB)
                     </li>
                   ))}
                 </ul>
@@ -529,17 +621,17 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                   photos.length >= 1 ? "valid" : "invalid"
                 }`}
               >
-                • Minimum 1 photo required {photos.length >= 1 ? "✅" : "❌"}
+                Minimum 1 photo required {photos.length >= 1 ? "✅" : "❌"}
               </p>
               <p
                 className={`requirement ${
                   photos.length <= 4 ? "valid" : "invalid"
                 }`}
               >
-                • Maximum 4 photos allowed {photos.length <= 4 ? "✅" : "❌"}
+                Maximum 4 photos allowed {photos.length <= 4 ? "✅" : "❌"}
               </p>
               <p className="requirement-note">
-                • Supported formats: JPEG, PNG, GIF (Max 5MB each)
+                📝 Supported: JPEG, PNG, GIF (Max 5MB each)
               </p>
             </div>
           </div>
@@ -558,7 +650,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
               className="submit-btn"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Adding..." : "Submit"}
+              {isSubmitting ? "✨ Adding Person..." : "🚀 Submit"}
             </button>
           </div>
         </form>
