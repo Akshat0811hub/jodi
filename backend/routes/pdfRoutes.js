@@ -105,7 +105,7 @@ router.get("/person/:id/pdf", async (req, res) => {
     console.log("📊 Template data prepared with all fields");
 
     // ✅ Render EJS template
-    const templatePath = path.join(__dirname, '../views/pdf-person-lite.ejs');
+    const templatePath = path.join(__dirname, '../templates/person-pdf.ejs');
     
     // Check if template exists
     if (!fs.existsSync(templatePath)) {
@@ -240,7 +240,7 @@ router.get("/person/:id/html", async (req, res) => {
       currentDate: new Date().toLocaleDateString('en-IN')
     };
 
-    const templatePath = path.join(__dirname, '../views/pdf-person-lite.ejs');
+    const templatePath = path.join(__dirname, '../templates/person-pdf.ejs');
     const html = await ejs.renderFile(templatePath, templateData);
     
     res.send(html); // Send HTML to browser for preview
