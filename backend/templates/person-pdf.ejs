@@ -2,276 +2,597 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title><%= person.name || "Profile" %> - Profile</title>
+  <title><%= person.name || 'Profile' %> - Profile</title>
   <style>
-    @page { size: A4; margin: 0; }
-    html,body {
-      margin:0; padding:0;
+    /* PDF-specific styles */
+    @page { 
+      size: A4; 
+      margin: 0;
+    }
+    
+    * {
+      box-sizing: border-box;
+    }
+    
+    html, body {
+      margin: 0; 
+      padding: 0;
       font-family: "Helvetica", Arial, sans-serif;
       color: #111;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+      font-size: 14px;
+      line-height: 1.4;
+      /* Critical for PDF rendering */
+      -webkit-print-color-adjust: exact !important;
+      color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
-    .page { box-sizing: border-box; padding: 110px 40px 110px 40px; }
+    
+    .page { 
+      box-sizing: border-box; 
+      padding: 110px 40px 110px 40px;
+      min-height: 100vh;
+      position: relative;
+    }
 
-    /* HEADER */
+    /* HEADER - Fixed positioning for PDF */
     header {
       position: fixed;
-      top: 0; left: 0; right: 0;
-      height: 90px; padding: 12px 40px;
-      border-bottom: 2px solid #444;
-      display:flex; align-items:center; justify-content:space-between;
-      background: #fff;
+      top: 0; 
+      left: 0; 
+      right: 0;
+      height: 90px; 
+      padding: 12px 40px;
+      border-bottom: 2px solid #444 !important;
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between;
+      background: #fff !important;
       z-index: 1000;
     }
-    .header-left { display:flex; gap:16px; align-items:center; }
+    
+    .header-left { 
+      display: flex; 
+      gap: 16px; 
+      align-items: center; 
+    }
+    
     .logo { 
-      height:70px; width:auto; object-fit:contain;
+      height: 70px; 
+      width: auto; 
+      object-fit: contain;
       max-width: 200px;
     }
+    
     .company-meta {
-      font-size:14px; line-height:1.3; color:#000;
+      font-size: 14px; 
+      line-height: 1.3; 
+      color: #000;
     }
+    
     .company-meta strong {
-      font-size:20px;
-      font-weight:700;
-      color: maroon;
+      font-size: 20px;
+      font-weight: 700;
+      color: maroon !important;
     }
+    
     .header-right {
-      text-align:right;
-      font-size:14px;
-      font-weight:600;
+      text-align: right;
+      font-size: 14px;
+      font-weight: 600;
+      color: #000;
     }
 
+    /* FOOTER */
     footer {
       position: fixed;
-      bottom: 0; left: 0; right: 0;
-      height: 90px; padding: 12px 40px;
-      border-top: 1px solid #ddd;
-      font-size:11px; color:#444; background:#fff;
+      bottom: 0; 
+      left: 0; 
+      right: 0;
+      height: 90px; 
+      padding: 12px 40px;
+      border-top: 1px solid #ddd !important;
+      font-size: 11px; 
+      color: #444; 
+      background: #fff !important;
       z-index: 1000;
     }
 
+    /* MAIN CONTENT */
     h1.title {
-      font-size:22px;
-      margin:0 0 12px 0;
-      letter-spacing:0.5px;
-      font-weight:700;
-      color: maroon;
+      font-size: 22px;
+      margin: 0 0 20px 0;
+      letter-spacing: 0.5px;
+      font-weight: 700;
+      color: maroon !important;
+      text-align: center;
+      padding-bottom: 10px;
+      border-bottom: 2px solid maroon;
     }
-    .profile-top { display:flex; gap:18px; margin-bottom:18px; }
-    .profile-pic {
-      width:180px; height:220px;
-      object-fit:cover;
-      border-radius:4px; border:1px solid #ccc;
-      background: #f5f5f5;
-    }
-    .personal-details { flex:1; }
-    .detail-row {
-      display:flex; gap:12px; margin-bottom:6px;
-      font-size:14px;
-    }
-    .label { width:180px; font-weight:600; color:#222; }
-    .value { flex:1; }
-
-    .section { margin-top:10px; page-break-inside: avoid; }
-    .section h2 {
-      font-size:15px;
-      margin:8px 0;
-      border-bottom:1px solid #eee;
-      padding-bottom:6px;
-      font-weight:700;
-      color: maroon;
-    }
-    .family-table, .siblings-table {
-      width:100%; border-collapse: collapse; margin-top:6px;
-    }
-    .family-table td, .siblings-table td {
-      padding:6px 8px;
-      border:1px solid #e8e8e8;
-      vertical-align:top;
-      font-size:13px;
-    }
-    .family-table td strong, .siblings-table td strong {
-      color: maroon;
-    }
-
-    .disclaimer {
-      font-size:11px; color:#666;
-      margin-top:14px; line-height:1.25;
-    }
-
-    /* Photos Grid */
-    .photo-grid {
-      display:flex; 
-      flex-wrap:wrap; 
-      gap:10px;
-      margin-top: 10px;
-    }
-    .photo-grid img {
-      width:180px;
-      height:auto;
-      max-height: 220px;
-      border:1px solid #ccc;
-      border-radius:4px;
-      object-fit:cover;
-      background: #f5f5f5;
-    }
-
-    img {
-      image-rendering: -webkit-optimize-contrast;
-      image-rendering: optimize-contrast;
-    }
-
-    .section, .profile-top, .photo-grid {
+    
+    .profile-top { 
+      display: flex; 
+      gap: 18px; 
+      margin-bottom: 25px;
       page-break-inside: avoid;
+    }
+    
+    .profile-pic {
+      width: 180px; 
+      height: 220px;
+      object-fit: cover;
+      border-radius: 4px; 
+      border: 2px solid #ccc !important;
+      background: #f5f5f5 !important;
+      flex-shrink: 0;
+    }
+    
+    .personal-details { 
+      flex: 1; 
+    }
+    
+    .detail-row {
+      display: flex; 
+      gap: 12px; 
+      margin-bottom: 8px;
+      font-size: 14px;
+      padding: 4px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .label { 
+      width: 180px; 
+      font-weight: 700; 
+      color: #222; 
+      flex-shrink: 0;
+    }
+    
+    .value { 
+      flex: 1;
+      color: #444;
+    }
+
+    /* SECTIONS */
+    .section { 
+      margin-top: 25px; 
+      page-break-inside: avoid; 
+    }
+    
+    .section h2 {
+      font-size: 16px;
+      margin: 15px 0 10px 0;
+      border-bottom: 2px solid #eee !important;
+      padding-bottom: 8px;
+      font-weight: 700;
+      color: maroon !important;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    /* TABLES */
+    .family-table, .siblings-table {
+      width: 100%; 
+      border-collapse: collapse; 
+      margin-top: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .family-table td, .siblings-table td {
+      padding: 10px 12px;
+      border: 1px solid #ddd !important;
+      vertical-align: top;
+      font-size: 13px;
+      background: #fff !important;
+    }
+    
+    .family-table thead td, .siblings-table thead td {
+      background: #f8f8f8 !important;
+      font-weight: 700;
+      color: #000;
+    }
+    
+    .family-table td strong, .siblings-table td strong {
+      color: maroon !important;
+      font-weight: 700;
+    }
+
+    /* PHOTOS */
+    .photo-grid {
+      display: flex; 
+      flex-wrap: wrap; 
+      gap: 15px;
+      margin-top: 15px;
+      page-break-inside: avoid;
+    }
+    
+    .photo-grid img {
+      width: 180px;
+      height: 220px;
+      border: 2px solid #ccc !important;
+      border-radius: 4px;
+      object-fit: cover;
+      background: #f5f5f5 !important;
+    }
+
+    .photo-placeholder {
+      width: 180px;
+      height: 220px;
+      border: 2px solid #ccc !important;
+      border-radius: 4px;
+      background: #f5f5f5 !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #999;
+      font-size: 14px;
+      text-align: center;
+      flex-direction: column;
+    }
+
+    /* DISCLAIMER */
+    .disclaimer {
+      font-size: 11px; 
+      color: #666;
+      margin-top: 20px; 
+      line-height: 1.4;
+      padding: 15px;
+      background: #f9f9f9 !important;
+      border: 1px solid #e0e0e0 !important;
+      border-radius: 4px;
+    }
+
+    /* NOTE PAGE */
+    .note-page {
+      page-break-before: always; 
+      padding: 80px 40px; 
+      text-align: center;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .note-content {
+      font-size: 18px; 
+      font-weight: 700; 
+      margin-top: 32px; 
+      line-height: 1.6; 
+      background-color: maroon !important; 
+      color: white !important; 
+      padding: 30px; 
+      border-radius: 8px;
+      max-width: 600px;
+    }
+
+    /* Force colors for PDF */
+    .force-color {
+      color: maroon !important;
+    }
+    
+    .force-border {
+      border-color: #444 !important;
+    }
+
+    /* Print optimizations */
+    @media print {
+      * {
+        -webkit-print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+      
+      .page {
+        page-break-inside: avoid;
+      }
+      
+      .section {
+        page-break-inside: avoid;
+      }
+    }
+
+    /* Grid layout for better organization */
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+
+    .detail-grid .detail-row {
+      margin-bottom: 0;
     }
   </style>
 </head>
 <body>
   <header>
     <div class="header-left">
-      <% if (typeof logoUrl !== 'undefined' && logoUrl) { %>
-        <img src="<%= logoUrl %>" class="logo" alt="Company Logo" onerror="this.style.display='none'" />
+      <% if (logoUrl) { %>
+        <img src="<%= logoUrl %>" alt="Logo" class="logo" />
       <% } %>
       <div class="company-meta">
-        <strong><%= companyName %></strong><br/>
+        <strong class="force-color"><%= companyName %></strong><br/>
         <span>📞 <%= PhoneNo %></span><br/>
-        <span>📧 <%= companyEmail || "—" %></span><br/>
+        <span>📧 <%= companyEmail %></span><br/>
         <small>📍 <%= companyAddress %></small>
       </div>
     </div>
     <div class="header-right">
-      Date: <%= new Date().toLocaleDateString() %>
+      Date: <span><%= new Date().toLocaleDateString('en-IN') %></span>
     </div>
   </header>
 
   <div class="page">
-    <h1 class="title">Profile Detail</h1>
+    <h1 class="title"><%= person.name || 'Profile' %> - Detailed Profile</h1>
 
     <div class="profile-top">
       <% if (person.profilePicture) { %>
-        <%
-          let profilePicUrl = '';
-          if (person.profilePicture.startsWith('http')) {
-            profilePicUrl = person.profilePicture;
-          } else {
-            profilePicUrl = baseUrl + '/uploads/' + person.profilePicture;
-          }
-        %>
-        <img src="<%= profilePicUrl %>" class="profile-pic" alt="Profile Picture" 
-             onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgwIiBoZWlnaHQ9IjIyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='" />
+        <img src="<%= baseUrl %>/uploads/<%= person.profilePicture %>" alt="Profile Picture" class="profile-pic" />
       <% } else { %>
-        <div class="profile-pic" style="display:flex; align-items:center; justify-content:center; background:#f5f5f5; color:#999; font-size:14px;">
-          No Profile Picture
+        <div class="photo-placeholder">
+          <div>📷</div>
+          <div>Profile Picture</div>
         </div>
       <% } %>
       
       <div class="personal-details">
-        <div class="detail-row"><div class="label">Name :</div><div class="value"><%= person.name || "—" %></div></div>
-        <div class="detail-row"><div class="label">Gender :</div><div class="value"><%= person.gender || "—" %></div></div>
-        <div class="detail-row"><div class="label">Marital Status :</div><div class="value"><%= person.maritalStatus || "—" %></div></div>
-        <div class="detail-row"><div class="label">Date Of Birth :</div><div class="value"><%= person.dob || "—" %></div></div>
-        <div class="detail-row"><div class="label">Native Place :</div><div class="value"><%= person.nativePlace || "—" %></div></div>
-        <div class="detail-row"><div class="label">Height :</div><div class="value"><%= person.height || "—" %></div></div>
-        <div class="detail-row"><div class="label">Complexion :</div><div class="value"><%= person.complexion || "—" %></div></div>
-        <div class="detail-row"><div class="label">Eating Habits :</div><div class="value"><%= person.eatingHabits || "—" %></div></div>
-        <div class="detail-row"><div class="label">NRI :</div><div class="value"><%= person.nri ? "Yes" : "No" %></div></div>
-      </div>
-    </div>
-
-    <!-- Uploaded Photos -->
-    <% if (person.photos && Array.isArray(person.photos) && person.photos.length > 0) { %>
-      <div class="section">
-        <h2>Uploaded Photos</h2>
-        <div class="photo-grid">
-          <% person.photos.forEach((photo, idx) => { %>
-            <div>
-              <%
-                let photoUrl = '';
-                if (photo) {
-                  if (photo.startsWith('http')) {
-                    photoUrl = photo;
-                  } else {
-                    photoUrl = baseUrl + '/uploads/' + photo;
-                  }
-                }
-              %>
-              <img src="<%= photoUrl %>" alt="Photo <%= idx+1 %>" 
-                   onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIE5vdCBGb3VuZDwvdGV4dD48L3N2Zz4='" />
-            </div>
-          <% }) %>
+        <h2 style="color: maroon; margin-bottom: 15px;">Personal Information</h2>
+        <div class="detail-grid">
+          <div class="detail-row">
+            <div class="label">Name :</div>
+            <div class="value"><%= person.name %></div>
+          </div>
+          <div class="detail-row">
+            <div class="label">Gender :</div>
+            <div class="value"><%= person.gender %></div>
+          </div>
+          <div class="detail-row">
+            <div class="label">Marital Status :</div>
+            <div class="value"><%= person.maritalStatus %></div>
+          </div>
+          <div class="detail-row">
+            <div class="label">Date Of Birth :</div>
+            <div class="value"><%= person.dob ? new Date(person.dob).toLocaleDateString('en-IN') : '—' %></div>
+          </div>
+          <div class="detail-row">
+            <div class="label">Birth Place & Time :</div>
+            <div class="value"><%= person.birthPlaceTime %></div>
+          </div>
+          <div class="detail-row">
+            <div class="label">Native Place :</div>
+            <div class="value"><%= person.nativePlace %></div>
+          </div>
+          <div class="detail-row">
+            <div class="label">Gotra :</div>
+            <div class="value"><%= person.gotra %></div>
+          </div>
+          <div class="detail-row">
+            <div class="label">Religion :</div>
+            <div class="value"><%= person.religion %></div>
+          </div>
+          <div class="detail-row">
+            <div class="label">Phone Number :</div>
+            <div class="value"><%= person.phoneNumber %></div>
+          </div>
+          <div class="detail-row">
+            <div class="label">Height :</div>
+            <div class="value"><%= person.height %></div>
+          </div>
+          <div class="detail-row">
+            <div class="label">Complexion :</div>
+            <div class="value"><%= person.complexion %></div>
+          </div>
+          <div class="detail-row">
+            <div class="label">Horoscope :</div>
+            <div class="value"><%= person.horoscope === true ? 'Yes' : person.horoscope === false ? 'No' : person.horoscope %></div>
+          </div>
+          <div class="detail-row">
+            <div class="label">Eating Habits :</div>
+            <div class="value"><%= person.eatingHabits %></div>
+          </div>
+          <div class="detail-row">
+            <div class="label">Drinking Habits :</div>
+            <div class="value"><%= person.drinkingHabits %></div>
+          </div>
+          <div class="detail-row">
+            <div class="label">Smoking Habits :</div>
+            <div class="value"><%= person.smokingHabits %></div>
+          </div>
+          <div class="detail-row">
+            <div class="label">Physical Disability :</div>
+            <div class="value"><%= person.disability %></div>
+          </div>
+          <div class="detail-row">
+            <div class="label">NRI :</div>
+            <div class="value"><%= person.nri === true ? 'Yes' : person.nri === false ? 'No' : person.nri %></div>
+          </div>
+          <div class="detail-row">
+            <div class="label">Vehicle :</div>
+            <div class="value"><%= person.vehicle === true ? 'Yes' : person.vehicle === false ? 'No' : person.vehicle %></div>
+          </div>
         </div>
       </div>
-    <% } %>
-
-    <div class="section">
-      <h2>Educational & Profession</h2>
-      <div class="detail-row"><div class="label">Higher Qualification :</div><div class="value"><%= person.higherQualification || person.education || "—" %></div></div>
-      <div class="detail-row"><div class="label">Occupation :</div><div class="value"><%= person.occupation || "—" %></div></div>
-      <div class="detail-row"><div class="label">Personal Income :</div><div class="value"><%= person.personalIncome || person.income || "—" %></div></div>
-      <div class="detail-row"><div class="label">Residence :</div><div class="value"><%= person.residence || "—" %></div></div>
     </div>
 
+    <!-- Education Section -->
+    <div class="section">
+      <h2>Educational Qualifications</h2>
+      <div class="detail-grid">
+        <div class="detail-row">
+          <div class="label">Higher Qualification :</div>
+          <div class="value"><%= person.higherQualification %></div>
+        </div>
+        <div class="detail-row">
+          <div class="label">Graduation :</div>
+          <div class="value"><%= person.graduation %></div>
+        </div>
+        <div class="detail-row">
+          <div class="label">Schooling :</div>
+          <div class="value"><%= person.schooling %></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profession & Income Section -->
+    <div class="section">
+      <h2>Profession & Income</h2>
+      <div class="detail-row">
+        <div class="label">Occupation :</div>
+        <div class="value"><%= person.occupation %></div>
+      </div>
+      <div class="detail-row">
+        <div class="label">Personal Income :</div>
+        <div class="value"><%= person.personalIncome %></div>
+      </div>
+      <div class="detail-row">
+        <div class="label">Family Income :</div>
+        <div class="value"><%= person.familyIncome %></div>
+      </div>
+      <div class="detail-row">
+        <div class="label">Residence :</div>
+        <div class="value"><%= person.residence %></div>
+      </div>
+      <div class="detail-row">
+        <div class="label">Other Property :</div>
+        <div class="value"><%= person.otherProperty %></div>
+      </div>
+    </div>
+
+    <!-- Family Details Section -->
     <div class="section">
       <h2>Family Details</h2>
       <table class="family-table">
-        <tr>
-          <td><strong>Father</strong></td><td><%= (person.family && person.family.father) || person.fatherName || "—" %></td>
-          <td><strong>Mother</strong></td><td><%= (person.family && person.family.mother) || person.motherName || "—" %></td>
-        </tr>
-        <tr>
-          <td><strong>Family Income</strong></td><td><%= person.familyIncome || "—" %></td>
-          <td><strong>Other Property</strong></td><td><%= person.otherProperty || "—" %></td>
-        </tr>
-      </table>
-    </div>
-
-    <div class="section">
-      <h2>Siblings & Extended Family</h2>
-      <table class="siblings-table">
         <thead>
-          <tr><td><strong>Name</strong></td><td><strong>Relation</strong></td><td><strong>Age</strong></td><td><strong>Profession</strong></td><td><strong>Marital Status</strong></td></tr>
+          <tr>
+            <td><strong>Father Details</strong></td>
+            <td></td>
+            <td><strong>Mother Details</strong></td>
+            <td></td>
+          </tr>
         </thead>
         <tbody>
-          <% if (Array.isArray(person.siblings) && person.siblings.length) { %>
-            <% person.siblings.forEach(function(sib){ %>
-              <tr>
-                <td><%= sib.name || "—" %></td>
-                <td><%= sib.relation || "—" %></td>
-                <td><%= sib.age || "—" %></td>
-                <td><%= sib.profession || "—" %></td>
-                <td><%= sib.maritalStatus || "—" %></td>
-              </tr>
-            <% }) %>
-          <% } else { %>
-            <tr><td colspan="5">No sibling details available</td></tr>
-          <% } %>
+          <tr>
+            <td><strong>Name</strong></td>
+            <td><%= person.fatherName %></td>
+            <td><strong>Name</strong></td>
+            <td><%= person.motherName %></td>
+          </tr>
+          <tr>
+            <td><strong>Occupation</strong></td>
+            <td><%= person.fatherOccupation %></td>
+            <td><strong>Occupation</strong></td>
+            <td><%= person.motherOccupation %></td>
+          </tr>
+          <tr>
+            <td><strong>Office Detail</strong></td>
+            <td><%= person.fatherOffice %></td>
+            <td></td>
+            <td></td>
+          </tr>
         </tbody>
       </table>
     </div>
+
+    <!-- Siblings Section -->
+    <% if (person.siblings && person.siblings.length > 0) { %>
+    <div class="section">
+      <h2>Siblings & Family Members</h2>
+      <table class="siblings-table">
+        <thead>
+          <tr>
+            <td><strong>Name</strong></td>
+            <td><strong>Relation</strong></td>
+            <td><strong>Age</strong></td>
+            <td><strong>Profession</strong></td>
+            <td><strong>Marital Status</strong></td>
+          </tr>
+        </thead>
+        <tbody>
+          <% person.siblings.forEach(function(sibling) { %>
+          <tr>
+            <td><%= sibling.name || '—' %></td>
+            <td><%= sibling.relation || '—' %></td>
+            <td><%= sibling.age || '—' %></td>
+            <td><%= sibling.profession || '—' %></td>
+            <td><%= sibling.maritalStatus || '—' %></td>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <% } else { %>
+    <div class="section">
+      <h2>Siblings & Family Members</h2>
+      <p style="color: #666; font-style: italic;">No sibling information provided</p>
+    </div>
+    <% } %>
+
+    <!-- Photos Section -->
+    <div class="section">
+      <h2>Additional Photos</h2>
+      <% if (person.photos && person.photos.length > 0) { %>
+        <div class="photo-grid">
+          <% person.photos.forEach(function(photo, index) { %>
+            <% if (index > 0) { %> <!-- Skip first photo as it's already shown as profile picture -->
+              <img src="<%= baseUrl %>/uploads/<%= photo %>" alt="Photo <%= index + 1 %>" onerror="this.style.display='none'" />
+            <% } %>
+          <% }); %>
+          
+          <!-- Fill remaining slots with placeholders if less than 3 additional photos -->
+          <% 
+            let additionalPhotos = person.photos.length - 1; // Subtract profile picture
+            if (additionalPhotos < 0) additionalPhotos = 0;
+            for (let i = additionalPhotos; i < 3; i++) { 
+          %>
+            <div class="photo-placeholder">
+              <div>📷</div>
+              <div>Photo <%= i + 2 %></div>
+            </div>
+          <% } %>
+        </div>
+      <% } else { %>
+        <div class="photo-grid">
+          <div class="photo-placeholder">
+            <div>📷</div>
+            <div>Photo 1</div>
+          </div>
+          <div class="photo-placeholder">
+            <div>📷</div>
+            <div>Photo 2</div>
+          </div>
+          <div class="photo-placeholder">
+            <div>📷</div>
+            <div>Photo 3</div>
+          </div>
+        </div>
+      <% } %>
+    </div>
+
+    <div class="disclaimer">
+      <strong>Disclaimer:</strong> The above particulars have been provided to the best of our knowledge, 
+      as per information provided by the concerned party. We (<%= companyName %>) shall not be responsible for 
+      misrepresentation of any or all of the information herein.
+    </div>
   </div>
 
-  <!-- Last Page NOTE -->
-  <div style="page-break-before: always; padding: 80px 40px; text-align: center;">
-    <div style="font-size: 20px; font-weight: bold; margin-top: 32px; line-height: 1.6; background-color: maroon; color: white; padding: 20px; border-radius: 6px;">
-      NOTE : The above particulars have been provided to the best of our knowledge, as per
-      information provided by the concerned party.<br/>
-      We ( Jodi No 1) shall not be responsible for misrepresentation of any or all of
-      the information herein. Amount will not be refunded in any case.<br/>
-      All clients have to pay full maturity amount on ROKA CEREMONY.
+  <!-- Note Page -->
+  <div class="note-page">
+    <div class="note-content">
+      NOTE: The above particulars have been provided to the best of our knowledge, as per
+      information provided by the concerned party.<br/><br/>
+      We (<%= companyName %>) shall not be responsible for misrepresentation of any or all of
+      the information herein. Amount will not be refunded in any case.<br/><br/>
+      All clients have to pay full maturity amount on ROKA CEREMONY.<br/><br/>
+      Contact: <%= PhoneNo %> | <%= companyEmail %>
     </div>
   </div>
 
   <footer>
     <div style="display:flex;justify-content:space-between;align-items:center;">
       <div>
-        <strong><%= companyName %></strong><br/>
+        <strong class="force-color"><%= companyName %></strong><br/>
         <small><%= PhoneNo %> | <%= companyAddress %></small>
       </div>
       <div style="text-align:right;">
-        <small>By Mamta Aggarwal, 9871080409, 9211729184, 9211729185, 9211729186</small><br/>
-        <small>www.jodino1@gmail.com</small>
+        <small>By Mamta Aggarwal, <%= PhoneNo %>, 9211729184, 9211729185, 9211729186</small><br/>
+        <small><%= companyEmail %></small>
       </div>
     </div>
   </footer>

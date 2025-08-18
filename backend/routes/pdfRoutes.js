@@ -1,6 +1,7 @@
 // routes/pdfRoutes.js
 const express = require("express");
-const PDFDocument = require("pdfkit");
+const puppeteer = require("puppeteer");
+const ejs = require("ejs");
 const Person = require("../models/personModel");
 const path = require("path");
 const fs = require("fs");
@@ -8,28 +9,6 @@ const fs = require("fs");
 const router = express.Router();
 
 console.log("📄 Loading PDF routes...");
-
-// Field labels mapping
-const fieldLabels = {
-  name: "Name",
-  age: "Age",
-  height: "Height",
-  gender: "Gender",
-  religion: "Religion",
-  caste: "Caste",
-  maritalStatus: "Marital Status",
-  state: "State",
-  area: "Area",
-  dob: "Date of Birth",
-  nativePlace: "Native Place",
-  phoneNumber: "Phone Number",
-  occupation: "Occupation",
-  education: "Education",
-  income: "Income",
-  fatherName: "Father's Name",
-  motherName: "Mother's Name",
-  residence: "Residence"
-};
 
 // Helper function to format date
 const formatDate = (dateString) => {
@@ -43,14 +22,11 @@ const formatDate = (dateString) => {
   });
 };
 
-// GET /api/pdf/person/:id/pdf - Generate styled PDF for a person
+// GET /api/pdf/person/:id/pdf - Generate styled PDF using EJS template
 router.get("/person/:id/pdf", async (req, res) => {
   try {
     const { id } = req.params;
-    const fieldsParam = req.query.fields || '';
-    const selectedFields = fieldsParam ? fieldsParam.split(',') : Object.keys(fieldLabels);
-    
-    console.log(`📄 Generating PDF for person ${id} with fields:`, selectedFields);
+    console.log(`📄 Generating styled PDF for person ${id}`);
     
     // Find the person
     const person = await Person.findById(id);
@@ -60,179 +36,235 @@ router.get("/person/:id/pdf", async (req, res) => {
     }
     
     console.log("✅ Person found:", person.name);
-    
-    // Create PDF document
-    const doc = new PDFDocument({
-      margin: 50,
-      size: 'A4'
-    });
-    
-    // Set response headers
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${person.name.replace(/[^a-zA-Z0-9]/g, '_')}_profile.pdf"`);
-    
-    // Pipe the PDF to response
-    doc.pipe(res);
-    
-    // Add header
-    doc.fontSize(24)
-       .fillColor('#2c3e50')
-       .text('JODI - Profile Details', { align: 'center' })
-       .moveDown();
-    
-    // Add a line
-    doc.moveTo(50, doc.y)
-       .lineTo(550, doc.y)
-       .stroke('#3498db')
-       .moveDown();
-    
-    // Add person photo if available
-    const photoPath = person.photos && person.photos[0] 
-      ? path.join(__dirname, '../uploads', person.photos[0])
-      : null;
-      
-    if (photoPath && fs.existsSync(photoPath)) {
-      try {
-        doc.image(photoPath, 450, 120, { width: 100, height: 120 });
-        console.log("📸 Added photo to PDF");
-      } catch (photoError) {
-        console.warn("⚠️ Failed to add photo to PDF:", photoError.message);
-      }
-    }
-    
-    // Add person name prominently
-    doc.fontSize(20)
-       .fillColor('#2c3e50')
-       .text(person.name || 'N/A', 50, 120)
-       .moveDown();
-    
-    // Add personal details section
-    doc.fontSize(16)
-       .fillColor('#34495e')
-       .text('Personal Information', 50, doc.y)
-       .moveDown(0.5);
-    
-    // Current Y position
-    let currentY = doc.y;
-    
-    // Add selected fields
-    doc.fontSize(12).fillColor('#2c3e50');
-    
-    selectedFields.forEach((field, index) => {
-      if (fieldLabels[field] && person[field] !== undefined) {
-        let value = person[field];
+
+    // ✅ Complete template data with ALL fields from AddPersonForm
+    const templateData = {
+      person: {
+        // Personal Details
+        name: person.name || "—",
+        gender: person.gender || "—",
+        maritalStatus: person.maritalStatus || "—",
+        dob: person.dob || "—",
+        birthPlaceTime: person.birthPlaceTime || "—",
+        nativePlace: person.nativePlace || "—",
+        gotra: person.gotra || "—",
+        religion: person.religion || "—",
+        phoneNumber: person.phoneNumber || "—",
+        height: person.height || "—",
+        complexion: person.complexion || "—",
+        horoscope: person.horoscope || "—",
+        eatingHabits: person.eatingHabits || "—",
+        drinkingHabits: person.drinkingHabits || "—",
+        smokingHabits: person.smokingHabits || "—",
+        disability: person.disability || "—",
+        nri: person.nri || false,
+        vehicle: person.vehicle || "—",
         
-        // Format specific fields
-        if (field === 'dob') {
-          value = formatDate(value);
-        } else if (value === null || value === undefined || value === '') {
-          value = '-';
+        // Family Details
+        fatherName: person.fatherName || "—",
+        fatherOccupation: person.fatherOccupation || "—",
+        fatherOffice: person.fatherOffice || "—",
+        motherName: person.motherName || "—",
+        motherOccupation: person.motherOccupation || "—",
+        residence: person.residence || "—",
+        otherProperty: person.otherProperty || "—",
+        
+        // Education
+        higherQualification: person.higherQualification || "—",
+        graduation: person.graduation || "—",
+        schooling: person.schooling || "—",
+        
+        // Profession & Income
+        occupation: person.occupation || "—",
+        personalIncome: person.personalIncome || "—",
+        familyIncome: person.familyIncome || "—",
+        
+        // Photos and Siblings
+        photos: person.photos || [],
+        siblings: person.siblings || [],
+        profilePicture: person.photos?.[0] || null,
+        
+        // Additional fields for compatibility
+        family: {
+          father: person.fatherName || "—",
+          mother: person.motherName || "—"
         }
-        
-        // Add field label and value
-        doc.font('Helvetica-Bold')
-           .text(`${fieldLabels[field]}:`, 50, currentY, { continued: true, width: 150 })
-           .font('Helvetica')
-           .text(` ${value}`, { width: 300 });
-        
-        currentY += 20;
-        
-        // Check if we need a new page
-        if (currentY > 750) {
-          doc.addPage();
-          currentY = 50;
-        }
-      }
-    });
+      },
+      companyName: "JODI NO 1",
+      PhoneNo: "9871080409",
+      companyEmail: "jodino1@gmail.com",
+      companyAddress: "Gurugram, Haryana, India",
+      logoUrl: "", // Add if you have logo
+      baseUrl: process.env.BASE_URL || `${req.protocol}://${req.get('host')}`
+    };
+
+    console.log("📊 Template data prepared with all fields");
+
+    // ✅ Render EJS template
+    const templatePath = path.join(__dirname, '../views/pdf-person.ejs');
     
-    // Add siblings section if available
-    if (person.siblings && person.siblings.length > 0) {
-      currentY += 10;
-      
-      if (currentY > 700) {
-        doc.addPage();
-        currentY = 50;
-      }
-      
-      doc.fontSize(16)
-         .fillColor('#34495e')
-         .text('Family Details', 50, currentY)
-         .moveDown(0.5);
-      
-      currentY = doc.y;
-      
-      person.siblings.forEach((sibling, index) => {
-        doc.fontSize(14)
-           .fillColor('#2c3e50')
-           .text(`Sibling ${index + 1}:`, 50, currentY);
-        
-        currentY += 18;
-        
-        doc.fontSize(12);
-        if (sibling.name) {
-          doc.text(`Name: ${sibling.name}`, 70, currentY);
-          currentY += 15;
-        }
-        if (sibling.relation) {
-          doc.text(`Relation: ${sibling.relation}`, 70, currentY);
-          currentY += 15;
-        }
-        if (sibling.age) {
-          doc.text(`Age: ${sibling.age}`, 70, currentY);
-          currentY += 15;
-        }
-        if (sibling.profession) {
-          doc.text(`Profession: ${sibling.profession}`, 70, currentY);
-          currentY += 15;
-        }
-        if (sibling.maritalStatus) {
-          doc.text(`Marital Status: ${sibling.maritalStatus}`, 70, currentY);
-          currentY += 15;
-        }
-        
-        currentY += 10;
-        
-        if (currentY > 750) {
-          doc.addPage();
-          currentY = 50;
-        }
+    // Check if template exists
+    if (!fs.existsSync(templatePath)) {
+      console.error("❌ EJS template not found at:", templatePath);
+      return res.status(500).json({ 
+        message: "PDF template not found", 
+        path: templatePath 
       });
     }
+
+    const html = await ejs.renderFile(templatePath, templateData);
+    console.log("📝 HTML rendered successfully, length:", html.length);
+
+    // ✅ Launch Puppeteer with proper config
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-web-security',
+        '--allow-running-insecure-content',
+        '--disable-features=VizDisplayCompositor',
+        '--run-all-compositor-stages-before-draw',
+        '--disable-backgrounding-occluded-windows'
+      ]
+    });
+
+    const page = await browser.newPage();
     
-    // Add footer
-    const pages = doc.bufferedPageRange();
-    for (let i = 0; i < pages.count; i++) {
-      doc.switchToPage(i);
-      
-      // Add page number
-      doc.fontSize(10)
-         .fillColor('#7f8c8d')
-         .text(`Page ${i + 1} of ${pages.count}`, 50, 770, { align: 'center' });
-      
-      // Add generation timestamp
-      doc.text(`Generated on ${new Date().toLocaleDateString('en-IN')} at ${new Date().toLocaleTimeString('en-IN')}`, 
-               50, 785, { align: 'center' });
-    }
+    // ✅ Set viewport and emulate screen
+    await page.setViewport({ width: 1200, height: 1600, deviceScaleFactor: 2 });
     
-    // Finalize the PDF
-    doc.end();
-    
-    console.log("✅ PDF generated successfully for:", person.name);
-    
+    // ✅ Set content and wait for everything to load
+    await page.setContent(html, { 
+      waitUntil: ['networkidle0', 'domcontentloaded'],
+      timeout: 30000 
+    });
+
+    // ✅ Wait a bit more for fonts and styles to load
+    await page.waitForTimeout(2000);
+
+    // ✅ Generate PDF with optimal settings
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true, // ✅ CRITICAL for your styling
+      margin: {
+        top: '0px',
+        right: '0px', 
+        bottom: '0px',
+        left: '0px'
+      },
+      preferCSSPageSize: true,
+      displayHeaderFooter: false,
+      scale: 1,
+      quality: 100
+    });
+
+    await browser.close();
+    console.log("✅ PDF generated successfully with styling");
+
+    // ✅ Send PDF with proper headers
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${(person.name || 'profile').replace(/[^a-zA-Z0-9]/g, '_')}_detailed_profile.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.send(pdfBuffer);
+
   } catch (error) {
     console.error("❌ PDF generation error:", error);
     
-    // If response hasn't been sent yet, send error
     if (!res.headersSent) {
       res.status(500).json({
         message: "Failed to generate PDF",
-        error: error.message
+        error: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }
   }
 });
 
-// GET /api/pdf/bulk - Generate bulk PDF for multiple people
+// ✅ HTML preview endpoint for debugging (same data as PDF)
+router.get("/person/:id/html", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const person = await Person.findById(id);
+    
+    if (!person) {
+      return res.status(404).json({ message: "Person not found" });
+    }
+
+    // Same template data as PDF
+    const templateData = {
+      person: {
+        // Personal Details - ALL fields from form
+        name: person.name || "—",
+        gender: person.gender || "—",
+        maritalStatus: person.maritalStatus || "—",
+        dob: person.dob || "—",
+        birthPlaceTime: person.birthPlaceTime || "—",
+        nativePlace: person.nativePlace || "—",
+        gotra: person.gotra || "—",
+        religion: person.religion || "—",
+        phoneNumber: person.phoneNumber || "—",
+        height: person.height || "—",
+        complexion: person.complexion || "—",
+        horoscope: person.horoscope || "—",
+        eatingHabits: person.eatingHabits || "—",
+        drinkingHabits: person.drinkingHabits || "—",
+        smokingHabits: person.smokingHabits || "—",
+        disability: person.disability || "—",
+        nri: person.nri || false,
+        vehicle: person.vehicle || "—",
+        
+        // Family Details
+        fatherName: person.fatherName || "—",
+        fatherOccupation: person.fatherOccupation || "—",
+        fatherOffice: person.fatherOffice || "—",
+        motherName: person.motherName || "—",
+        motherOccupation: person.motherOccupation || "—",
+        residence: person.residence || "—",
+        otherProperty: person.otherProperty || "—",
+        
+        // Education
+        higherQualification: person.higherQualification || "—",
+        graduation: person.graduation || "—",
+        schooling: person.schooling || "—",
+        
+        // Profession & Income
+        occupation: person.occupation || "—",
+        personalIncome: person.personalIncome || "—",
+        familyIncome: person.familyIncome || "—",
+        
+        // Photos and Siblings
+        photos: person.photos || [],
+        siblings: person.siblings || [],
+        profilePicture: person.photos?.[0] || null,
+        
+        // Compatibility
+        family: {
+          father: person.fatherName || "—",
+          mother: person.motherName || "—"
+        }
+      },
+      companyName: "JODI NO 1",
+      PhoneNo: "9871080409",
+      companyEmail: "jodino1@gmail.com",
+      companyAddress: "Gurugram, Haryana, India",
+      logoUrl: "",
+      baseUrl: process.env.BASE_URL || `${req.protocol}://${req.get('host')}`
+    };
+
+    const templatePath = path.join(__dirname, '../views/pdf-person.ejs');
+    const html = await ejs.renderFile(templatePath, templateData);
+    
+    res.send(html); // Send HTML to browser for preview
+    
+  } catch (error) {
+    console.error("❌ HTML preview error:", error);
+    res.status(500).json({ message: "Failed to generate HTML preview", error: error.message });
+  }
+});
+
+// POST /api/pdf/bulk - Generate bulk PDF for multiple people (keeping same functionality)
 router.post("/bulk", async (req, res) => {
   try {
     const { personIds, selectedFields } = req.body;
@@ -253,80 +285,96 @@ router.post("/bulk", async (req, res) => {
         message: "No people found"
       });
     }
-    
-    // Create PDF document
-    const doc = new PDFDocument({
-      margin: 50,
-      size: 'A4'
+
+    // ✅ Use Puppeteer for bulk PDF as well for consistency
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage'
+      ]
     });
+
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1200, height: 1600, deviceScaleFactor: 2 });
+
+    // ✅ Generate combined HTML for all people
+    let combinedHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Bulk Profiles Export</title>
+        <style>
+          @page { size: A4; margin: 0; }
+          body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+          .bulk-header { text-align: center; margin-bottom: 30px; page-break-after: always; }
+          .person-page { page-break-before: always; padding: 40px; }
+          .person-title { font-size: 24px; color: maroon; margin-bottom: 20px; text-align: center; }
+          .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+          .detail-item { padding: 8px; border-bottom: 1px solid #eee; }
+          .detail-label { font-weight: bold; color: #333; }
+          .detail-value { color: #666; }
+        </style>
+      </head>
+      <body>
+        <div class="bulk-header">
+          <h1 style="color: maroon;">JODI NO 1 - Bulk Profiles Export</h1>
+          <p>Total Profiles: ${people.length}</p>
+          <p>Generated on: ${new Date().toLocaleDateString('en-IN')}</p>
+        </div>
+    `;
+
+    people.forEach((person, index) => {
+      combinedHtml += `
+        <div class="person-page">
+          <h2 class="person-title">Profile ${index + 1}: ${person.name || 'N/A'}</h2>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <div class="detail-label">Name:</div>
+              <div class="detail-value">${person.name || "—"}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Gender:</div>
+              <div class="detail-value">${person.gender || "—"}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Date of Birth:</div>
+              <div class="detail-value">${formatDate(person.dob)}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Religion:</div>
+              <div class="detail-value">${person.religion || "—"}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Height:</div>
+              <div class="detail-value">${person.height || "—"}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Phone Number:</div>
+              <div class="detail-value">${person.phoneNumber || "—"}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    combinedHtml += `</body></html>`;
+
+    await page.setContent(combinedHtml, { waitUntil: 'networkidle0' });
     
-    // Set response headers
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' }
+    });
+
+    await browser.close();
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="bulk_profiles_${Date.now()}.pdf"`);
-    
-    // Pipe the PDF to response
-    doc.pipe(res);
-    
-    // Add title page
-    doc.fontSize(24)
-       .fillColor('#2c3e50')
-       .text('JODI - Bulk Profile Export', { align: 'center' })
-       .moveDown()
-       .fontSize(16)
-       .text(`${people.length} Profile(s)`, { align: 'center' })
-       .moveDown(2);
-    
-    // Add each person
-    people.forEach((person, personIndex) => {
-      if (personIndex > 0) {
-        doc.addPage();
-      }
-      
-      // Person header
-      doc.fontSize(20)
-         .fillColor('#2c3e50')
-         .text(`Profile ${personIndex + 1}: ${person.name || 'N/A'}`, 50, 50)
-         .moveDown();
-      
-      // Add line
-      doc.moveTo(50, doc.y)
-         .lineTo(550, doc.y)
-         .stroke('#3498db')
-         .moveDown();
-      
-      let currentY = doc.y;
-      
-      // Add fields
-      const fieldsToShow = selectedFields || Object.keys(fieldLabels);
-      doc.fontSize(12).fillColor('#2c3e50');
-      
-      fieldsToShow.forEach((field) => {
-        if (fieldLabels[field] && person[field] !== undefined) {
-          let value = person[field];
-          
-          if (field === 'dob') {
-            value = formatDate(value);
-          } else if (value === null || value === undefined || value === '') {
-            value = '-';
-          }
-          
-          doc.font('Helvetica-Bold')
-             .text(`${fieldLabels[field]}:`, 50, currentY, { continued: true, width: 150 })
-             .font('Helvetica')
-             .text(` ${value}`, { width: 350 });
-          
-          currentY += 18;
-          
-          if (currentY > 750) {
-            doc.addPage();
-            currentY = 50;
-          }
-        }
-      });
-    });
-    
-    // Finalize PDF
-    doc.end();
+    res.send(pdfBuffer);
     
     console.log("✅ Bulk PDF generated successfully");
     
