@@ -126,7 +126,7 @@ const addPhotosSection = async (doc, person) => {
     doc.addPage();
     
     // Photos section header
-    addStyledSectionHeader(doc, '📸 PHOTOGRAPHS');
+    addStyledSectionHeader(doc, ' PHOTOGRAPHS');
     
     if (uniquePhotos.length === 0) {
       // ✅ Show "No photos available" message with styling
@@ -410,7 +410,7 @@ const addEnhancedImportantNote = (doc) => {
   doc.fontSize(14)
      .font('Helvetica-Bold')
      .fillColor(colors.white)
-     .text('⚠️ IMPORTANT NOTICE', 55, headerY + 10);
+     .text('IMPORTANT NOTICE', 55, headerY + 10);
   
   // Move down after header
   doc.y = headerY + 45;
