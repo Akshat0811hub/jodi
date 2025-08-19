@@ -355,7 +355,7 @@ async function seedAdminUsers() {
     const admins = [
       { name: "Akshat", email: "akshat@gmail.com", password: "admin123" },
       { name: "Mannat", email: "mannat@gmail.com", password: "mannat@123" },
-      { name: "Mannat", email: "jodino1@gmail.com", password: "mamta1947" },
+      { name: "Mannat", email: "jodi@gmail.com", password: "mamta1947" },
     ];
 
     for (let admin of admins) {

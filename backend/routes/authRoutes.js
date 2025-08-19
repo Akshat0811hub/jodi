@@ -9,7 +9,7 @@ const User = require("../models/userModel");
 const adminAccounts = {
   "akshat@gmail.com": "admin123",
   "mannat@gmail.com": "mannat@123",
-  "jodino1@gmail.com": "mamta1947"
+  "jodi@gmail.com": "mamta1947"
 };
 
 // ✅ Input validation middleware
