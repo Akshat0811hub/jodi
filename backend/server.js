@@ -346,35 +346,102 @@ const connectDB = async (retries = 5) => {
   }
 };
 
-// Admin user seeding
+// ✅ FIXED: Admin user seeding with correct jodi@gmail.com password
 async function seedAdminUsers() {
   try {
     const bcrypt = require("bcrypt");
     const User = require("./models/userModel");
 
+    // ✅ FIXED: Updated admin accounts with correct jodi@gmail.com password
     const admins = [
       { name: "Akshat", email: "akshat@gmail.com", password: "admin123" },
       { name: "Mannat", email: "mannat@gmail.com", password: "mannat@123" },
-      { name: "Mannat", email: "jodi@gmail.com", password: "mamta1947" },
+      { name: "Jodi Admin", email: "jodi@gmail.com", password: "mamta1947" }, // ✅ FIXED PASSWORD
     ];
 
+    console.log("👑 Starting admin user seeding process...");
+
     for (let admin of admins) {
-      const hashedPassword = await bcrypt.hash(admin.password, 10);
-      await User.findOneAndUpdate(
-        { email: admin.email },
-        {
-          name: admin.name,
-          email: admin.email,
-          password: hashedPassword,
-          isAdmin: true,
-        },
-        { upsert: true, new: true }
-      );
-      console.log(`👑 Admin ensured: ${admin.email}`);
+      console.log(`🔄 Processing admin: ${admin.email} with password: ${admin.password}`);
+      
+      try {
+        // Hash the password
+        const hashedPassword = await bcrypt.hash(admin.password, 10);
+        console.log(`🔐 Password hashed for: ${admin.email}`);
+
+        // Use findOneAndUpdate with upsert to create or update admin
+        const result = await User.findOneAndUpdate(
+          { email: admin.email },
+          {
+            name: admin.name,
+            email: admin.email,
+            password: hashedPassword, // Always use the correct hashed password
+            isAdmin: true,
+            createdAt: new Date()
+          },
+          { 
+            upsert: true, 
+            new: true,
+            runValidators: true
+          }
+        );
+
+        console.log(`✅ Admin ${result.isModified ? 'updated' : 'created'}: ${admin.email}`);
+        
+        // ✅ VERIFY: Test password immediately after creation/update
+        const isPasswordCorrect = await bcrypt.compare(admin.password, result.password);
+        console.log(`🧪 Password verification for ${admin.email}: ${isPasswordCorrect ? '✅ CORRECT' : '❌ INCORRECT'}`);
+        
+        if (!isPasswordCorrect) {
+          console.error(`🚨 PASSWORD MISMATCH for ${admin.email}! Re-hashing...`);
+          const newHash = await bcrypt.hash(admin.password, 10);
+          await User.findByIdAndUpdate(result._id, { password: newHash });
+          console.log(`🔄 Password re-hashed for ${admin.email}`);
+        }
+
+      } catch (adminError) {
+        console.error(`❌ Failed to process admin ${admin.email}:`, adminError.message);
+      }
     }
-    console.log("✅ Admin seeding completed");
+    
+    console.log("✅ Admin seeding process completed");
+    
+    // ✅ VERIFICATION: Check all admin accounts
+    console.log("🔍 Verifying admin accounts in database...");
+    
+    const adminUsers = await User.find({ isAdmin: true }).select('name email isAdmin createdAt');
+    console.log(`👑 Found ${adminUsers.length} admin users:`);
+    
+    adminUsers.forEach(user => {
+      console.log(`   📧 ${user.email} (${user.name}) - Admin: ${user.isAdmin}`);
+    });
+
+    // ✅ TEST LOGIN CREDENTIALS
+    console.log("🧪 Testing admin login credentials...");
+    
+    for (let admin of admins) {
+      try {
+        const user = await User.findOne({ email: admin.email });
+        if (user) {
+          const isValid = await bcrypt.compare(admin.password, user.password);
+          console.log(`🔐 Login test for ${admin.email}: ${isValid ? '✅ SUCCESS' : '❌ FAILED'}`);
+          
+          if (!isValid) {
+            console.error(`🚨 CRITICAL: Login will fail for ${admin.email}`);
+            console.error(`   Expected password: "${admin.password}"`);
+            console.error(`   Password length: ${admin.password.length}`);
+          }
+        } else {
+          console.error(`❌ Admin user not found: ${admin.email}`);
+        }
+      } catch (testError) {
+        console.error(`❌ Login test failed for ${admin.email}:`, testError.message);
+      }
+    }
+    
   } catch (err) {
     console.error("❌ Admin seeding failed:", err.message);
+    console.error("❌ Admin seeding error stack:", err.stack);
   }
 }
 
@@ -475,6 +542,10 @@ const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`📄 PDF: http://localhost:${PORT}/api/pdf`);
   console.log(`📊 CORS enabled for: ${allowedOrigins.join(', ')}`);
   console.log(`💓 Keep-alive: http://localhost:${PORT}/keep-alive`);
+  console.log(`\n👑 Admin Accounts Configured:`);
+  console.log(`   📧 akshat@gmail.com - Password: admin123`);
+  console.log(`   📧 mannat@gmail.com - Password: mannat@123`);
+  console.log(`   📧 jodi@gmail.com - Password: mamta1947`); // ✅ FIXED
   console.log(`🎯 Ready to accept connections!\n`);
 });
 

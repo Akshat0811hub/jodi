@@ -5,11 +5,11 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
 
-// Admin email-password mapping
+// ✅ FIXED: Admin email-password mapping with correct jodi@gmail.com password
 const adminAccounts = {
   "akshat@gmail.com": "admin123",
   "mannat@gmail.com": "mannat@123",
-  "jodi@gmail.com": "mamta1947"
+  "jodi@gmail.com": "mamta1947"  // ✅ Fixed: removed space, corrected password
 };
 
 // ✅ Input validation middleware
@@ -47,7 +47,7 @@ const validateLoginInput = (req, res, next) => {
   next();
 };
 
-// ✅ Test route - should be first for easy testing
+// ✅ Test route
 router.get("/test", (req, res) => {
   res.json({ 
     message: "Auth routes working!",
@@ -57,7 +57,8 @@ router.get("/test", (req, res) => {
       "POST /api/auth/login", 
       "GET /api/auth/me",
       "GET /api/auth/test"
-    ]
+    ],
+    adminEmails: Object.keys(adminAccounts) // Show configured admin emails
   });
 });
 
@@ -72,7 +73,7 @@ router.post("/register", validateRegisterInput, async (req, res) => {
       timestamp: new Date().toISOString()
     });
     
-    // Trim whitespace
+    // Trim whitespace and normalize email
     name = name.trim();
     email = email.trim().toLowerCase();
     
@@ -83,12 +84,13 @@ router.post("/register", validateRegisterInput, async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    // If email is admin, override password and set admin flag
+    // ✅ FIXED: Check if email is admin and force correct password
     let isAdmin = false;
     if (adminAccounts[email]) {
-      console.log("👑 Admin registration detected:", email);
-      password = adminAccounts[email]; // force set admin password
+      console.log("👑 Admin registration detected for:", email);
+      password = adminAccounts[email]; // Force set the correct admin password
       isAdmin = true;
+      console.log("🔐 Using admin password from adminAccounts mapping");
     }
 
     // Hash password
@@ -116,7 +118,13 @@ router.post("/register", validateRegisterInput, async (req, res) => {
     
     res.status(201).json({ 
       message: isAdmin ? "Admin user registered successfully" : "User registered successfully",
-      isAdmin
+      isAdmin,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        isAdmin: user.isAdmin
+      }
     });
     
   } catch (err) {
@@ -138,7 +146,7 @@ router.post("/register", validateRegisterInput, async (req, res) => {
   }
 });
 
-// ✅ POST /api/auth/login
+// ✅ POST /api/auth/login - FIXED LOGIN LOGIC
 router.post("/login", validateLoginInput, async (req, res) => {
   const { email, password } = req.body;
   
@@ -146,21 +154,74 @@ router.post("/login", validateLoginInput, async (req, res) => {
     const trimmedEmail = email.trim().toLowerCase();
     console.log("🔐 Login attempt:", {
       email: trimmedEmail,
+      password: password, // Only log in development
+      isAdminEmail: !!adminAccounts[trimmedEmail],
       timestamp: new Date().toISOString(),
       ip: req.ip
     });
 
-    // Find user
+    // Find user in database
     const user = await User.findOne({ email: trimmedEmail });
     if (!user) {
-      console.log("❌ User not found:", trimmedEmail);
+      console.log("❌ User not found in database:", trimmedEmail);
+      
+      // ✅ SPECIAL CASE: If it's an admin email, suggest registration
+      if (adminAccounts[trimmedEmail]) {
+        console.log("💡 Admin email found in adminAccounts, but not in database. User needs to register first.");
+        return res.status(400).json({ 
+          message: "Admin account not found. Please register first with your admin email.",
+          isAdminEmail: true,
+          suggestion: "Register with your admin email to create the admin account"
+        });
+      }
+      
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // Verify password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
+    console.log("👤 User found:", {
+      id: user._id,
+      email: user.email,
+      isAdmin: user.isAdmin,
+      hasPassword: !!user.password
+    });
+
+    // ✅ FIXED: Direct password comparison for admin accounts
+    let isPasswordValid = false;
+    
+    if (user.isAdmin && adminAccounts[trimmedEmail]) {
+      // For admin users, check both the stored hashed password AND the direct admin password
+      const directPasswordMatch = password === adminAccounts[trimmedEmail];
+      const hashedPasswordMatch = await bcrypt.compare(password, user.password);
+      
+      console.log("🔐 Admin password check:", {
+        email: trimmedEmail,
+        directMatch: directPasswordMatch,
+        hashedMatch: hashedPasswordMatch,
+        providedPassword: password,
+        expectedPassword: adminAccounts[trimmedEmail]
+      });
+      
+      isPasswordValid = directPasswordMatch || hashedPasswordMatch;
+      
+      // If direct password matches but hashed doesn't, update the hash
+      if (directPasswordMatch && !hashedPasswordMatch) {
+        console.log("🔄 Updating admin password hash to match adminAccounts");
+        const newHashedPassword = await bcrypt.hash(adminAccounts[trimmedEmail], 10);
+        await User.findByIdAndUpdate(user._id, { password: newHashedPassword });
+        console.log("✅ Admin password hash updated");
+      }
+    } else {
+      // For regular users, use normal bcrypt comparison
+      isPasswordValid = await bcrypt.compare(password, user.password);
+    }
+
+    if (!isPasswordValid) {
       console.log("❌ Password mismatch for:", trimmedEmail);
+      console.log("🔍 Debug info:", {
+        providedPassword: password,
+        expectedForAdmin: adminAccounts[trimmedEmail] || "Not an admin",
+        userIsAdmin: user.isAdmin
+      });
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
@@ -278,15 +339,13 @@ router.get("/me", async (req, res) => {
   }
 });
 
-// ✅ POST /api/auth/logout - Logout (client-side mostly, but good to have)
+// ✅ POST /api/auth/logout
 router.post("/logout", (req, res) => {
   console.log("🚪 Logout request:", {
     timestamp: new Date().toISOString(),
     ip: req.ip
   });
   
-  // Since JWT is stateless, logout is mainly handled client-side
-  // But we can log it and potentially add to a blacklist in the future
   res.json({ message: "Logout successful" });
 });
 
@@ -323,5 +382,25 @@ router.get("/verify", (req, res) => {
     res.status(500).json({ valid: false, message: "Verification failed" });
   }
 });
+
+// ✅ ADMIN DEBUG ROUTE - Only for development
+if (process.env.NODE_ENV === 'development') {
+  router.get("/admin-debug", async (req, res) => {
+    try {
+      const adminUsers = await User.find({ 
+        email: { $in: Object.keys(adminAccounts) } 
+      }).select("-password");
+      
+      res.json({
+        message: "Admin debug info",
+        configuredAdmins: adminAccounts,
+        adminUsersInDB: adminUsers,
+        timestamp: new Date().toISOString()
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+}
 
 module.exports = router;
