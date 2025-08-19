@@ -5,6 +5,7 @@ const User = require("../models/userModel");
 // Admin email-password mapping
 const adminAccounts = {
   "akshat@gmail.com": "admin123",
+  "jodino1@gmail.com": "mamta1947",
   "mannat@gmail.com": "mannat@123"
 };
 

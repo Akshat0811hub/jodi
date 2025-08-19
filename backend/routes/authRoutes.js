@@ -8,7 +8,8 @@ const User = require("../models/userModel");
 // Admin email-password mapping
 const adminAccounts = {
   "akshat@gmail.com": "admin123",
-  "mannat@gmail.com": "mannat@123"
+  "mannat@gmail.com": "mannat@123",
+  "jodino1@gmail.com": "mamta1947"
 };
 
 // ✅ Input validation middleware
