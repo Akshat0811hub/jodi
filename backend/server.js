@@ -18,38 +18,46 @@ const allowedOrigins = [
   "https://jodi-iexr.vercel.app",
   "http://localhost:3000",
   "http://localhost:5173",
-  "http://localhost:3001"
+  "http://localhost:3001",
 ];
 
 // ✅ CRITICAL FIX: Custom CORS middleware for Render
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  
+
   // Always set CORS headers, regardless of origin
   if (origin && allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-  } else if (process.env.NODE_ENV === 'development') {
+    res.header("Access-Control-Allow-Origin", origin);
+  } else if (process.env.NODE_ENV === "development") {
     // In development, allow any origin
-    res.header('Access-Control-Allow-Origin', origin || '*');
+    res.header("Access-Control-Allow-Origin", origin || "*");
   } else {
     // In production, set the main frontend origin as default
-    res.header('Access-Control-Allow-Origin', 'https://jodi-iexr.vercel.app');
+    res.header("Access-Control-Allow-Origin", "https://jodi-iexr.vercel.app");
   }
-  
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, X-HTTP-Method-Override');
-  res.header('Access-Control-Expose-Headers', 'Content-Length, X-Foo, X-Bar');
-  res.header('Access-Control-Max-Age', '86400'); // 24 hours
-  
-  console.log(`🔄 CORS Headers Set for: ${req.method} ${req.url} from origin: ${origin}`);
-  
+
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS"
+  );
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, X-HTTP-Method-Override"
+  );
+  res.header("Access-Control-Expose-Headers", "Content-Length, X-Foo, X-Bar");
+  res.header("Access-Control-Max-Age", "86400"); // 24 hours
+
+  console.log(
+    `🔄 CORS Headers Set for: ${req.method} ${req.url} from origin: ${origin}`
+  );
+
   // Handle preflight requests immediately
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     console.log(`✅ Preflight handled for: ${req.url}`);
     return res.sendStatus(200);
   }
-  
+
   next();
 });
 
@@ -58,7 +66,7 @@ const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, etc.)
     if (!origin) return callback(null, true);
-    
+
     if (allowedOrigins.indexOf(origin) !== -1) {
       console.log("✅ CORS - Origin allowed:", origin);
       callback(null, true);
@@ -70,41 +78,47 @@ const corsOptions = {
   },
   credentials: true,
   optionsSuccessStatus: 200,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   allowedHeaders: [
-    'Origin',
-    'X-Requested-With',
-    'Content-Type',
-    'Accept',
-    'Authorization',
-    'Cache-Control',
-    'X-HTTP-Method-Override'
-  ]
+    "Origin",
+    "X-Requested-With",
+    "Content-Type",
+    "Accept",
+    "Authorization",
+    "Cache-Control",
+    "X-HTTP-Method-Override",
+  ],
 };
 
 app.use(cors(corsOptions));
 
 // ✅ Body parsing middleware with increased limits
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 // ✅ Request logging middleware
 app.use((req, res, next) => {
-  console.log(`📥 ${new Date().toISOString()} - ${req.method} ${req.url} from ${req.headers.origin || 'unknown'}`);
+  console.log(
+    `📥 ${new Date().toISOString()} - ${req.method} ${req.url} from ${
+      req.headers.origin || "unknown"
+    }`
+  );
   next();
 });
 
 // ✅ Static file serving
-const uploadsPath = path.join(__dirname, 'uploads');
-const assetsPath = path.join(__dirname, 'assets');
+const uploadsPath = path.join(__dirname, "uploads");
+const assetsPath = path.join(__dirname, "assets");
 
-const fs = require('fs');
+const fs = require("fs");
 if (!fs.existsSync(uploadsPath)) {
   fs.mkdirSync(uploadsPath, { recursive: true });
-  console.log('📁 Created uploads directory');
+  console.log("📁 Created uploads directory");
+} else {
+  console.log("📁 Uploads directory exists at:", uploadsPath);
 }
 
-app.use('/uploads', express.static(uploadsPath));
+app.use("/uploads", express.static(uploadsPath));
 app.use(express.static(assetsPath));
 
 // ✅ Root health check
@@ -133,11 +147,12 @@ app.get("/health", (req, res) => {
     status: "OK",
     timestamp: new Date().toISOString(),
     cors: "enabled",
-    mongodb: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
+    mongodb:
+      mongoose.connection.readyState === 1 ? "connected" : "disconnected",
     uptime: Math.floor(process.uptime()),
     memory: Math.floor(process.memoryUsage().heapUsed / 1024 / 1024) + "MB",
     routes: "loaded",
-    allowedOrigins: allowedOrigins
+    allowedOrigins: allowedOrigins,
   });
 });
 
@@ -148,7 +163,7 @@ app.get("/cors-test", (req, res) => {
     message: "✅ CORS is working!",
     origin: req.headers.origin,
     timestamp: new Date().toISOString(),
-    headers: req.headers
+    headers: req.headers,
   });
 });
 
@@ -159,7 +174,7 @@ app.get("/api/test", (req, res) => {
     message: "✅ API is working perfectly!",
     cors: "enabled",
     timestamp: new Date().toISOString(),
-    server: "JODI Backend v1.0.0"
+    server: "JODI Backend v1.0.0",
   });
 });
 
@@ -169,7 +184,7 @@ app.get("/keep-alive", (req, res) => {
   res.status(200).json({
     status: "alive",
     timestamp: new Date().toISOString(),
-    uptime: Math.floor(process.uptime())
+    uptime: Math.floor(process.uptime()),
   });
 });
 
@@ -183,19 +198,19 @@ try {
   console.log("✅ Auth routes mounted at /api/auth");
 } catch (error) {
   console.error("❌ Failed to load auth routes:", error.message);
-  
+
   // Create basic fallback auth routes
   app.post("/api/auth/login", (req, res) => {
-    res.status(501).json({ 
+    res.status(501).json({
       message: "Auth routes not implemented yet",
-      error: "Auth module not found" 
+      error: "Auth module not found",
     });
   });
-  
+
   app.post("/api/auth/register", (req, res) => {
-    res.status(501).json({ 
+    res.status(501).json({
       message: "Auth routes not implemented yet",
-      error: "Auth module not found" 
+      error: "Auth module not found",
     });
   });
 }
@@ -219,7 +234,7 @@ try {
   console.log("✅ Person routes mounted at /api/people");
 } catch (error) {
   console.error("❌ Failed to load person routes:", error.message);
-  
+
   // Create emergency fallback
   app.get("/api/people", async (req, res) => {
     try {
@@ -227,17 +242,17 @@ try {
       const people = await Person.find().sort({ createdAt: -1 });
       res.json(people);
     } catch (err) {
-      res.status(500).json({ 
-        message: "Person routes not properly configured", 
-        error: err.message 
+      res.status(500).json({
+        message: "Person routes not properly configured",
+        error: err.message,
       });
     }
   });
-  
+
   app.post("/api/people", (req, res) => {
-    res.status(501).json({ 
-      message: "Person creation not available", 
-      error: "Person routes not loaded" 
+    res.status(501).json({
+      message: "Person creation not available",
+      error: "Person routes not loaded",
     });
   });
 }
@@ -245,31 +260,32 @@ try {
 // ✅ FIXED: PDF routes - This was the main issue!
 try {
   const pdfRoutes = require("./routes/pdfRoutes");
-  app.use("/api/pdf", pdfRoutes);  // ✅ This ensures the route is properly mounted
+  app.use("/api/pdf", pdfRoutes); // ✅ This ensures the route is properly mounted
   console.log("✅ PDF routes mounted at /api/pdf");
-  
+
   // ✅ Test if PDF route is working
   console.log("🧪 Testing PDF route availability...");
-  
 } catch (error) {
   console.error("❌ Failed to load PDF routes:", error.message);
   console.error("❌ PDF Route Error Stack:", error.stack);
-  
+
   // ✅ CRITICAL: Create emergency PDF fallback if module fails
   app.get("/api/pdf/person/:id/pdf", (req, res) => {
-    console.error("🚨 PDF route fallback triggered - main PDF module failed to load");
-    res.status(500).json({ 
+    console.error(
+      "🚨 PDF route fallback triggered - main PDF module failed to load"
+    );
+    res.status(500).json({
       message: "PDF generation module failed to load",
       error: "PDF routes could not be initialized",
-      details: error.message
+      details: error.message,
     });
   });
-  
+
   app.post("/api/pdf/bulk", (req, res) => {
     console.error("🚨 Bulk PDF route fallback triggered");
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Bulk PDF generation module failed to load",
-      error: "PDF routes could not be initialized"
+      error: "PDF routes could not be initialized",
     });
   });
 }
@@ -277,33 +293,33 @@ try {
 // ✅ Additional route verification
 app.get("/api/routes-test", (req, res) => {
   const routes = [];
-  
+
   app._router.stack.forEach((middleware) => {
     if (middleware.route) {
       routes.push({
         path: middleware.route.path,
-        methods: Object.keys(middleware.route.methods)
+        methods: Object.keys(middleware.route.methods),
       });
-    } else if (middleware.name === 'router') {
+    } else if (middleware.name === "router") {
       middleware.handle.stack.forEach((handler) => {
         if (handler.route) {
           const basePath = middleware.regexp.source
-            .replace('^\\', '')
-            .replace('\\/?(?=\\/|$)', '')
-            .replace(/\\\//g, '/');
+            .replace("^\\", "")
+            .replace("\\/?(?=\\/|$)", "")
+            .replace(/\\\//g, "/");
           routes.push({
             path: basePath + handler.route.path,
-            methods: Object.keys(handler.route.methods)
+            methods: Object.keys(handler.route.methods),
           });
         }
       });
     }
   });
-  
+
   res.json({
     message: "Available routes",
     routes: routes,
-    count: routes.length
+    count: routes.length,
   });
 });
 
@@ -322,7 +338,7 @@ const connectDB = async (retries = 5) => {
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
-      family: 4
+      family: 4,
     });
 
     console.log("✅ MongoDB connected successfully");
@@ -332,12 +348,13 @@ const connectDB = async (retries = 5) => {
     console.log("🏓 MongoDB ping successful");
 
     await seedAdminUsers();
-    
   } catch (err) {
     console.error("❌ MongoDB connection error:", err.message);
-    
+
     if (retries > 0) {
-      console.log(`🔄 Retrying MongoDB connection in 5 seconds... (${retries} attempts left)`);
+      console.log(
+        `🔄 Retrying MongoDB connection in 5 seconds... (${retries} attempts left)`
+      );
       setTimeout(() => connectDB(retries - 1), 5000);
     } else {
       console.error("💥 MongoDB connection failed after all retries");
@@ -362,8 +379,10 @@ async function seedAdminUsers() {
     console.log("👑 Starting admin user seeding process...");
 
     for (let admin of admins) {
-      console.log(`🔄 Processing admin: ${admin.email} with password: ${admin.password}`);
-      
+      console.log(
+        `🔄 Processing admin: ${admin.email} with password: ${admin.password}`
+      );
+
       try {
         // Hash the password
         const hashedPassword = await bcrypt.hash(admin.password, 10);
@@ -377,55 +396,78 @@ async function seedAdminUsers() {
             email: admin.email,
             password: hashedPassword, // Always use the correct hashed password
             isAdmin: true,
-            createdAt: new Date()
+            createdAt: new Date(),
           },
-          { 
-            upsert: true, 
+          {
+            upsert: true,
             new: true,
-            runValidators: true
+            runValidators: true,
           }
         );
 
-        console.log(`✅ Admin ${result.isModified ? 'updated' : 'created'}: ${admin.email}`);
-        
+        console.log(
+          `✅ Admin ${result.isModified ? "updated" : "created"}: ${
+            admin.email
+          }`
+        );
+
         // ✅ VERIFY: Test password immediately after creation/update
-        const isPasswordCorrect = await bcrypt.compare(admin.password, result.password);
-        console.log(`🧪 Password verification for ${admin.email}: ${isPasswordCorrect ? '✅ CORRECT' : '❌ INCORRECT'}`);
-        
+        const isPasswordCorrect = await bcrypt.compare(
+          admin.password,
+          result.password
+        );
+        console.log(
+          `🧪 Password verification for ${admin.email}: ${
+            isPasswordCorrect ? "✅ CORRECT" : "❌ INCORRECT"
+          }`
+        );
+
         if (!isPasswordCorrect) {
-          console.error(`🚨 PASSWORD MISMATCH for ${admin.email}! Re-hashing...`);
+          console.error(
+            `🚨 PASSWORD MISMATCH for ${admin.email}! Re-hashing...`
+          );
           const newHash = await bcrypt.hash(admin.password, 10);
           await User.findByIdAndUpdate(result._id, { password: newHash });
           console.log(`🔄 Password re-hashed for ${admin.email}`);
         }
-
       } catch (adminError) {
-        console.error(`❌ Failed to process admin ${admin.email}:`, adminError.message);
+        console.error(
+          `❌ Failed to process admin ${admin.email}:`,
+          adminError.message
+        );
       }
     }
-    
+
     console.log("✅ Admin seeding process completed");
-    
+
     // ✅ VERIFICATION: Check all admin accounts
     console.log("🔍 Verifying admin accounts in database...");
-    
-    const adminUsers = await User.find({ isAdmin: true }).select('name email isAdmin createdAt');
+
+    const adminUsers = await User.find({ isAdmin: true }).select(
+      "name email isAdmin createdAt"
+    );
     console.log(`👑 Found ${adminUsers.length} admin users:`);
-    
-    adminUsers.forEach(user => {
-      console.log(`   📧 ${user.email} (${user.name}) - Admin: ${user.isAdmin}`);
+
+    adminUsers.forEach((user) => {
+      console.log(
+        `   📧 ${user.email} (${user.name}) - Admin: ${user.isAdmin}`
+      );
     });
 
     // ✅ TEST LOGIN CREDENTIALS
     console.log("🧪 Testing admin login credentials...");
-    
+
     for (let admin of admins) {
       try {
         const user = await User.findOne({ email: admin.email });
         if (user) {
           const isValid = await bcrypt.compare(admin.password, user.password);
-          console.log(`🔐 Login test for ${admin.email}: ${isValid ? '✅ SUCCESS' : '❌ FAILED'}`);
-          
+          console.log(
+            `🔐 Login test for ${admin.email}: ${
+              isValid ? "✅ SUCCESS" : "❌ FAILED"
+            }`
+          );
+
           if (!isValid) {
             console.error(`🚨 CRITICAL: Login will fail for ${admin.email}`);
             console.error(`   Expected password: "${admin.password}"`);
@@ -435,10 +477,12 @@ async function seedAdminUsers() {
           console.error(`❌ Admin user not found: ${admin.email}`);
         }
       } catch (testError) {
-        console.error(`❌ Login test failed for ${admin.email}:`, testError.message);
+        console.error(
+          `❌ Login test failed for ${admin.email}:`,
+          testError.message
+        );
       }
     }
-    
   } catch (err) {
     console.error("❌ Admin seeding failed:", err.message);
     console.error("❌ Admin seeding error stack:", err.stack);
@@ -472,27 +516,30 @@ app.use((err, req, res, next) => {
   // Ensure CORS headers in error responses
   const origin = req.headers.origin;
   if (origin && allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header("Access-Control-Allow-Origin", origin);
+    res.header("Access-Control-Allow-Credentials", "true");
   }
 
   res.status(500).json({
     message: "Internal server error",
-    error: process.env.NODE_ENV === "development" ? err.message : "Something went wrong",
-    timestamp: new Date().toISOString()
+    error:
+      process.env.NODE_ENV === "development"
+        ? err.message
+        : "Something went wrong",
+    timestamp: new Date().toISOString(),
   });
 });
 
 // ✅ 404 handler with CORS headers
 app.use("*", (req, res) => {
   console.log(`❌ 404: ${req.method} ${req.originalUrl}`);
-  
+
   const origin = req.headers.origin;
   if (origin && allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header("Access-Control-Allow-Origin", origin);
+    res.header("Access-Control-Allow-Credentials", "true");
   }
-  
+
   res.status(404).json({
     message: "Route not found",
     path: req.originalUrl,
@@ -500,7 +547,7 @@ app.use("*", (req, res) => {
     timestamp: new Date().toISOString(),
     availableRoutes: [
       "GET /",
-      "GET /health", 
+      "GET /health",
       "GET /cors-test",
       "GET /api/test",
       "GET /api/routes-test",
@@ -512,7 +559,7 @@ app.use("*", (req, res) => {
       "PUT /api/people/:id",
       "DELETE /api/people/:id",
       "GET /api/pdf/person/:id/pdf",
-      "POST /api/pdf/bulk"
+      "POST /api/pdf/bulk",
     ],
   });
 });
@@ -540,7 +587,7 @@ const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`🔐 Auth: http://localhost:${PORT}/api/auth`);
   console.log(`👥 People: http://localhost:${PORT}/api/people`);
   console.log(`📄 PDF: http://localhost:${PORT}/api/pdf`);
-  console.log(`📊 CORS enabled for: ${allowedOrigins.join(', ')}`);
+  console.log(`📊 CORS enabled for: ${allowedOrigins.join(", ")}`);
   console.log(`💓 Keep-alive: http://localhost:${PORT}/keep-alive`);
   console.log(`\n👑 Admin Accounts Configured:`);
   console.log(`   📧 akshat@gmail.com - Password: admin123`);
@@ -550,7 +597,7 @@ const server = app.listen(PORT, "0.0.0.0", () => {
 });
 
 server.on("error", (err) => {
-  if (err.code === 'EADDRINUSE') {
+  if (err.code === "EADDRINUSE") {
     console.error(`❌ Port ${PORT} is already in use`);
     process.exit(1);
   } else {

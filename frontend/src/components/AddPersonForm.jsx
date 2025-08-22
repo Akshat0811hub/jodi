@@ -156,7 +156,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
       });
 
       console.log("📤 Sending request to /people endpoint...");
-      const response = await api.post("/people", data, {
+      const response = await api.post("/api/people", data, {
         headers: {
           "Content-Type": "multipart/form-data",
         },

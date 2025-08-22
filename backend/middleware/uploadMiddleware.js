@@ -1,57 +1,95 @@
-// Backend route example - routes/people.js or similar
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const router = express.Router();
-const Person = require("../models/personModel"); // Adjust path as needed
+const Person = require("../models/personModel");
 
-// ✅ Multer configuration for file uploads
+// 🔧 FIXED: Ensure uploads directory exists with proper structure
+const createUploadsDir = () => {
+  const uploadDir = path.join(process.cwd(), 'uploads');
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+    console.log("✅ Created uploads directory:", uploadDir);
+  }
+  return uploadDir;
+};
+
+// 🔧 FIXED: Better multer configuration
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const uploadDir = 'uploads/';
-    // Create uploads directory if it doesn't exist
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
+    const uploadDir = createUploadsDir();
     cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
-    // Generate unique filename with timestamp
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    // Generate clean, consistent filename
+    const ext = path.extname(file.originalname).toLowerCase();
+    const baseName = file.originalname.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+    const timestamp = Date.now();
+    const uniqueId = Math.round(Math.random() * 1E9);
+    const filename = `photo_${timestamp}_${uniqueId}${ext}`;
+    
+    console.log(`📸 Saving file as: ${filename}`);
+    cb(null, filename);
   }
 });
 
-// ✅ File filter for images only
+// 🔧 FIXED: Better file validation
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+  console.log(`📸 Validating file: ${file.originalname}, Type: ${file.mimetype}`);
+  
+  const allowedTypes = [
+    'image/jpeg', 
+    'image/jpg', 
+    'image/png', 
+    'image/gif', 
+    'image/webp'
+  ];
   
   if (allowedTypes.includes(file.mimetype)) {
+    console.log(`✅ File type valid: ${file.mimetype}`);
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only JPEG, PNG, and GIF images are allowed.'), false);
+    console.log(`❌ File type invalid: ${file.mimetype}`);
+    cb(new Error(`Invalid file type: ${file.mimetype}. Only JPEG, PNG, GIF, and WebP are allowed.`), false);
   }
 };
 
-// ✅ Multer upload configuration
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit per file
-    files: 4 // Maximum 4 files
+    fileSize: 5 * 1024 * 1024, // 5MB
+    files: 4
   },
   fileFilter: fileFilter
 });
 
-// ✅ POST /api/people - Create new person with photo upload
+// 🔧 FIXED: Enhanced POST route with better photo handling
 router.post('/people', upload.array('photos', 4), async (req, res) => {
   try {
-    console.log("📤 Received POST /api/people request");
-    console.log("📝 Form data keys:", Object.keys(req.body));
+    console.log("\n📤 ===== NEW PERSON CREATION REQUEST =====");
+    console.log("📝 Form data received:", Object.keys(req.body));
     console.log("📸 Files received:", req.files?.length || 0);
+    
+    // Log each uploaded file
+    if (req.files && req.files.length > 0) {
+      req.files.forEach((file, index) => {
+        console.log(`📸 File ${index + 1}:`);
+        console.log(`   Original: ${file.originalname}`);
+        console.log(`   Saved as: ${file.filename}`);
+        console.log(`   Path: ${file.path}`);
+        console.log(`   Size: ${(file.size / 1024).toFixed(2)} KB`);
+        
+        // Verify file exists
+        if (fs.existsSync(file.path)) {
+          console.log(`   ✅ File verified on disk`);
+        } else {
+          console.log(`   ❌ File NOT found on disk!`);
+        }
+      });
+    }
 
-    // ✅ Validate required fields
+    // Basic validation
     const { name, religion, phoneNumber } = req.body;
     
     if (!name?.trim()) {
@@ -70,9 +108,8 @@ router.post('/people', upload.array('photos', 4), async (req, res) => {
       return res.status(400).json({ message: "Phone Number must be numeric and max 10 digits" });
     }
 
-    // ✅ Validate photos
-    if (!req.files || req.files.length < 3) {
-      // Clean up any uploaded files if validation fails
+    // Photo validation
+    if (!req.files || req.files.length < 1) {
       if (req.files) {
         req.files.forEach(file => {
           fs.unlink(file.path, (err) => {
@@ -81,25 +118,32 @@ router.post('/people', upload.array('photos', 4), async (req, res) => {
         });
       }
       return res.status(400).json({ 
-        message: `Please upload at least 3 photos. Received: ${req.files?.length || 0}` 
+        message: `Please upload at least 1 photo. Received: ${req.files?.length || 0}` 
       });
     }
 
-    if (req.files.length > 4) {
-      // Clean up files if too many
-      req.files.forEach(file => {
-        fs.unlink(file.path, (err) => {
-          if (err) console.error("Error deleting file:", err);
-        });
-      });
-      return res.status(400).json({ message: "Maximum 4 photos allowed" });
-    }
-
-    // ✅ Process photo filenames
+    // 🔧 FIXED: Store ONLY filenames (not full paths) for consistency
     const photoFilenames = req.files.map(file => file.filename);
-    console.log("📸 Saved photo filenames:", photoFilenames);
+    console.log("📸 Photo filenames to store in DB:", photoFilenames);
+    
+    // Verify all files exist
+    const missingFiles = [];
+    photoFilenames.forEach((filename, index) => {
+      const fullPath = path.join(process.cwd(), 'uploads', filename);
+      if (!fs.existsSync(fullPath)) {
+        missingFiles.push(`File ${index + 1}: ${filename}`);
+      }
+    });
+    
+    if (missingFiles.length > 0) {
+      console.error("❌ Missing files after upload:", missingFiles);
+      return res.status(500).json({ 
+        message: "Some files were not saved properly",
+        missingFiles: missingFiles
+      });
+    }
 
-    // ✅ Parse siblings if provided
+    // Parse siblings
     let siblings = [];
     if (req.body.siblings) {
       try {
@@ -110,7 +154,7 @@ router.post('/people', upload.array('photos', 4), async (req, res) => {
       }
     }
 
-    // ✅ Create person object
+    // 🔧 FIXED: Create person with consistent photo storage
     const personData = {
       // Personal Details
       name: req.body.name?.trim(),
@@ -124,13 +168,13 @@ router.post('/people', upload.array('photos', 4), async (req, res) => {
       phoneNumber: req.body.phoneNumber?.trim(),
       height: req.body.height || "",
       complexion: req.body.complexion || "",
-      horoscope: req.body.horoscope || "",
+      horoscope: req.body.horoscope === "true",
       eatingHabits: req.body.eatingHabits || "",
       drinkingHabits: req.body.drinkingHabits || "",
       smokingHabits: req.body.smokingHabits || "",
       disability: req.body.disability || "",
-      nri: req.body.nri || "",
-      vehicle: req.body.vehicle || "",
+      nri: req.body.nri === "true",
+      vehicle: req.body.vehicle === "true",
       
       // Family Details
       fatherName: req.body.fatherName || "",
@@ -152,26 +196,37 @@ router.post('/people', upload.array('photos', 4), async (req, res) => {
       personalIncome: req.body.personalIncome || "",
       familyIncome: req.body.familyIncome || "",
       
-      // Photos
+      // 🔧 FIXED: Store only filenames for better path resolution
       photos: photoFilenames,
-      profilePicture: photoFilenames[0] || "" // Use first photo as profile picture
+      profilePicture: photoFilenames[0] || ""
     };
 
-    // ✅ Save to database
+    // Save to database
     const newPerson = new Person(personData);
     const savedPerson = await newPerson.save();
     
-    console.log("✅ Person created successfully:", savedPerson._id);
+    console.log("✅ Person created successfully with ID:", savedPerson._id);
+    console.log("📸 Photos stored:", savedPerson.photos);
+    console.log("📸 Profile picture:", savedPerson.profilePicture);
+    
+    // Final verification - check if files still exist
+    console.log("\n🔍 Final file verification:");
+    savedPerson.photos.forEach((filename, index) => {
+      const fullPath = path.join(process.cwd(), 'uploads', filename);
+      const exists = fs.existsSync(fullPath);
+      console.log(`   ${index + 1}. ${filename}: ${exists ? '✅' : '❌'}`);
+    });
     
     res.status(201).json({
       message: "Person added successfully",
-      person: savedPerson
+      person: savedPerson,
+      photosUploaded: photoFilenames.length
     });
 
   } catch (error) {
     console.error("❌ Error creating person:", error);
     
-    // ✅ Clean up uploaded files on error
+    // Clean up uploaded files on error
     if (req.files) {
       req.files.forEach(file => {
         fs.unlink(file.path, (err) => {
@@ -180,44 +235,36 @@ router.post('/people', upload.array('photos', 4), async (req, res) => {
       });
     }
     
-    // ✅ Handle different error types
     if (error.code === 11000) {
       res.status(400).json({ message: "Person with this phone number already exists" });
     } else if (error.name === 'ValidationError') {
       const errors = Object.values(error.errors).map(err => err.message);
       res.status(400).json({ message: `Validation error: ${errors.join(', ')}` });
-    } else if (error.code === 'LIMIT_FILE_SIZE') {
-      res.status(400).json({ message: "File too large. Maximum 5MB per photo." });
-    } else if (error.code === 'LIMIT_FILE_COUNT') {
-      res.status(400).json({ message: "Too many files. Maximum 4 photos allowed." });
     } else {
-      res.status(500).json({ message: "Internal server error" });
+      res.status(500).json({ message: "Internal server error: " + error.message });
     }
   }
 });
 
-// ✅ GET /api/people - Get all people
-router.get('/people', async (req, res) => {
+// 🔧 FIXED: Test route to verify uploads directory
+router.get('/test-uploads', (req, res) => {
   try {
-    const people = await Person.find().sort({ createdAt: -1 });
-    res.json(people);
-  } catch (error) {
-    console.error("❌ Error fetching people:", error);
-    res.status(500).json({ message: "Failed to fetch people" });
-  }
-});
-
-// ✅ GET /api/people/:id - Get single person
-router.get('/people/:id', async (req, res) => {
-  try {
-    const person = await Person.findById(req.params.id);
-    if (!person) {
-      return res.status(404).json({ message: "Person not found" });
+    const uploadsPath = path.join(process.cwd(), 'uploads');
+    const exists = fs.existsSync(uploadsPath);
+    
+    let files = [];
+    if (exists) {
+      files = fs.readdirSync(uploadsPath);
     }
-    res.json(person);
+    
+    res.json({
+      uploadsDirectory: uploadsPath,
+      exists: exists,
+      fileCount: files.length,
+      files: files.slice(0, 10) // Show first 10 files
+    });
   } catch (error) {
-    console.error("❌ Error fetching person:", error);
-    res.status(500).json({ message: "Failed to fetch person" });
+    res.status(500).json({ error: error.message });
   }
 });
 
