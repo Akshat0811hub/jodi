@@ -61,29 +61,45 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
       "📸 File details:",
       files.map((f) => ({ name: f.name, size: f.size, type: f.type }))
     );
-    
+
     // Enhanced validation
-    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+    const validTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
     const maxSize = 5 * 1024 * 1024; // 5MB
-    
-    const invalidFiles = files.filter(file => !validTypes.includes(file.type));
-    const oversizedFiles = files.filter(file => file.size > maxSize);
-    
+
+    const invalidFiles = files.filter(
+      (file) => !validTypes.includes(file.type)
+    );
+    const oversizedFiles = files.filter((file) => file.size > maxSize);
+
     if (invalidFiles.length > 0) {
-      setError(`Invalid file types: ${invalidFiles.map(f => f.name).join(', ')}. Please select JPEG, PNG, GIF, or WebP images only.`);
+      setError(
+        `Invalid file types: ${invalidFiles
+          .map((f) => f.name)
+          .join(", ")}. Please select JPEG, PNG, GIF, or WebP images only.`
+      );
       return;
     }
-    
+
     if (oversizedFiles.length > 0) {
-      setError(`Files too large: ${oversizedFiles.map(f => f.name).join(', ')}. Each file must be under 5MB.`);
+      setError(
+        `Files too large: ${oversizedFiles
+          .map((f) => f.name)
+          .join(", ")}. Each file must be under 5MB.`
+      );
       return;
     }
-    
+
     if (files.length > 4) {
       setError("You can upload maximum 4 photos. Please select fewer files.");
       return;
     }
-    
+
     setPhotos(files);
     setError("");
   };
@@ -145,7 +161,13 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
         return;
       }
 
-      const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+      const validTypes = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+      ];
       const invalidFiles = photos.filter(
         (photo) => !validTypes.includes(photo.type)
       );
@@ -160,12 +182,27 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
         setError("Each photo must be less than 5MB");
         return;
       }
+      console.log(
+        "📤 Form data being sent:",
+        Object.fromEntries(
+          Object.keys(formData).map((key) => [key, formData[key]])
+        )
+      );
 
       // Create FormData
       const data = new FormData();
 
       Object.keys(formData).forEach((key) => {
-        data.append(key, formData[key]);
+        const value = formData[key];
+        // Convert boolean strings to actual booleans
+        if (key === "horoscope" || key === "nri" || key === "vehicle") {
+          data.append(
+            key,
+            value === "true" ? true : value === "false" ? false : ""
+          );
+        } else {
+          data.append(key, value || "");
+        }
       });
 
       if (siblings.length > 0) {
@@ -199,25 +236,27 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
           );
           setUploadProgress(percentCompleted);
           console.log(`📊 Upload progress: ${percentCompleted}%`);
-        }
+        },
       });
 
-      console.log("✅ Person added successfully with Supabase photos:", response.data);
-      
+      console.log(
+        "✅ Person added successfully with Supabase photos:",
+        response.data
+      );
+
       // Show success info
       if (response.data.photoUrls && response.data.photoUrls.length > 0) {
         console.log("🖼️ Photo URLs:", response.data.photoUrls);
         console.log("📊 Upload summary:", {
           totalPhotos: response.data.photosUploaded || photos.length,
           storageType: "Supabase Storage (Free Tier)",
-          persistent: "Yes - survives server restarts"
+          persistent: "Yes - survives server restarts",
         });
       }
 
       setUploadingPhotos(false);
       onPersonAdded();
       onClose();
-      
     } catch (err) {
       console.error("❌ API Error Details:", {
         status: err.response?.status,
@@ -233,17 +272,25 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
       if (err.response?.data?.message) {
         setError(err.response.data.message);
       } else if (err.response?.status === 400) {
-        setError("Invalid data provided. Please check all fields and try again.");
+        setError(
+          "Invalid data provided. Please check all fields and try again."
+        );
       } else if (err.response?.status === 413) {
         setError("Files too large. Please reduce image sizes and try again.");
       } else if (err.response?.status === 429) {
         setError("Too many requests. Please wait a moment and try again.");
       } else if (err.response?.status === 500) {
-        setError("Storage service temporarily unavailable. Please try again in a few minutes.");
-      } else if (err.message.includes('timeout')) {
-        setError("Upload taking too long. Please check your internet connection and try again.");
-      } else if (err.message.includes('Network Error')) {
-        setError("Network connection issue. Please check your internet and try again.");
+        setError(
+          "Storage service temporarily unavailable. Please try again in a few minutes."
+        );
+      } else if (err.message.includes("timeout")) {
+        setError(
+          "Upload taking too long. Please check your internet connection and try again."
+        );
+      } else if (err.message.includes("Network Error")) {
+        setError(
+          "Network connection issue. Please check your internet and try again."
+        );
       } else {
         setError("Failed to add person. Please try again.");
       }
@@ -259,7 +306,11 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
       <div className="modal-container">
         <div className="modal-header">
           <h2>✨ Add New Person</h2>
-          <button className="close-btn" onClick={onClose} disabled={isSubmitting}>
+          <button
+            className="close-btn"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
             ×
           </button>
         </div>
@@ -274,8 +325,8 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
               <span>{uploadProgress}%</span>
             </div>
             <div className="progress-bar">
-              <div 
-                className="progress-fill" 
+              <div
+                className="progress-fill"
                 style={{ width: `${uploadProgress}%` }}
               ></div>
             </div>
@@ -288,7 +339,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
         <form onSubmit={handleSubmit} className="modal-form">
           {/* Personal Details Section */}
           <h3>👤 Personal Details</h3>
-          
+
           <div className="form-row">
             <div className="form-group">
               <input
@@ -301,9 +352,9 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
               />
             </div>
             <div className="form-group">
-              <select 
-                name="gender" 
-                value={formData.gender} 
+              <select
+                name="gender"
+                value={formData.gender}
                 onChange={handleChange}
                 disabled={isSubmitting}
               >
@@ -420,10 +471,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
               <select
                 name="horoscope"
                 value={formData.horoscope}
-                onChange={(e) =>
-                  setFormData({ ...formData, horoscope: e.target.value === "true" })
-                }
-                disabled={isSubmitting}
+                onChange={handleChange}
               >
                 <option value="">Believe in Horoscopes?</option>
                 <option value="true">Yes</option>
@@ -479,9 +527,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
               <select
                 name="nri"
                 value={formData.nri}
-                onChange={(e) =>
-                  setFormData({ ...formData, nri: e.target.value === "true" })
-                }
+                onChange={handleChange}
                 disabled={isSubmitting}
               >
                 <option value="">NRI Status</option>
@@ -493,9 +539,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
               <select
                 name="vehicle"
                 value={formData.vehicle}
-                onChange={(e) =>
-                  setFormData({ ...formData, vehicle: e.target.value === "true" })
-                }
+                onChange={{ handleChange }}
                 disabled={isSubmitting}
               >
                 <option value="">Own Vehicle?</option>
@@ -507,7 +551,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
 
           {/* Family Details Section */}
           <h3>👨‍👩‍👧‍👦 Family Details</h3>
-          
+
           <div className="form-row">
             <div className="form-group">
               <input
@@ -630,8 +674,8 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 <option>Single</option>
                 <option>Married</option>
               </select>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => removeSibling(idx)}
                 disabled={isSubmitting}
               >
@@ -650,7 +694,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
 
           {/* Education Section */}
           <h3>🎓 Education</h3>
-          
+
           <div className="form-group">
             <input
               name="higherQualification"
@@ -684,7 +728,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
 
           {/* Profession & Income Section */}
           <h3>💼 Profession & Income</h3>
-          
+
           <div className="form-group">
             <textarea
               name="occupation"
@@ -718,8 +762,11 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
           </div>
 
           {/* Enhanced Photos Section */}
-          <h3>📸 Photos (1-4 photos required) * 
-            <span className="storage-info">🌟 Stored safely in Supabase Cloud</span>
+          <h3>
+            📸 Photos (1-4 photos required) *
+            <span className="storage-info">
+              🌟 Stored safely in Supabase Cloud
+            </span>
           </h3>
           <div className="photo-upload-section">
             <input
@@ -767,8 +814,12 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 📝 Supported: JPEG, PNG, GIF, WebP (Max 5MB each)
               </p>
               <div className="storage-benefits">
-                <p className="storage-benefit">☁️ Permanently stored in Supabase</p>
-                <p className="storage-benefit">⚡ Fast global delivery via CDN</p>
+                <p className="storage-benefit">
+                  ☁️ Permanently stored in Supabase
+                </p>
+                <p className="storage-benefit">
+                  ⚡ Fast global delivery via CDN
+                </p>
                 <p className="storage-benefit">💾 Survives server restarts</p>
               </div>
             </div>
@@ -788,12 +839,11 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
               className="submit-btn"
               disabled={isSubmitting}
             >
-              {isSubmitting 
-                ? uploadingPhotos 
-                  ? "☁️ Uploading Photos..." 
+              {isSubmitting
+                ? uploadingPhotos
+                  ? "☁️ Uploading Photos..."
                   : "✨ Processing..."
-                : "🚀 Submit"
-              }
+                : "🚀 Submit"}
             </button>
           </div>
         </form>
