@@ -1,4 +1,4 @@
-// src/components/AddPersonFormModal.jsx - ENHANCED RICH MODERN VERSION
+// src/components/AddPersonFormModal.jsx - SUPABASE ENHANCED VERSION
 import React, { useState } from "react";
 import api from "../api";
 import "../css/addPerson.css";
@@ -46,6 +46,8 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
   const [photos, setPhotos] = useState([]);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -59,6 +61,29 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
       "📸 File details:",
       files.map((f) => ({ name: f.name, size: f.size, type: f.type }))
     );
+    
+    // Enhanced validation
+    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    
+    const invalidFiles = files.filter(file => !validTypes.includes(file.type));
+    const oversizedFiles = files.filter(file => file.size > maxSize);
+    
+    if (invalidFiles.length > 0) {
+      setError(`Invalid file types: ${invalidFiles.map(f => f.name).join(', ')}. Please select JPEG, PNG, GIF, or WebP images only.`);
+      return;
+    }
+    
+    if (oversizedFiles.length > 0) {
+      setError(`Files too large: ${oversizedFiles.map(f => f.name).join(', ')}. Each file must be under 5MB.`);
+      return;
+    }
+    
+    if (files.length > 4) {
+      setError("You can upload maximum 4 photos. Please select fewer files.");
+      return;
+    }
+    
     setPhotos(files);
     setError("");
   };
@@ -84,9 +109,11 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
     e.preventDefault();
     setError("");
     setIsSubmitting(true);
+    setUploadingPhotos(true);
+    setUploadProgress(0);
 
     try {
-      // Validation
+      // Enhanced validation
       if (!formData.name.trim()) {
         setError("Name is required");
         return;
@@ -118,12 +145,12 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
         return;
       }
 
-      const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif"];
+      const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
       const invalidFiles = photos.filter(
         (photo) => !validTypes.includes(photo.type)
       );
       if (invalidFiles.length > 0) {
-        setError("Please upload only image files (JPEG, PNG, GIF)");
+        setError("Please upload only image files (JPEG, PNG, GIF, WebP)");
         return;
       }
 
@@ -134,6 +161,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
         return;
       }
 
+      // Create FormData
       const data = new FormData();
 
       Object.keys(formData).forEach((key) => {
@@ -146,8 +174,9 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
         data.append("siblings", JSON.stringify([]));
       }
 
+      // Add photos with progress tracking
       photos.forEach((photo, index) => {
-        console.log(`📸 Photo ${index + 1}:`, {
+        console.log(`📸 Adding photo ${index + 1} to FormData:`, {
           name: photo.name,
           size: `${(photo.size / 1024 / 1024).toFixed(2)}MB`,
           type: photo.type,
@@ -155,17 +184,40 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
         data.append("photos", photo);
       });
 
-      console.log("📤 Sending request to /people endpoint...");
+      console.log("🚀 Uploading photos to Supabase and creating person...");
+      setUploadProgress(25);
+
+      // Make API request with progress tracking
       const response = await api.post("/people", data, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
-        timeout: 60000,
+        timeout: 120000, // Increased timeout for cloud uploads
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          setUploadProgress(percentCompleted);
+          console.log(`📊 Upload progress: ${percentCompleted}%`);
+        }
       });
 
-      console.log("✅ Person added successfully:", response.data);
+      console.log("✅ Person added successfully with Supabase photos:", response.data);
+      
+      // Show success info
+      if (response.data.photoUrls && response.data.photoUrls.length > 0) {
+        console.log("🖼️ Photo URLs:", response.data.photoUrls);
+        console.log("📊 Upload summary:", {
+          totalPhotos: response.data.photosUploaded || photos.length,
+          storageType: "Supabase Storage (Free Tier)",
+          persistent: "Yes - survives server restarts"
+        });
+      }
+
+      setUploadingPhotos(false);
       onPersonAdded();
       onClose();
+      
     } catch (err) {
       console.error("❌ API Error Details:", {
         status: err.response?.status,
@@ -174,17 +226,31 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
         message: err.message,
       });
 
+      setUploadingPhotos(false);
+      setUploadProgress(0);
+
+      // Enhanced error handling for Supabase-specific errors
       if (err.response?.data?.message) {
         setError(err.response.data.message);
       } else if (err.response?.status === 400) {
-        setError("Invalid data provided. Please check all fields.");
+        setError("Invalid data provided. Please check all fields and try again.");
       } else if (err.response?.status === 413) {
-        setError("Files too large. Please reduce image sizes.");
+        setError("Files too large. Please reduce image sizes and try again.");
+      } else if (err.response?.status === 429) {
+        setError("Too many requests. Please wait a moment and try again.");
+      } else if (err.response?.status === 500) {
+        setError("Storage service temporarily unavailable. Please try again in a few minutes.");
+      } else if (err.message.includes('timeout')) {
+        setError("Upload taking too long. Please check your internet connection and try again.");
+      } else if (err.message.includes('Network Error')) {
+        setError("Network connection issue. Please check your internet and try again.");
       } else {
         setError("Failed to add person. Please try again.");
       }
     } finally {
       setIsSubmitting(false);
+      setUploadingPhotos(false);
+      setUploadProgress(0);
     }
   };
 
@@ -193,12 +259,31 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
       <div className="modal-container">
         <div className="modal-header">
           <h2>✨ Add New Person</h2>
-          <button className="close-btn" onClick={onClose}>
+          <button className="close-btn" onClick={onClose} disabled={isSubmitting}>
             ×
           </button>
         </div>
 
         {error && <div className="error-text">{error}</div>}
+
+        {/* Upload Progress Indicator */}
+        {uploadingPhotos && (
+          <div className="upload-progress">
+            <div className="progress-info">
+              <span>🚀 Uploading to Supabase Cloud Storage...</span>
+              <span>{uploadProgress}%</span>
+            </div>
+            <div className="progress-bar">
+              <div 
+                className="progress-fill" 
+                style={{ width: `${uploadProgress}%` }}
+              ></div>
+            </div>
+            <p className="progress-note">
+              📤 Photos are being stored permanently in cloud storage
+            </p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="modal-form">
           {/* Personal Details Section */}
@@ -212,10 +297,16 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 value={formData.name}
                 onChange={handleChange}
                 required
+                disabled={isSubmitting}
               />
             </div>
             <div className="form-group">
-              <select name="gender" value={formData.gender} onChange={handleChange}>
+              <select 
+                name="gender" 
+                value={formData.gender} 
+                onChange={handleChange}
+                disabled={isSubmitting}
+              >
                 <option value="">Select Gender</option>
                 <option>Male</option>
                 <option>Female</option>
@@ -230,6 +321,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 name="maritalStatus"
                 value={formData.maritalStatus}
                 onChange={handleChange}
+                disabled={isSubmitting}
               >
                 <option value="">Marital Status</option>
                 <option>Never Married</option>
@@ -244,6 +336,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 name="dob"
                 value={formData.dob}
                 onChange={handleChange}
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -255,6 +348,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 placeholder="Place of Birth & Time"
                 value={formData.birthPlaceTime}
                 onChange={handleChange}
+                disabled={isSubmitting}
               />
             </div>
             <div className="form-group">
@@ -263,6 +357,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 placeholder="Native Place"
                 value={formData.nativePlace}
                 onChange={handleChange}
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -274,6 +369,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 placeholder="Gotra"
                 value={formData.gotra}
                 onChange={handleChange}
+                disabled={isSubmitting}
               />
             </div>
             <div className="form-group">
@@ -283,6 +379,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 value={formData.religion}
                 onChange={handleChange}
                 required
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -295,6 +392,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 value={formData.phoneNumber}
                 onChange={handleChange}
                 required
+                disabled={isSubmitting}
               />
             </div>
             <div className="form-group">
@@ -303,6 +401,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 placeholder="Height (e.g., 5'8'')"
                 value={formData.height}
                 onChange={handleChange}
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -314,6 +413,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 placeholder="Complexion"
                 value={formData.complexion}
                 onChange={handleChange}
+                disabled={isSubmitting}
               />
             </div>
             <div className="form-group">
@@ -323,6 +423,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 onChange={(e) =>
                   setFormData({ ...formData, horoscope: e.target.value === "true" })
                 }
+                disabled={isSubmitting}
               >
                 <option value="">Believe in Horoscopes?</option>
                 <option value="true">Yes</option>
@@ -338,6 +439,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 placeholder="Eating Habits (Veg/Non-Veg)"
                 value={formData.eatingHabits}
                 onChange={handleChange}
+                disabled={isSubmitting}
               />
             </div>
             <div className="form-group">
@@ -346,6 +448,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 placeholder="Drinking Habits"
                 value={formData.drinkingHabits}
                 onChange={handleChange}
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -357,6 +460,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 placeholder="Smoking Habits"
                 value={formData.smokingHabits}
                 onChange={handleChange}
+                disabled={isSubmitting}
               />
             </div>
             <div className="form-group">
@@ -365,6 +469,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 placeholder="Physical Disability (if any)"
                 value={formData.disability}
                 onChange={handleChange}
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -377,6 +482,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 onChange={(e) =>
                   setFormData({ ...formData, nri: e.target.value === "true" })
                 }
+                disabled={isSubmitting}
               >
                 <option value="">NRI Status</option>
                 <option value="true">Yes</option>
@@ -390,6 +496,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 onChange={(e) =>
                   setFormData({ ...formData, vehicle: e.target.value === "true" })
                 }
+                disabled={isSubmitting}
               >
                 <option value="">Own Vehicle?</option>
                 <option value="true">Yes</option>
@@ -408,6 +515,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 placeholder="Father's Name"
                 value={formData.fatherName}
                 onChange={handleChange}
+                disabled={isSubmitting}
               />
             </div>
             <div className="form-group">
@@ -416,6 +524,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 placeholder="Father's Occupation"
                 value={formData.fatherOccupation}
                 onChange={handleChange}
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -427,6 +536,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 placeholder="Father's Office/Business"
                 value={formData.fatherOffice}
                 onChange={handleChange}
+                disabled={isSubmitting}
               />
             </div>
             <div className="form-group">
@@ -435,6 +545,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 placeholder="Mother's Name"
                 value={formData.motherName}
                 onChange={handleChange}
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -446,6 +557,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 placeholder="Mother's Occupation"
                 value={formData.motherOccupation}
                 onChange={handleChange}
+                disabled={isSubmitting}
               />
             </div>
             <div className="form-group">
@@ -454,6 +566,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 placeholder="Current Residence"
                 value={formData.residence}
                 onChange={handleChange}
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -465,6 +578,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
               value={formData.otherProperty}
               onChange={handleChange}
               rows="3"
+              disabled={isSubmitting}
             />
           </div>
 
@@ -478,6 +592,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 onChange={(e) =>
                   handleSiblingChange(idx, "name", e.target.value)
                 }
+                disabled={isSubmitting}
               />
               <input
                 placeholder="Relation"
@@ -485,6 +600,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 onChange={(e) =>
                   handleSiblingChange(idx, "relation", e.target.value)
                 }
+                disabled={isSubmitting}
               />
               <input
                 placeholder="Age"
@@ -493,6 +609,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 onChange={(e) =>
                   handleSiblingChange(idx, "age", e.target.value)
                 }
+                disabled={isSubmitting}
               />
               <input
                 placeholder="Profession"
@@ -500,18 +617,24 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 onChange={(e) =>
                   handleSiblingChange(idx, "profession", e.target.value)
                 }
+                disabled={isSubmitting}
               />
               <select
                 value={s.maritalStatus}
                 onChange={(e) =>
                   handleSiblingChange(idx, "maritalStatus", e.target.value)
                 }
+                disabled={isSubmitting}
               >
                 <option value="">Status</option>
                 <option>Single</option>
                 <option>Married</option>
               </select>
-              <button type="button" onClick={() => removeSibling(idx)}>
+              <button 
+                type="button" 
+                onClick={() => removeSibling(idx)}
+                disabled={isSubmitting}
+              >
                 🗑️
               </button>
             </div>
@@ -520,6 +643,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
             type="button"
             onClick={addSibling}
             className="add-sibling-btn"
+            disabled={isSubmitting}
           >
             Add Family Member
           </button>
@@ -533,6 +657,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
               placeholder="Higher Qualification (Masters, PhD, etc.)"
               value={formData.higherQualification}
               onChange={handleChange}
+              disabled={isSubmitting}
             />
           </div>
 
@@ -543,6 +668,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 placeholder="Graduation Details"
                 value={formData.graduation}
                 onChange={handleChange}
+                disabled={isSubmitting}
               />
             </div>
             <div className="form-group">
@@ -551,6 +677,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 placeholder="School/Board"
                 value={formData.schooling}
                 onChange={handleChange}
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -565,6 +692,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
               value={formData.occupation}
               onChange={handleChange}
               rows="4"
+              disabled={isSubmitting}
             />
           </div>
 
@@ -575,6 +703,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 placeholder="Personal Income (Annual)"
                 value={formData.personalIncome}
                 onChange={handleChange}
+                disabled={isSubmitting}
               />
             </div>
             <div className="form-group">
@@ -583,20 +712,24 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 placeholder="Family Income (Annual)"
                 value={formData.familyIncome}
                 onChange={handleChange}
+                disabled={isSubmitting}
               />
             </div>
           </div>
 
-          {/* Photos Section */}
-          <h3>📸 Photos (1-4 photos required) *</h3>
+          {/* Enhanced Photos Section */}
+          <h3>📸 Photos (1-4 photos required) * 
+            <span className="storage-info">🌟 Stored safely in Supabase Cloud</span>
+          </h3>
           <div className="photo-upload-section">
             <input
               type="file"
               multiple
-              accept="image/*"
+              accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
               onChange={handlePhotoChange}
               className="photo-input"
               required
+              disabled={isSubmitting}
             />
 
             {photos.length > 0 && (
@@ -631,8 +764,13 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 Maximum 4 photos allowed {photos.length <= 4 ? "✅" : "❌"}
               </p>
               <p className="requirement-note">
-                📝 Supported: JPEG, PNG, GIF (Max 5MB each)
+                📝 Supported: JPEG, PNG, GIF, WebP (Max 5MB each)
               </p>
+              <div className="storage-benefits">
+                <p className="storage-benefit">☁️ Permanently stored in Supabase</p>
+                <p className="storage-benefit">⚡ Fast global delivery via CDN</p>
+                <p className="storage-benefit">💾 Survives server restarts</p>
+              </div>
             </div>
           </div>
 
@@ -650,7 +788,12 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
               className="submit-btn"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "✨ Adding Person..." : "🚀 Submit"}
+              {isSubmitting 
+                ? uploadingPhotos 
+                  ? "☁️ Uploading Photos..." 
+                  : "✨ Processing..."
+                : "🚀 Submit"
+              }
             </button>
           </div>
         </form>

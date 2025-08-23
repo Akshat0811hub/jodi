@@ -63,6 +63,95 @@ const LoadingOverlay = ({ message }) => (
   </div>
 );
 
+// Image component with Supabase URL handling
+const SupabaseImage = ({ photo, alt, className, onError }) => {
+  const [imageUrl, setImageUrl] = useState(null);
+  const [imageError, setImageError] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadImage = async () => {
+      try {
+        setLoading(true);
+        setImageError(false);
+        
+        // If photo is an object with url property (new format)
+        if (typeof photo === 'object' && photo.url) {
+          setImageUrl(photo.url);
+        }
+        // If photo is a string (old format or filename)
+        else if (typeof photo === 'string') {
+          // Check if it's already a full URL
+          if (photo.startsWith('http')) {
+            setImageUrl(photo);
+          } else {
+            // Get URL from backend
+            try {
+              const response = await api.get(`/people/image/${photo}`);
+              setImageUrl(response.data.url);
+            } catch (error) {
+              console.error("Failed to get image URL:", error);
+              setImageError(true);
+            }
+          }
+        } else {
+          setImageError(true);
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error("Error loading image:", error);
+        setImageError(true);
+        setLoading(false);
+      }
+    };
+
+    if (photo) {
+      loadImage();
+    } else {
+      setImageError(true);
+      setLoading(false);
+    }
+  }, [photo]);
+
+  const handleImageError = () => {
+    console.error("Image failed to load:", imageUrl);
+    setImageError(true);
+    if (onError) onError();
+  };
+
+  if (loading) {
+    return (
+      <div className={`${className} image-loading`}>
+        <div className="image-skeleton">
+          <div className="skeleton-shimmer"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (imageError || !imageUrl) {
+    return (
+      <div className={`${className} image-error`}>
+        <div className="error-placeholder">
+          <span className="error-icon">🖼️</span>
+          <span className="error-text">Image not available</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={imageUrl}
+      alt={alt}
+      className={className}
+      onError={handleImageError}
+      loading="lazy"
+    />
+  );
+};
+
 const PeopleList = ({ filters }) => {
   const [people, setPeople] = useState([]);
   const [expandedRow, setExpandedRow] = useState(null);
@@ -82,14 +171,18 @@ const PeopleList = ({ filters }) => {
   const fetchPeople = async () => {
     try {
       setTableLoading(true);
+      console.log("📡 Fetching people with Supabase integration...");
+      
       const params = new URLSearchParams(filters).toString();
       const res = await api.get(`/people?${params}`);
+      
+      console.log("✅ People fetched successfully:", res.data.length);
       setPeople(res.data);
       
       // Add small delay for smooth loading animation
       setTimeout(() => setTableLoading(false), 300);
     } catch (err) {
-      console.error("Failed to fetch people", err);
+      console.error("❌ Failed to fetch people", err);
       showNotification("Failed to fetch people. Please try again.", 'error');
       setTableLoading(false);
     }
@@ -114,17 +207,26 @@ const PeopleList = ({ filters }) => {
   const handleConfirmEdit = async () => {
     try {
       setLoading(true);
+      console.log("📝 Updating person with Supabase...");
+      
       await api.put(`/people/${formData._id}`, formData);
+      
+      // Update local state with new data
       setPeople((prevPeople) =>
         prevPeople.map((p) =>
-          p._id === formData._id ? { ...p, ...formData } : p
+          p._id === formData._id ? { ...formData, photos: p.photos, profilePictureUrl: p.profilePictureUrl } : p
         )
       );
+      
       setExpandedRow(formData._id);
       setEditMode(false);
-      showNotification("Profile updated successfully!", 'success');
+      showNotification("Profile updated successfully! 🎉", 'success');
+      
+      // Refresh data to get latest from server
+      setTimeout(() => fetchPeople(), 500);
+      
     } catch (err) {
-      console.error("Error updating person:", err);
+      console.error("❌ Error updating person:", err);
       showNotification("Failed to update profile. Please try again.", 'error');
     } finally {
       setLoading(false);
@@ -135,12 +237,13 @@ const PeopleList = ({ filters }) => {
     // Custom premium confirmation dialog would be better, but using native for now
     if (window.confirm("⚠️ Are you sure you want to delete this person? This action cannot be undone.")) {
       try {
+        console.log("🗑️ Deleting person and Supabase photos...");
         await api.delete(`/people/${id}`);
-        showNotification("Person deleted successfully", 'success');
+        showNotification("Person deleted successfully (including photos from Supabase)", 'success');
         fetchPeople();
         setExpandedRow(null);
       } catch (error) {
-        console.error("Error deleting person:", error);
+        console.error("❌ Error deleting person:", error);
         showNotification("Failed to delete person. Please try again.", 'error');
       }
     }
@@ -224,11 +327,6 @@ const PeopleList = ({ filters }) => {
     });
   };
 
-  const getImageUrl = (filename) => {
-    const baseUrl = process.env.REACT_APP_API_URL || "https://jodi-fi4e.onrender.com";
-    return `${baseUrl}/uploads/${filename}`;
-  };
-
   // Select/Deselect all fields functionality
   const handleSelectAllFields = () => {
     setSelectedFields([...availableFields]);
@@ -259,12 +357,16 @@ const PeopleList = ({ filters }) => {
       <div className="people-container">
         <div className="header-section">
           <h2 className="people-heading">
-            ✨ Showing {people.length} person{people.length !== 1 && "s"}
+            ✨ Showing {people.length} person{people.length !== 1 && "s"} (Supabase Storage)
           </h2>
           <div className="header-stats">
             <div className="stat-card">
               <div className="stat-number">{people.length}</div>
               <div className="stat-label">Total Profiles</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-number">🆓</div>
+              <div className="stat-label">Supabase Free</div>
             </div>
           </div>
         </div>
@@ -345,16 +447,14 @@ const PeopleList = ({ filters }) => {
                               <div className="expanded-details">
                                 {person.photos?.length > 0 && (
                                   <div className="photo-section">
-                                    <img
-                                      src={getImageUrl(person.photos[0])}
+                                    <SupabaseImage
+                                      photo={person.photos[0]}
                                       alt={person.name}
                                       className="expanded-photo"
-                                      onError={(e) => {
-                                        e.target.style.display = 'none';
-                                      }}
                                     />
                                     <div className="photo-overlay">
                                       <span className="photo-icon">📸</span>
+                                      <span className="photo-source">Supabase</span>
                                     </div>
                                   </div>
                                 )}
@@ -415,7 +515,7 @@ const PeopleList = ({ filters }) => {
                                     className="action-btn delete-btn"
                                   >
                                     <span className="btn-icon">🗑️</span>
-                                    <span className="btn-text">Delete</span>
+                                    <span className="btn-text">Delete (+ Supabase)</span>
                                   </button>
                                 </div>
                               </div>

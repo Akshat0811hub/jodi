@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const path = require("path");
+const { createClient } = require('@supabase/supabase-js');
 
 // Load environment variables first
 dotenv.config();
@@ -13,7 +14,14 @@ console.log("🔄 Starting server setup...");
 console.log("🌍 Environment:", process.env.NODE_ENV || "development");
 console.log("📡 Port:", process.env.PORT || 5000);
 
-// ✅ RENDER-SPECIFIC CORS FIX - This addresses the Render CORS issue
+// 🆓 SUPABASE CONFIGURATION
+const supabaseUrl = process.env.SUPABASE_URL || 'https://anjowgqnhyatiltnencb.supabase.co';
+const supabaseKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuam93Z3FuaHlhdGlsdG5lbmNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU5NTM0MDQsImV4cCI6MjA3MTUyOTQwNH0.xccgtRzzj8QWdfo2ivmycYAUIK3L_KUYO_emOnzq1ZE';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+console.log("🆓 Supabase configured:", supabaseUrl);
+
+// ✅ RENDER-SPECIFIC CORS FIX
 const allowedOrigins = [
   "https://jodi-iexr.vercel.app",
   "http://localhost:3000",
@@ -106,29 +114,19 @@ app.use((req, res, next) => {
   next();
 });
 
-// ✅ Static file serving
-const uploadsPath = path.join(__dirname, "uploads");
-const assetsPath = path.join(__dirname, "assets");
-
-const fs = require("fs");
-if (!fs.existsSync(uploadsPath)) {
-  fs.mkdirSync(uploadsPath, { recursive: true });
-  console.log("📁 Created uploads directory");
-} else {
-  console.log("📁 Uploads directory exists at:", uploadsPath);
-}
-
-app.use("/uploads", express.static(uploadsPath));
-app.use(express.static(assetsPath));
+// ✅ REMOVED: Local static file serving (now using Supabase)
+// We no longer need uploads directory or static file serving
+console.log("📁 Using Supabase Storage instead of local uploads");
 
 // ✅ Root health check
 app.get("/", (req, res) => {
   res.status(200).json({
-    message: "🚀 JODI Server is running!",
+    message: "🚀 JODI Server is running with Supabase!",
     status: "OK",
     timestamp: new Date().toISOString(),
     version: "1.0.0",
     cors: "enabled",
+    storage: "Supabase",
     environment: process.env.NODE_ENV || "development",
     endpoints: {
       health: "/health",
@@ -141,14 +139,24 @@ app.get("/", (req, res) => {
   });
 });
 
-// ✅ Health check endpoint
-app.get("/health", (req, res) => {
+// ✅ Health check endpoint with Supabase status
+app.get("/health", async (req, res) => {
+  let supabaseStatus = "unknown";
+  
+  try {
+    // Test Supabase connection
+    const { data, error } = await supabase.storage.listBuckets();
+    supabaseStatus = error ? "error" : "connected";
+  } catch (err) {
+    supabaseStatus = "failed";
+  }
+
   res.status(200).json({
     status: "OK",
     timestamp: new Date().toISOString(),
     cors: "enabled",
-    mongodb:
-      mongoose.connection.readyState === 1 ? "connected" : "disconnected",
+    mongodb: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
+    supabase: supabaseStatus,
     uptime: Math.floor(process.uptime()),
     memory: Math.floor(process.memoryUsage().heapUsed / 1024 / 1024) + "MB",
     routes: "loaded",
@@ -173,6 +181,7 @@ app.get("/api/test", (req, res) => {
   res.status(200).json({
     message: "✅ API is working perfectly!",
     cors: "enabled",
+    storage: "Supabase",
     timestamp: new Date().toISOString(),
     server: "JODI Backend v1.0.0",
   });
@@ -186,6 +195,32 @@ app.get("/keep-alive", (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: Math.floor(process.uptime()),
   });
+});
+
+// ✅ Supabase test endpoint
+app.get("/supabase-test", async (req, res) => {
+  try {
+    console.log("🧪 Testing Supabase connection...");
+    
+    const { data: buckets, error } = await supabase.storage.listBuckets();
+    
+    if (error) {
+      throw error;
+    }
+
+    res.status(200).json({
+      message: "✅ Supabase connection successful!",
+      buckets: buckets.map(bucket => bucket.name),
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error("❌ Supabase test failed:", error);
+    res.status(500).json({
+      message: "❌ Supabase connection failed",
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // ✅ Load routes with comprehensive error handling
@@ -227,11 +262,11 @@ try {
   });
 }
 
-// Person routes - CRITICAL
+// Person routes - CRITICAL (Updated for Supabase)
 try {
   const personRoutes = require("./routes/personRoutes");
   app.use("/api/people", personRoutes);
-  console.log("✅ Person routes mounted at /api/people");
+  console.log("✅ Person routes mounted at /api/people (Supabase enabled)");
 } catch (error) {
   console.error("❌ Failed to load person routes:", error.message);
 
@@ -257,19 +292,18 @@ try {
   });
 }
 
-// ✅ FIXED: PDF routes - This was the main issue!
+// ✅ PDF routes (Updated for Supabase)
 try {
   const pdfRoutes = require("./routes/pdfRoutes");
-  app.use("/api/pdf", pdfRoutes); // ✅ This ensures the route is properly mounted
-  console.log("✅ PDF routes mounted at /api/pdf");
+  app.use("/api/pdf", pdfRoutes);
+  console.log("✅ PDF routes mounted at /api/pdf (Supabase enabled)");
 
-  // ✅ Test if PDF route is working
   console.log("🧪 Testing PDF route availability...");
 } catch (error) {
   console.error("❌ Failed to load PDF routes:", error.message);
   console.error("❌ PDF Route Error Stack:", error.stack);
 
-  // ✅ CRITICAL: Create emergency PDF fallback if module fails
+  // ✅ CRITICAL: Create emergency PDF fallback
   app.get("/api/pdf/person/:id/pdf", (req, res) => {
     console.error(
       "🚨 PDF route fallback triggered - main PDF module failed to load"
@@ -320,6 +354,7 @@ app.get("/api/routes-test", (req, res) => {
     message: "Available routes",
     routes: routes,
     count: routes.length,
+    storage: "Supabase",
   });
 });
 
@@ -363,17 +398,16 @@ const connectDB = async (retries = 5) => {
   }
 };
 
-// ✅ FIXED: Admin user seeding with correct jodi@gmail.com password
+// ✅ Admin user seeding with correct credentials
 async function seedAdminUsers() {
   try {
     const bcrypt = require("bcrypt");
     const User = require("./models/userModel");
 
-    // ✅ FIXED: Updated admin accounts with correct jodi@gmail.com password
     const admins = [
       { name: "Akshat", email: "akshat@gmail.com", password: "admin123" },
       { name: "Mannat", email: "mannat@gmail.com", password: "mannat@123" },
-      { name: "Jodi Admin", email: "jodi@gmail.com", password: "mamta1947" }, // ✅ FIXED PASSWORD
+      { name: "Jodi Admin", email: "jodi@gmail.com", password: "mamta1947" },
     ];
 
     console.log("👑 Starting admin user seeding process...");
@@ -394,7 +428,7 @@ async function seedAdminUsers() {
           {
             name: admin.name,
             email: admin.email,
-            password: hashedPassword, // Always use the correct hashed password
+            password: hashedPassword,
             isAdmin: true,
             createdAt: new Date(),
           },
@@ -411,7 +445,7 @@ async function seedAdminUsers() {
           }`
         );
 
-        // ✅ VERIFY: Test password immediately after creation/update
+        // Verify password immediately after creation/update
         const isPasswordCorrect = await bcrypt.compare(
           admin.password,
           result.password
@@ -440,7 +474,7 @@ async function seedAdminUsers() {
 
     console.log("✅ Admin seeding process completed");
 
-    // ✅ VERIFICATION: Check all admin accounts
+    // Verification: Check all admin accounts
     console.log("🔍 Verifying admin accounts in database...");
 
     const adminUsers = await User.find({ isAdmin: true }).select(
@@ -454,7 +488,7 @@ async function seedAdminUsers() {
       );
     });
 
-    // ✅ TEST LOGIN CREDENTIALS
+    // Test login credentials
     console.log("🧪 Testing admin login credentials...");
 
     for (let admin of admins) {
@@ -550,6 +584,7 @@ app.use("*", (req, res) => {
       "GET /health",
       "GET /cors-test",
       "GET /api/test",
+      "GET /supabase-test",
       "GET /api/routes-test",
       "POST /api/auth/login",
       "POST /api/auth/register",
@@ -579,10 +614,11 @@ function gracefulShutdown() {
 // ✅ Start server
 const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, "0.0.0.0", () => {
-  console.log(`\n🚀 Server running on port ${PORT}`);
+  console.log(`\n🚀 Server running on port ${PORT} with Supabase Storage!`);
   console.log(`🔗 Health: http://localhost:${PORT}/health`);
   console.log(`🧪 CORS Test: http://localhost:${PORT}/cors-test`);
   console.log(`🧪 API Test: http://localhost:${PORT}/api/test`);
+  console.log(`🆓 Supabase Test: http://localhost:${PORT}/supabase-test`);
   console.log(`🧪 Routes Test: http://localhost:${PORT}/api/routes-test`);
   console.log(`🔐 Auth: http://localhost:${PORT}/api/auth`);
   console.log(`👥 People: http://localhost:${PORT}/api/people`);
@@ -592,7 +628,8 @@ const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`\n👑 Admin Accounts Configured:`);
   console.log(`   📧 akshat@gmail.com - Password: admin123`);
   console.log(`   📧 mannat@gmail.com - Password: mannat@123`);
-  console.log(`   📧 jodi@gmail.com - Password: mamta1947`); // ✅ FIXED
+  console.log(`   📧 jodi@gmail.com - Password: mamta1947`);
+  console.log(`🆓 Storage: Supabase (Free Tier - 1GB storage)`);
   console.log(`🎯 Ready to accept connections!\n`);
 });
 
@@ -607,6 +644,5 @@ server.on("error", (err) => {
 
 server.timeout = 120000; // 2 minutes
 
-// ✅ Export app and logoPath for reuse
-const logoPath = path.join(__dirname, "logo.png"); // 👈 backend/logo.png resolve
-module.exports = { app, logoPath };
+// ✅ Export app for reuse
+module.exports = { app, supabase };

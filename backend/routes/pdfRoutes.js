@@ -1,13 +1,20 @@
-// routes/pdfRoutes.js - FIXED VERSION with Photo Issues Resolved
+// routes/pdfRoutes.js - FIXED VERSION with Supabase Integration
 const express = require("express");
 const PDFDocument = require("pdfkit");
 const Person = require("../models/personModel");
+const { createClient } = require('@supabase/supabase-js');
 const path = require("path");
-const fs = require("fs");
 
 const router = express.Router();
 
-console.log("📄 Loading FIXED PDF routes with photo issues resolved...");
+console.log("📄 Loading PDF routes with Supabase integration...");
+
+// 🆓 SUPABASE CONFIGURATION
+const supabaseUrl = process.env.SUPABASE_URL || 'https://anjowgqnhyatiltnencb.supabase.co';
+const supabaseKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuam93Z3FuaHlhdGlsdG5lbmNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU5NTM0MDQsImV4cCI6MjA3MTUyOTQwNH0.xccgtRzzj8QWdfo2ivmycYAUIK3L_KUYO_emOnzq1ZE';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+const BUCKET_NAME = process.env.SUPABASE_BUCKET || 'matrimony-photos';
 
 // Color scheme for better styling
 const colors = {
@@ -71,9 +78,7 @@ const addStyledSectionHeader = (doc, title) => {
   const headerY = doc.y;
 
   doc.rect(40, headerY, 520, 30).fill(colors.primary);
-
   doc.rect(40, headerY, 520, 2).fill(colors.accent);
-
   doc.circle(55, headerY + 15, 8).fill(colors.accent);
 
   doc
@@ -85,33 +90,50 @@ const addStyledSectionHeader = (doc, title) => {
   doc.fillColor(colors.text).moveDown(1.2);
 };
 
-// 🔧 FIXED: Improved photo path resolution with debug logging
-const resolvePhotoPath = (photoPath) => {
-  if (!photoPath || typeof photoPath !== "string") {
-    console.log("❌ Invalid photo path type:", typeof photoPath, photoPath);
+// 🆓 SUPABASE: Download image from URL and return buffer
+const downloadImageFromSupabase = async (imageUrl) => {
+  try {
+    console.log("📥 Downloading image from Supabase:", imageUrl);
+    
+    // Extract the file path from the URL
+    const urlParts = imageUrl.split('/');
+    const bucketIndex = urlParts.findIndex(part => part === BUCKET_NAME);
+    
+    if (bucketIndex === -1) {
+      throw new Error("Invalid Supabase URL format");
+    }
+    
+    const filePath = urlParts.slice(bucketIndex + 1).join('/');
+    console.log("📁 Extracted file path:", filePath);
+    
+    // Download from Supabase
+    const { data, error } = await supabase.storage
+      .from(BUCKET_NAME)
+      .download(filePath);
+      
+    if (error) {
+      throw error;
+    }
+    
+    if (!data) {
+      throw new Error("No data received from Supabase");
+    }
+    
+    // Convert blob to buffer
+    const buffer = await data.arrayBuffer();
+    console.log("✅ Image downloaded successfully, size:", buffer.byteLength, "bytes");
+    
+    return Buffer.from(buffer);
+  } catch (error) {
+    console.error("❌ Error downloading image from Supabase:", error);
     return null;
   }
-
-  const cleanPath = photoPath.trim();
-  console.log("🔍 Looking for photo:", cleanPath);
-
-  // Since we store only filenames, construct the full path directly
-  const fullPath = path.join(process.cwd(), "uploads", cleanPath);
-  console.log("📁 Full path:", fullPath);
-
-  if (fs.existsSync(fullPath)) {
-    console.log("✅ Photo found at:", fullPath);
-    return fullPath;
-  }
-
-  console.log("❌ Photo not found:", fullPath);
-  return null;
 };
 
-// 🔧 FIXED: Improved single photo addition with better validation
-const addSinglePhoto = async (
+// 🆓 SUPABASE: Add single photo from URL
+const addSinglePhotoFromUrl = async (
   doc,
-  photoPath,
+  imageUrl,
   x,
   y,
   width,
@@ -119,61 +141,34 @@ const addSinglePhoto = async (
   photoNumber
 ) => {
   try {
-    if (!photoPath || typeof photoPath !== "string" || !photoPath.trim()) {
-      console.log(`❌ Invalid photo path for photo ${photoNumber}:`, photoPath);
+    if (!imageUrl || typeof imageUrl !== "string" || !imageUrl.trim()) {
+      console.log(`❌ Invalid image URL for photo ${photoNumber}:`, imageUrl);
       return false;
     }
 
-    console.log(`\n📸 Processing photo ${photoNumber}:`);
-    console.log(`   Original path: ${photoPath}`);
+    console.log(`\n📸 Processing photo ${photoNumber} from Supabase:`);
+    console.log(`   URL: ${imageUrl}`);
 
-    const fullPath = resolvePhotoPath(photoPath.trim());
+    // Download image from Supabase
+    const imageBuffer = await downloadImageFromSupabase(imageUrl.trim());
 
-    if (!fullPath || !fs.existsSync(fullPath)) {
+    if (!imageBuffer) {
+      console.log(`❌ Failed to download photo ${photoNumber} from Supabase`);
+      return false;
+    }
+
+    // Validate buffer
+    if (imageBuffer.length === 0) {
+      console.log(`❌ Photo ${photoNumber} buffer is empty`);
+      return false;
+    }
+
+    if (imageBuffer.length > 10 * 1024 * 1024) { // 10MB limit
       console.log(
-        `❌ Photo ${photoNumber} file not found after path resolution`
+        `❌ Photo ${photoNumber} too large: ${(
+          imageBuffer.length / 1024 / 1024
+        ).toFixed(2)} MB`
       );
-      return false;
-    }
-
-    // 🔧 FIXED: Better file validation
-    const validExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"];
-    const ext = path.extname(fullPath).toLowerCase();
-
-    if (!validExtensions.includes(ext)) {
-      console.log(`❌ Invalid image type for photo ${photoNumber}: ${ext}`);
-      console.log(`   Supported types: ${validExtensions.join(", ")}`);
-      return false;
-    }
-
-    // Check file size and readability
-    try {
-      const stats = fs.statSync(fullPath);
-      console.log(
-        `📊 Photo ${photoNumber} stats: ${(stats.size / 1024).toFixed(2)} KB`
-      );
-
-      if (stats.size === 0) {
-        console.log(`❌ Photo ${photoNumber} is empty (0 bytes)`);
-        return false;
-      }
-
-      if (stats.size > 10 * 1024 * 1024) {
-        // 10MB limit
-        console.log(
-          `❌ Photo ${photoNumber} too large: ${(
-            stats.size /
-            1024 /
-            1024
-          ).toFixed(2)} MB`
-        );
-        return false;
-      }
-
-      // Test if file is readable
-      fs.accessSync(fullPath, fs.constants.R_OK);
-    } catch (error) {
-      console.log(`❌ Cannot access photo ${photoNumber} file:`, error.message);
       return false;
     }
 
@@ -184,9 +179,9 @@ const addSinglePhoto = async (
       .stroke(colors.primary)
       .lineWidth(2);
 
-    // 🔧 FIXED: Better image adding with error handling
     try {
-      doc.image(fullPath, x, y, {
+      // Add image to PDF from buffer
+      doc.image(imageBuffer, x, y, {
         width: width,
         height: height,
         fit: [width, height],
@@ -194,7 +189,7 @@ const addSinglePhoto = async (
         valign: "center",
       });
 
-      console.log(`✅ Photo ${photoNumber} added successfully`);
+      console.log(`✅ Photo ${photoNumber} added successfully from Supabase`);
     } catch (imageError) {
       console.log(
         `❌ Failed to add image to PDF for photo ${photoNumber}:`,
@@ -275,49 +270,48 @@ const addPhotoPlaceholder = (
   }
 };
 
-// 🔧 FIXED: Photos section with better error handling and debugging
+// 🆓 SUPABASE: Photos section with URL-based loading
 const addPhotosSection = async (doc, person) => {
   try {
     console.log("\n📸 =================================");
-    console.log("📸 Starting photos section processing...");
+    console.log("📸 Starting photos section processing (Supabase)...");
     console.log("📸 Person ID:", person._id);
     console.log("📸 Person name:", person.name);
-    console.log("📸 Profile picture:", person.profilePicture);
-    console.log("📸 Photos array:", person.photos);
+    console.log("📸 Profile picture URL:", person.profilePicture);
+    console.log("📸 Photos URLs:", person.photos);
     console.log("📸 =================================\n");
 
-    // Collect all available photos
-    const allPhotos = [];
-    console.log("📸 Raw person.photos:", person.photos);
-    console.log("📸 Raw person.profilePicture:", person.profilePicture);
+    // Collect all available photo URLs
+    const allPhotoUrls = [];
 
     // Add profile picture if exists
     if (
       person.profilePicture &&
       typeof person.profilePicture === "string" &&
-      person.profilePicture.trim()
+      person.profilePicture.trim() &&
+      person.profilePicture.includes('supabase')
     ) {
-      allPhotos.push(person.profilePicture.trim());
-      console.log("📸 Added profile picture to collection");
+      allPhotoUrls.push(person.profilePicture.trim());
+      console.log("📸 Added profile picture URL to collection");
     }
 
     // Add photos array if exists
     if (person.photos && Array.isArray(person.photos)) {
-      person.photos.forEach((photo, index) => {
-        if (photo && typeof photo === "string" && photo.trim()) {
-          allPhotos.push(photo.trim());
-          console.log(`📸 Added photo ${index + 1} to collection`);
+      person.photos.forEach((photoUrl, index) => {
+        if (photoUrl && typeof photoUrl === "string" && photoUrl.trim() && photoUrl.includes('supabase')) {
+          allPhotoUrls.push(photoUrl.trim());
+          console.log(`📸 Added photo URL ${index + 1} to collection`);
         } else {
-          console.log(`⚠️ Skipped invalid photo ${index + 1}:`, photo);
+          console.log(`⚠️ Skipped invalid photo URL ${index + 1}:`, photoUrl);
         }
       });
     }
 
     // Remove duplicates and limit to 4
-    const uniquePhotos = [...new Set(allPhotos)].slice(0, 4);
-    console.log(`📸 Final photos to process: ${uniquePhotos.length}`);
-    uniquePhotos.forEach((photo, index) => {
-      console.log(`   ${index + 1}. ${photo}`);
+    const uniquePhotoUrls = [...new Set(allPhotoUrls)].slice(0, 4);
+    console.log(`📸 Final photo URLs to process: ${uniquePhotoUrls.length}`);
+    uniquePhotoUrls.forEach((url, index) => {
+      console.log(`   ${index + 1}. ${url.substring(0, 60)}...`);
     });
 
     // Add new page for photos
@@ -326,7 +320,7 @@ const addPhotosSection = async (doc, person) => {
     // Photos section header
     addStyledSectionHeader(doc, "📷 PHOTOGRAPHS");
 
-    if (uniquePhotos.length === 0) {
+    if (uniquePhotoUrls.length === 0) {
       doc.rect(50, doc.y, 500, 100).fill("#F8F9FA").stroke("#DEE2E6");
 
       doc
@@ -341,7 +335,7 @@ const addPhotosSection = async (doc, person) => {
       doc
         .fontSize(11)
         .font("Helvetica")
-        .text("Photos will be displayed here when uploaded", 50, doc.y + 20, {
+        .text("Photos will be displayed here when uploaded to Supabase", 50, doc.y + 20, {
           width: 500,
           align: "center",
         });
@@ -351,7 +345,7 @@ const addPhotosSection = async (doc, person) => {
     }
 
     // Calculate layout dynamically
-    const photosCount = uniquePhotos.length;
+    const photosCount = uniquePhotoUrls.length;
     let photosPerRow, photoWidth, photoHeight;
 
     if (photosCount === 1) {
@@ -381,8 +375,8 @@ const addPhotosSection = async (doc, person) => {
     let photosInCurrentRow = 0;
     let successfulPhotos = 0;
 
-    for (let i = 0; i < uniquePhotos.length; i++) {
-      const photoPath = uniquePhotos[i];
+    for (let i = 0; i < uniquePhotoUrls.length; i++) {
+      const photoUrl = uniquePhotoUrls[i];
 
       // Special handling for 3 photos layout
       if (photosCount === 3 && i === 2) {
@@ -401,10 +395,10 @@ const addPhotosSection = async (doc, person) => {
         }/${photosCount} at position (${currentX}, ${currentY})`
       );
 
-      // Try to add the photo
-      const photoAdded = await addSinglePhoto(
+      // Try to add the photo from Supabase URL
+      const photoAdded = await addSinglePhotoFromUrl(
         doc,
-        photoPath,
+        photoUrl,
         currentX,
         currentY,
         photoWidth,
@@ -423,7 +417,7 @@ const addPhotosSection = async (doc, person) => {
           photoWidth,
           photoHeight,
           i + 1,
-          "Not Found"
+          "Download Failed"
         );
       }
 
@@ -439,17 +433,17 @@ const addPhotosSection = async (doc, person) => {
     doc.y = finalPhotoY;
 
     console.log(
-      `\n✅ Photos section completed: ${successfulPhotos}/${photosCount} photos loaded successfully`
+      `\n✅ Photos section completed: ${successfulPhotos}/${photosCount} photos loaded successfully from Supabase`
     );
     return true;
   } catch (error) {
-    console.error("❌ Error in addPhotosSection:", error);
+    console.error("❌ Error in addPhotosSection (Supabase):", error);
 
     try {
       doc
         .fontSize(12)
         .fillColor("#E74C3C")
-        .text("⚠️ Error loading photos section", 50, doc.y, {
+        .text("⚠️ Error loading photos section from Supabase", 50, doc.y, {
           align: "center",
         });
     } catch (fallbackError) {
@@ -541,14 +535,14 @@ const addStyledHeader = (doc, person) => {
   doc.fillColor(colors.text);
 };
 
-// 🔧 MAIN FIXED PDF ROUTE
+// 🆓 MAIN PDF ROUTE with Supabase Integration
 router.get("/person/:id/pdf", async (req, res) => {
   let doc = null;
 
   try {
     const { id } = req.params;
     console.log(`\n📄 =====================================`);
-    console.log(`📄 Starting PDF generation for person ${id}`);
+    console.log(`📄 Starting PDF generation for person ${id} (Supabase)`);
     console.log(`📄 =====================================\n`);
 
     if (!id || id.length !== 24) {
@@ -562,6 +556,8 @@ router.get("/person/:id/pdf", async (req, res) => {
     }
 
     console.log("✅ Person found:", person.name || "Unnamed");
+    console.log("📸 Photos in database:", person.photos?.length || 0);
+    console.log("📸 Profile picture:", person.profilePicture ? "✅" : "❌");
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
@@ -676,7 +672,7 @@ router.get("/person/:id/pdf", async (req, res) => {
       });
     }
 
-    // Photos section with improved error handling
+    // Photos section with Supabase integration
     await addPhotosSection(doc, person);
 
     // Add important notice
@@ -690,7 +686,7 @@ router.get("/person/:id/pdf", async (req, res) => {
       .text(
         `Generated on: ${new Date().toLocaleDateString(
           "en-IN"
-        )} | JODI NO 1 Matrimonial Services`,
+        )} | JODI NO 1 Matrimonial Services | Storage: Supabase`,
         50,
         footerY,
         { align: "center" }
@@ -698,7 +694,7 @@ router.get("/person/:id/pdf", async (req, res) => {
 
     doc.end();
     console.log(
-      "\n✅ PDF generated successfully with improved photo handling!"
+      "\n✅ PDF generated successfully with Supabase photo integration!"
     );
   } catch (error) {
     console.error("❌ PDF generation error:", error);
@@ -718,26 +714,14 @@ router.get("/person/:id/pdf", async (req, res) => {
   }
 });
 
-// 🔧 FIXED: Test route with debug info
-router.get("/test-pdf", (req, res) => {
+// 🆓 Test route with Supabase info
+router.get("/test-pdf", async (req, res) => {
   try {
-    console.log("📄 Testing PDF generation...");
-    console.log("📁 Current working directory:", process.cwd());
-    console.log("📁 Routes directory:", __dirname);
-
-    // Check if uploads directory exists
-    const uploadsPath = path.join(process.cwd(), "uploads");
-    const uploadsExists = fs.existsSync(uploadsPath);
-    console.log("📂 Uploads directory exists:", uploadsExists, uploadsPath);
-
-    if (uploadsExists) {
-      try {
-        const files = fs.readdirSync(uploadsPath);
-        console.log("📂 Files in uploads:", files);
-      } catch (e) {
-        console.log("❌ Cannot read uploads directory:", e.message);
-      }
-    }
+    console.log("📄 Testing PDF generation with Supabase...");
+    
+    // Test Supabase connection
+    const { data: buckets, error } = await supabase.storage.listBuckets();
+    const supabaseWorking = !error;
 
     const doc = new PDFDocument({ margin: 50 });
 
@@ -749,19 +733,30 @@ router.get("/test-pdf", (req, res) => {
     doc
       .fontSize(20)
       .fillColor(colors.primary)
-      .text("FIXED PDF Routes Test - Success! ✅", 100, 100);
+      .text("PDF Routes with Supabase Test - Success! ✅", 100, 100);
     doc
       .fontSize(12)
       .fillColor(colors.text)
-      .text("Photo issues have been resolved with better debugging.", 100, 140);
+      .text("Photo integration updated for Supabase storage.", 100, 140);
     doc
       .fontSize(10)
       .fillColor("#666")
-      .text(`Uploads path: ${uploadsPath}`, 100, 170);
+      .text(`Supabase URL: ${supabaseUrl}`, 100, 170);
+    doc
+      .fontSize(10)
+      .fillColor(supabaseWorking ? "#27AE60" : "#E74C3C")
+      .text(`Supabase Status: ${supabaseWorking ? "✅ Connected" : "❌ Failed"}`, 100, 190);
     doc
       .fontSize(10)
       .fillColor("#666")
-      .text(`Uploads exists: ${uploadsExists}`, 100, 190);
+      .text(`Bucket: ${BUCKET_NAME}`, 100, 210);
+
+    if (supabaseWorking && buckets) {
+      doc
+        .fontSize(10)
+        .fillColor("#666")
+        .text(`Available Buckets: ${buckets.map(b => b.name).join(', ')}`, 100, 230);
+    }
 
     doc.end();
   } catch (error) {
@@ -770,8 +765,27 @@ router.get("/test-pdf", (req, res) => {
   }
 });
 
+// 🆓 Bulk PDF generation (placeholder)
+router.post("/bulk", async (req, res) => {
+  try {
+    console.log("📄 Bulk PDF generation requested (Supabase enabled)");
+    
+    // This would be implemented for generating multiple PDFs
+    res.status(501).json({
+      message: "Bulk PDF generation not yet implemented",
+      storage: "Supabase",
+      note: "Individual PDF generation is working with Supabase"
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Bulk PDF generation failed",
+      error: error.message
+    });
+  }
+});
+
 console.log(
-  "✅ FIXED PDF routes loaded with improved photo handling and debugging!"
+  "✅ PDF routes loaded with Supabase integration for photo handling!"
 );
 
 module.exports = router;

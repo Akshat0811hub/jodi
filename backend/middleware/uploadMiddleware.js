@@ -1,40 +1,20 @@
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
-const fs = require("fs");
+const { createClient } = require('@supabase/supabase-js');
 const router = express.Router();
 const Person = require("../models/personModel");
 
-// 🔧 FIXED: Ensure uploads directory exists with proper structure
-const createUploadsDir = () => {
-  const uploadDir = path.join(process.cwd(), 'uploads');
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-    console.log("✅ Created uploads directory:", uploadDir);
-  }
-  return uploadDir;
-};
+// 🆓 SUPABASE CONFIGURATION (FREE TIER: 1GB storage, 2GB bandwidth)
+const supabaseUrl = process.env.SUPABASE_URL || 'https://anjowgqnhyatiltnencb.supabase.co';
+const supabaseKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuam93Z3FuaHlhdGlsdG5lbmNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU5NTM0MDQsImV4cCI6MjA3MTUyOTQwNH0.xccgtRzzj8QWdfo2ivmycYAUIK3L_KUYO_emOnzq1ZE';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 🔧 FIXED: Better multer configuration
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = createUploadsDir();
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    // Generate clean, consistent filename
-    const ext = path.extname(file.originalname).toLowerCase();
-    const baseName = file.originalname.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-    const timestamp = Date.now();
-    const uniqueId = Math.round(Math.random() * 1E9);
-    const filename = `photo_${timestamp}_${uniqueId}${ext}`;
-    
-    console.log(`📸 Saving file as: ${filename}`);
-    cb(null, filename);
-  }
-});
+const BUCKET_NAME = process.env.SUPABASE_BUCKET || 'matrimony-photos';
 
-// 🔧 FIXED: Better file validation
+// 🔧 MULTER: Store in memory
+const storage = multer.memoryStorage();
+
 const fileFilter = (req, file, cb) => {
   console.log(`📸 Validating file: ${file.originalname}, Type: ${file.mimetype}`);
   
@@ -64,30 +44,38 @@ const upload = multer({
   fileFilter: fileFilter
 });
 
-// 🔧 FIXED: Enhanced POST route with better photo handling
+// 🆓 HELPER: Upload to Supabase Storage
+async function uploadToSupabase(file, filename) {
+  try {
+    const { data, error } = await supabase.storage
+      .from(BUCKET_NAME)
+      .upload(`uploads/${filename}`, file.buffer, {
+        contentType: file.mimetype,
+        upsert: false // Don't overwrite existing files
+      });
+
+    if (error) {
+      throw error;
+    }
+
+    // Get public URL
+    const { data: publicData } = supabase.storage
+      .from(BUCKET_NAME)
+      .getPublicUrl(`uploads/${filename}`);
+
+    return publicData.publicUrl;
+  } catch (error) {
+    console.error("❌ Error uploading to Supabase:", error);
+    throw error;
+  }
+}
+
+// 🆓 MODIFIED: Upload route with Supabase
 router.post('/people', upload.array('photos', 4), async (req, res) => {
   try {
     console.log("\n📤 ===== NEW PERSON CREATION REQUEST =====");
     console.log("📝 Form data received:", Object.keys(req.body));
     console.log("📸 Files received:", req.files?.length || 0);
-    
-    // Log each uploaded file
-    if (req.files && req.files.length > 0) {
-      req.files.forEach((file, index) => {
-        console.log(`📸 File ${index + 1}:`);
-        console.log(`   Original: ${file.originalname}`);
-        console.log(`   Saved as: ${file.filename}`);
-        console.log(`   Path: ${file.path}`);
-        console.log(`   Size: ${(file.size / 1024).toFixed(2)} KB`);
-        
-        // Verify file exists
-        if (fs.existsSync(file.path)) {
-          console.log(`   ✅ File verified on disk`);
-        } else {
-          console.log(`   ❌ File NOT found on disk!`);
-        }
-      });
-    }
 
     // Basic validation
     const { name, religion, phoneNumber } = req.body;
@@ -110,38 +98,38 @@ router.post('/people', upload.array('photos', 4), async (req, res) => {
 
     // Photo validation
     if (!req.files || req.files.length < 1) {
-      if (req.files) {
-        req.files.forEach(file => {
-          fs.unlink(file.path, (err) => {
-            if (err) console.error("Error deleting file:", err);
-          });
-        });
-      }
       return res.status(400).json({ 
         message: `Please upload at least 1 photo. Received: ${req.files?.length || 0}` 
       });
     }
 
-    // 🔧 FIXED: Store ONLY filenames (not full paths) for consistency
-    const photoFilenames = req.files.map(file => file.filename);
-    console.log("📸 Photo filenames to store in DB:", photoFilenames);
-    
-    // Verify all files exist
-    const missingFiles = [];
-    photoFilenames.forEach((filename, index) => {
-      const fullPath = path.join(process.cwd(), 'uploads', filename);
-      if (!fs.existsSync(fullPath)) {
-        missingFiles.push(`File ${index + 1}: ${filename}`);
-      }
+    // 🆓 Upload files to Supabase
+    console.log("🚀 Uploading files to Supabase...");
+    const uploadPromises = req.files.map(async (file, index) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+      const timestamp = Date.now();
+      const uniqueId = Math.round(Math.random() * 1E9);
+      const filename = `photo_${timestamp}_${uniqueId}_${index}${ext}`;
+      
+      console.log(`📸 Uploading ${file.originalname} as ${filename}`);
+      
+      const url = await uploadToSupabase(file, filename);
+      
+      return {
+        filename: filename,
+        url: url,
+        originalName: file.originalname,
+        size: file.size
+      };
     });
+
+    // Wait for all uploads
+    const uploadedFiles = await Promise.all(uploadPromises);
     
-    if (missingFiles.length > 0) {
-      console.error("❌ Missing files after upload:", missingFiles);
-      return res.status(500).json({ 
-        message: "Some files were not saved properly",
-        missingFiles: missingFiles
-      });
-    }
+    console.log("✅ All files uploaded successfully:");
+    uploadedFiles.forEach((file, index) => {
+      console.log(`   ${index + 1}. ${file.filename} -> ${file.url}`);
+    });
 
     // Parse siblings
     let siblings = [];
@@ -154,7 +142,11 @@ router.post('/people', upload.array('photos', 4), async (req, res) => {
       }
     }
 
-    // 🔧 FIXED: Create person with consistent photo storage
+    // Store URLs
+    const photoUrls = uploadedFiles.map(file => file.url);
+    const photoFilenames = uploadedFiles.map(file => file.filename);
+
+    // Create person data
     const personData = {
       // Personal Details
       name: req.body.name?.trim(),
@@ -196,9 +188,10 @@ router.post('/people', upload.array('photos', 4), async (req, res) => {
       personalIncome: req.body.personalIncome || "",
       familyIncome: req.body.familyIncome || "",
       
-      // 🔧 FIXED: Store only filenames for better path resolution
-      photos: photoFilenames,
-      profilePicture: photoFilenames[0] || ""
+      // 🆓 Store URLs
+      photos: photoUrls,
+      photoFilenames: photoFilenames,
+      profilePicture: photoUrls[0] || ""
     };
 
     // Save to database
@@ -207,33 +200,16 @@ router.post('/people', upload.array('photos', 4), async (req, res) => {
     
     console.log("✅ Person created successfully with ID:", savedPerson._id);
     console.log("📸 Photos stored:", savedPerson.photos);
-    console.log("📸 Profile picture:", savedPerson.profilePicture);
-    
-    // Final verification - check if files still exist
-    console.log("\n🔍 Final file verification:");
-    savedPerson.photos.forEach((filename, index) => {
-      const fullPath = path.join(process.cwd(), 'uploads', filename);
-      const exists = fs.existsSync(fullPath);
-      console.log(`   ${index + 1}. ${filename}: ${exists ? '✅' : '❌'}`);
-    });
     
     res.status(201).json({
       message: "Person added successfully",
       person: savedPerson,
-      photosUploaded: photoFilenames.length
+      photosUploaded: uploadedFiles.length,
+      photoUrls: photoUrls
     });
 
   } catch (error) {
     console.error("❌ Error creating person:", error);
-    
-    // Clean up uploaded files on error
-    if (req.files) {
-      req.files.forEach(file => {
-        fs.unlink(file.path, (err) => {
-          if (err) console.error("Error deleting file on error:", err);
-        });
-      });
-    }
     
     if (error.code === 11000) {
       res.status(400).json({ message: "Person with this phone number already exists" });
@@ -246,25 +222,36 @@ router.post('/people', upload.array('photos', 4), async (req, res) => {
   }
 });
 
-// 🔧 FIXED: Test route to verify uploads directory
-router.get('/test-uploads', (req, res) => {
+// 🆓 Test Supabase connection
+router.get('/test-supabase', async (req, res) => {
   try {
-    const uploadsPath = path.join(process.cwd(), 'uploads');
-    const exists = fs.existsSync(uploadsPath);
-    
-    let files = [];
-    if (exists) {
-      files = fs.readdirSync(uploadsPath);
+    // List files in bucket
+    const { data, error } = await supabase.storage
+      .from(BUCKET_NAME)
+      .list('uploads/', {
+        limit: 10,
+        offset: 0
+      });
+
+    if (error) {
+      throw error;
     }
-    
+
     res.json({
-      uploadsDirectory: uploadsPath,
-      exists: exists,
-      fileCount: files.length,
-      files: files.slice(0, 10) // Show first 10 files
+      message: "Supabase connection successful",
+      bucket: BUCKET_NAME,
+      fileCount: data?.length || 0,
+      files: data?.map(file => ({
+        name: file.name,
+        size: file.metadata?.size,
+        lastModified: file.updated_at
+      })) || []
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ 
+      message: "Supabase connection failed",
+      error: error.message 
+    });
   }
 });
 
