@@ -14,7 +14,7 @@ const supabaseKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cC
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Bucket name for storing person photos
-const BUCKET_NAME = 'person-photos';
+const BUCKET_NAME = 'matrimony-photos';
 
 // ✅ Initialize Supabase bucket if it doesn't exist
 const initializeSupabaseBucket = async () => {
