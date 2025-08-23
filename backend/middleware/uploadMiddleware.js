@@ -48,7 +48,7 @@ const upload = multer({
 async function uploadToSupabase(file, filename) {
   try {
     const { data, error } = await supabase.storage
-      .from(matrimony-photos)
+      .from(BUCKET_NAME)
       .upload(`uploads/${filename}`, file.buffer, {
         contentType: file.mimetype,
         upsert: false // Don't overwrite existing files
@@ -60,7 +60,7 @@ async function uploadToSupabase(file, filename) {
 
     // Get public URL
     const { data: publicData } = supabase.storage
-      .from(matrimony-photos)
+      .from(BUCKET_NAME)
       .getPublicUrl(`uploads/${filename}`);
 
     return publicData.publicUrl;
