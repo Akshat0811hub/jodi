@@ -135,7 +135,7 @@ body::after {
   margin: 0 auto;
   /* Ensure it stays in viewport */
   max-height: 90vh;
-  overflow-y: auto;
+  
 }
 
 @keyframes formSlideIn {

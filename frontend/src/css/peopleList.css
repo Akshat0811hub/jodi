@@ -49,10 +49,6 @@ body::before {
   z-index: -1;
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
-}
 
 /* Container with premium glassmorphism */
 .people-container {
@@ -100,7 +96,7 @@ body::before {
   position: absolute;
   bottom: -10px;
   left: 50%;
-  transform: translateX(-50%);
+  
   width: 80px;
   height: 3px;
   background: var(--secondary-gradient);
@@ -192,7 +188,7 @@ body::before {
 
 .people-row:hover {
   background: linear-gradient(90deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.05) 100%);
-  transform: translateX(8px);
+  
   box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
 }
 
@@ -237,16 +233,6 @@ body::before {
   animation: expandIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@keyframes expandIn {
-  0% {
-    opacity: 0;
-    transform: translateY(-20px) scale(0.95);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
 
 /* Premium photo styling */
 .expanded-photo {
@@ -279,7 +265,7 @@ body::before {
 }
 
 .expanded-photo:hover {
-  transform: scale(1.05) rotate(1deg);
+
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
 }
 
@@ -308,19 +294,17 @@ body::before {
   bottom: 0;
   width: 4px;
   background: var(--primary-gradient);
-  transform: scaleY(0);
-  transition: transform 0.3s ease;
+
+  
 }
 
 .expanded-details > div p:hover {
   background: rgba(255, 255, 255, 0.8);
-  transform: translateX(5px);
+
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
-.expanded-details > div p:hover::before {
-  transform: scaleY(1);
-}
+
 
 .expanded-details > div p strong {
   color: var(--text-primary);
@@ -379,7 +363,7 @@ body::before {
 }
 
 .action-buttons .edit-btn:hover {
-  transform: translateY(-3px);
+
   box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
 }
 
@@ -389,7 +373,7 @@ body::before {
 }
 
 .action-buttons .pdf-btn:hover {
-  transform: translateY(-3px);
+
   box-shadow: 0 8px 25px rgba(75, 172, 254, 0.6);
 }
 
@@ -399,12 +383,12 @@ body::before {
 }
 
 .action-buttons .delete-btn:hover {
-  transform: translateY(-3px);
+
   box-shadow: 0 8px 25px rgba(250, 112, 154, 0.6);
 }
 
 .action-buttons button:active {
-  transform: translateY(-1px);
+
 }
 
 /* Premium field selection */
@@ -474,7 +458,7 @@ body::before {
 
 .checkbox-label:hover {
   background: rgba(255, 255, 255, 0.9);
-  transform: translateX(3px);
+  
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
@@ -531,7 +515,7 @@ body::before {
   border-color: #667eea;
   background: rgba(255, 255, 255, 1);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-  transform: translateY(-2px);
+  
 }
 
 .edit-actions {
@@ -608,16 +592,7 @@ body::before {
   background-color: rgba(255, 255, 255, 0.2);
 }
 
-@keyframes slideInRight {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
+
 
 /* Loading Overlay */
 .loading-overlay {
@@ -655,10 +630,7 @@ body::before {
   margin: 0;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
+
 
 /* App Wrapper */
 .app-wrapper {
@@ -872,7 +844,7 @@ body::before {
 .detail-item:hover {
   background: rgba(255, 255, 255, 0.8);
   border-left-color: #667eea;
-  transform: translateX(3px);
+
 }
 
 .detail-label {
@@ -965,7 +937,8 @@ body::before {
 
 .field-action-btn:hover {
   background: rgba(255, 255, 255, 1);
-  transform: translateY(-1px);
+  
+
 }
 
 .select-all {
@@ -994,7 +967,7 @@ body::before {
 .checkbox-label:hover {
   background: rgba(255, 255, 255, 0.9);
   border-color: rgba(102, 126, 234, 0.3);
-  transform: translateY(-1px);
+
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
@@ -1023,7 +996,7 @@ body::before {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  
   color: white;
   font-size: 12px;
   font-weight: bold;
@@ -1077,20 +1050,13 @@ body::before {
   box-shadow: 0 4px 15px rgba(75, 172, 254, 0.4);
 }
 
-.pdf-action-btn.generate-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(75, 172, 254, 0.6);
-}
 
 .pdf-action-btn.cancel-btn {
   background: #6c757d;
   color: white;
 }
 
-.pdf-action-btn.cancel-btn:hover {
-  background: #5a6268;
-  transform: translateY(-1px);
-}
+
 
 /* Edit Form Enhancements */
 .edit-form {
@@ -1159,7 +1125,7 @@ body::before {
   border-color: #667eea;
   background: white;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-  transform: translateY(-1px);
+  
 }
 
 .form-input::placeholder {
@@ -1195,19 +1161,11 @@ body::before {
   box-shadow: 0 4px 15px rgba(75, 172, 254, 0.4);
 }
 
-.edit-action-btn.save-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(75, 172, 254, 0.6);
-}
+
 
 .edit-action-btn.cancel-btn {
   background: #6c757d;
   color: white;
-}
-
-.edit-action-btn.cancel-btn:hover {
-  background: #5a6268;
-  transform: translateY(-1px);
 }
 
 /* Row expanded state indicator */
@@ -1362,22 +1320,9 @@ body::before {
 .people-table tr:nth-child(4) { animation-delay: 0.4s; }
 .people-table tr:nth-child(5) { animation-delay: 0.5s; }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 
-/* Hover effects for table rows */
-.people-row:hover .name-avatar {
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
+
+
 
 .people-row:hover .data-value {
   color: var(--text-primary);
@@ -1408,13 +1353,3 @@ body::before {
 .people-table tr:nth-child(4) { animation-delay: 0.4s; }
 .people-table tr:nth-child(5) { animation-delay: 0.5s; }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
