@@ -62,7 +62,7 @@ html {
 body {
   font-family: 'Inter', 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 30%, #f093fb 70%, #667eea 100%);
-  background-attachment: fixed;
+  /* background-attachment: fixed; */
   background-size: 400% 400%;
   animation: gradientShift 15s ease infinite;
   min-height: 100vh;
@@ -947,7 +947,7 @@ body {
 
 /* Premium Notifications - FIXED */
 .premium-notification {
-  position: fixed;
+
   top: 20px;
   right: 20px;
   z-index: 10000;
@@ -1030,7 +1030,7 @@ body {
 
 /* Loading Overlay - FIXED */
 .loading-overlay {
-  position: fixed;
+  
   top: 0;
   left: 0;
   width: 100vw;
