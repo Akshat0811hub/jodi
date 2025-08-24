@@ -366,7 +366,7 @@ const addPhotosSection = async (doc, person) => {
 
     // Add new page
     doc.addPage();
-    addStyledSectionHeader(doc, "📷 PHOTOGRAPHS");
+    addStyledSectionHeader(doc, " PHOTOGRAPHS");
 
     if (uniquePhotoUrls.length === 0) {
       doc.rect(50, doc.y, 500, 120).fill("#F8F9FA").stroke("#DEE2E6");
@@ -456,7 +456,7 @@ const addPhotosSection = async (doc, person) => {
         .text(`⚠️ Could not load any photos. Please check uploads.`, 50, doc.y, { align: "center" });
     }
 
-    console.log(`\n✅ Photos section completed: ${successfulPhotos}/${photosCount} loaded`);
+    // console.log(`\n✅ Photos section completed: ${successfulPhotos}/${photosCount} loaded`);
     return true;
   } catch (error) {
     console.error("❌ Error in photos section:", error);
@@ -518,8 +518,8 @@ const addHeader = (doc, person) => {
     .fontSize(11)
     .font("Helvetica")
     .fillColor(colors.light)
-    .text("📞 9871080409 | ✉️ jodino1@gmail.com", 50, 55)
-    .text("📍 G-25, Vardhman Premium Mall, Opp.Kali Mata Mandir, Deepali enclave, Delhi-110034", 50, 70);
+    .text(" 9871080409 |  jodino1@gmail.com", 50, 55)
+    .text(" G-25, Vardhman Premium Mall, Opp.Kali Mata Mandir, Deepali enclave, Delhi-110034", 50, 70);
 
   doc.moveDown(3);
   doc.rect(40, doc.y, 520, 40).fill(colors.accent);
@@ -596,7 +596,7 @@ router.get("/person/:id/pdf", async (req, res) => {
     addHeader(doc, personData);
 
     // Personal Details
-    addStyledSectionHeader(doc, "👤 PERSONAL DETAILS");
+    addStyledSectionHeader(doc, " PERSONAL DETAILS");
     addStyledField(doc, "Full Name", personData.name);
     addStyledField(doc, "Age", personData.age);
     addStyledField(doc, "Gender", personData.gender);
@@ -614,7 +614,7 @@ router.get("/person/:id/pdf", async (req, res) => {
     addStyledField(doc, "Complexion", personData.complexion);
 
     // Lifestyle
-    addStyledSectionHeader(doc, "🎯 LIFESTYLE & HABITS");
+    addStyledSectionHeader(doc, " LIFESTYLE & HABITS");
     addStyledField(doc, "Eating Habits", personData.eatingHabits);
     addStyledField(doc, "Drinking Habits", personData.drinkingHabits);
     addStyledField(doc, "Smoking Habits", personData.smokingHabits);
@@ -624,7 +624,7 @@ router.get("/person/:id/pdf", async (req, res) => {
     addStyledField(doc, "Horoscope Available", personData.horoscope ? "Yes" : "No");
 
     // Family Details
-    addStyledSectionHeader(doc, "👨‍👩‍👧‍👦 FAMILY DETAILS");
+    addStyledSectionHeader(doc, " FAMILY DETAILS");
     addStyledField(doc, "Father's Name", personData.fatherName);
     addStyledField(doc, "Father's Occupation", personData.fatherOccupation);
     addStyledField(doc, "Father's Office Details", personData.fatherOffice);
@@ -634,14 +634,14 @@ router.get("/person/:id/pdf", async (req, res) => {
     addStyledField(doc, "Other Properties", personData.otherProperty);
 
     // Education
-    addStyledSectionHeader(doc, "🎓 EDUCATION");
+    addStyledSectionHeader(doc, " EDUCATION");
     addStyledField(doc, "Education", personData.education);
     addStyledField(doc, "Higher Qualification", personData.higherQualification);
     addStyledField(doc, "Graduation", personData.graduation);
     addStyledField(doc, "Schooling", personData.schooling);
 
     // Income & Occupation
-    addStyledSectionHeader(doc, "💼 INCOME & OCCUPATION");
+    addStyledSectionHeader(doc, " INCOME & OCCUPATION");
     addStyledField(doc, "Income", personData.income);
     addStyledField(doc, "Personal Income", personData.personalIncome);
     addStyledField(doc, "Family Income", personData.familyIncome);
