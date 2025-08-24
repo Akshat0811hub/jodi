@@ -917,7 +917,7 @@
 
 /* FINAL SCROLL OPTIMIZATION FOR FILTER SIDEBAR */
 .filter-sidebar {
-  max-height: 120vh; /* or any height you want */
+  max-height: 200vh; /* or any height you want */
   overflow-y: auto; /* enables vertical scrolling */
   overflow-x: hidden; /* prevent sideways scroll */
 }
