@@ -35,7 +35,7 @@ body {
   font-family: 'Poppins', sans-serif;
   height: 100vh;
   width: 100vw;
-  overflow: hidden;
+  
   position: fixed;
   top: 0;
   left: 0;
@@ -129,7 +129,7 @@ body::after {
     0 25px 50px -12px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
   position: relative;
-  overflow: hidden;
+  
   animation: formSlideIn 1s cubic-bezier(0.23, 1, 0.32, 1);
   /* Force center alignment */
   margin: 0 auto;
@@ -294,7 +294,7 @@ input[type="password"]:focus {
   font-family: 'Poppins', sans-serif;
   cursor: pointer;
   position: relative;
-  overflow: hidden;
+  
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 
     0 10px 25px rgba(139, 92, 246, 0.3),
