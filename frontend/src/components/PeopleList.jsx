@@ -1,8 +1,9 @@
 // src/components/PeopleList.jsx
 import React, { useEffect, useState } from "react";
 import api from "../api";
+import "../css/global.css";
 import "../css/peopleList.css";
-
+ 
 const tableHeaders = ["Name", "Height", "DOB", "Phone No.", "Place"];
 
 const availableFields = [

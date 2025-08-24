@@ -1,6 +1,7 @@
 // src/components/Navbar.jsx
 import React from "react";
 import "../css/navbar.css"; // Make sure this path is correct
+import "../css/global.css"; // Make sure this path is correct
 
 const Navbar = ({ onSelect }) => {
   return (

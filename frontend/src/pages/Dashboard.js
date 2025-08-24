@@ -6,7 +6,7 @@ import UserTable from "../components/UserTable";
 import PeopleList from "../components/PeopleList";
 import FilterSidebar from "../components/FilterSidebar";
 import AddPersonForm from "../components/AddPersonForm";
-import "../css/dashboard.css"; // ✅ CSS file import
+import "../css/global.css"; // ✅ CSS file import
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);

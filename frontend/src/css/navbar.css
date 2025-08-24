@@ -1,15 +1,18 @@
 /* src/css/navbar.css */
 
 .navbar {
-  width: 100vw;               /* Full viewport width */
+  width: 100%;
   background-color: #2d2d2d;
   color: white;
   padding: 16px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-sizing: border-box;     /* Ensure padding doesn't overflow */
-  position: relative;         /* Prevent layout bugs */
+  box-sizing: border-box;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
 }
 
 .navbar-title {
@@ -23,11 +26,10 @@
   border: none;
   color: white;
   margin-left: 16px;
-  padding: 10px 16px;
-  border-radius: 6px;
+  padding: 8px 14px;
+  border-radius: 4px;
   font-size: 14px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
 }
 
 .navbar-buttons button:hover {

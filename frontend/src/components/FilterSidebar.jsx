@@ -1,6 +1,7 @@
-// src/components/FilterSidebar.jsx - ENHANCED RICH MODERN VERSION
+// src/components/FilterSidebar.jsx - FIXED WITH PROPER SCROLLING
 import React, { useState } from "react";
 import "../css/filterSidebar.css";
+import "../css/global.css";
 
 const dropdownOptions = {
   gender: ["Male", "Female", "Other"],
@@ -119,6 +120,7 @@ const FilterSidebar = ({ onFilter }) => {
 
   return (
     <div className="filter-sidebar">
+      {/* STICKY HEADER */}
       <div className="filter-header">
         <h3 className="filter-title">Filter People</h3>
         <button 
@@ -131,76 +133,59 @@ const FilterSidebar = ({ onFilter }) => {
         </button>
       </div>
 
-      {filterGroups.map((group, groupIndex) => (
-        <div key={group.id} style={{ marginBottom: '30px' }}>
-          {/* Group Title */}
-          <div style={{
-            fontSize: '16px',
-            fontWeight: '600',
-            color: '#4a5568',
-            marginBottom: '15px',
-            paddingLeft: '10px',
-            borderLeft: '3px solid #667eea',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
-            {group.id === 'personal' && '👤'}
-            {group.id === 'physical' && '📏'}
-            {group.id === 'lifestyle' && '🎯'}
-            {group.id === 'other' && '📋'}
-            {group.title}
-          </div>
-
-          {/* Filters in Group */}
-          {group.filters.map((filter) => (
-            <div 
-              key={filter.key} 
-              className="filter-group" 
-              data-filter={filter.key}
-              style={{ 
-                animationDelay: `${(groupIndex * 0.1) + (group.filters.indexOf(filter) * 0.05)}s` 
-              }}
-            >
-              <label className="filter-label">
-                {filter.label}
-                {filters[filter.key] && (
-                  <span style={{
-                    marginLeft: '8px',
-                    fontSize: '12px',
-                    color: '#10b981',
-                    fontWeight: '500'
-                  }}>
-                    ✓
-                  </span>
-                )}
-              </label>
-              {renderFilter(filter)}
+      {/* SCROLLABLE CONTENT AREA */}
+      <div className="filter-content">
+        {filterGroups.map((group, groupIndex) => (
+          <div key={group.id} className="filter-group-section">
+            {/* Group Title */}
+            <div className="group-title">
+              <span className="group-icon">
+                {group.id === 'personal' && '👤'}
+                {group.id === 'physical' && '📏'}
+                {group.id === 'lifestyle' && '🎯'}
+                {group.id === 'other' && '📋'}
+              </span>
+              <span className="group-text">{group.title}</span>
             </div>
-          ))}
-        </div>
-      ))}
 
-      <div style={{
-        marginTop: '30px',
-        padding: '20px 0',
-        borderTop: '1px solid rgba(255, 255, 255, 0.3)'
-      }}>
-        <div style={{
-          fontSize: '14px',
-          color: '#6b7280',
-          marginBottom: '15px',
-          textAlign: 'center'
-        }}>
+            {/* Filters in Group */}
+            <div className="filters-container">
+              {group.filters.map((filter, filterIndex) => (
+                <div 
+                  key={filter.key} 
+                  className="filter-group" 
+                  data-filter={filter.key}
+                  style={{ 
+                    animationDelay: `${(groupIndex * 0.1) + (filterIndex * 0.05)}s` 
+                  }}
+                >
+                  <label className="filter-label">
+                    {filter.label}
+                    {filters[filter.key] && (
+                      <span className="filter-active-indicator">✓</span>
+                    )}
+                  </label>
+                  {renderFilter(filter)}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        {/* FILTER STATUS */}
+        <div className="filter-status">
           {activeFilters > 0 ? (
-            <span style={{ color: '#10b981', fontWeight: '600' }}>
+            <span className="active-filters">
               🎯 {activeFilters} filter{activeFilters !== 1 ? 's' : ''} active
             </span>
           ) : (
-            <span>No filters applied</span>
+            <span className="no-filters">No filters applied</span>
           )}
         </div>
-        
+      </div>
+
+      {/* STICKY SUBMIT SECTION */}
+      <div className="submit-section">
         <button 
           className={`submit-btn ${isLoading ? 'loading' : ''}`}
           onClick={handleSubmit}
@@ -208,29 +193,127 @@ const FilterSidebar = ({ onFilter }) => {
         >
           {isLoading ? (
             <>
-              <span style={{ 
-                display: 'inline-block', 
-                marginRight: '8px',
-                animation: 'spin 1s linear infinite' 
-              }}>
-                ⏳
-              </span>
-              Searching...
+              <span className="loading-icon">⏳</span>
+              <span>Searching...</span>
             </>
           ) : (
             <>
-              🔍 Show Results
-              {activeFilters > 0 && ` (${activeFilters} filter${activeFilters !== 1 ? 's' : ''})`}
+              <span>🔍</span>
+              <span>Show Results</span>
+              {activeFilters > 0 && (
+                <span className="filter-count">
+                  ({activeFilters} filter{activeFilters !== 1 ? 's' : ''})
+                </span>
+              )}
             </>
           )}
         </button>
       </div>
 
-      {/* Add some CSS for the spin animation */}
+      {/* Loading Animation Styles */}
       <style jsx>{`
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
+        }
+        
+        .loading-icon {
+          display: inline-block;
+          animation: spin 1s linear infinite;
+        }
+        
+        .filter-group-section {
+          margin-bottom: 25px;
+          padding-bottom: 15px;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .filter-group-section:last-child {
+          border-bottom: none;
+          margin-bottom: 15px;
+        }
+        
+        .group-title {
+          font-size: 15px;
+          font-weight: 600;
+          color: #4a5568;
+          margin-bottom: 15px;
+          padding: 12px 16px;
+          background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+          border-radius: 8px;
+          border-left: 4px solid #667eea;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .group-icon {
+          font-size: 16px;
+        }
+        
+        .group-text {
+          flex: 1;
+        }
+        
+        .filters-container {
+          display: flex;
+          flex-direction: column;
+          gap: 15px;
+        }
+        
+        .filter-active-indicator {
+          margin-left: 8px;
+          font-size: 12px;
+          color: #10b981;
+          font-weight: 500;
+        }
+        
+        .filter-status {
+          text-align: center;
+          margin: 20px 0;
+          padding: 15px;
+          background: #f8fafc;
+          border-radius: 6px;
+          border: 1px solid #e2e8f0;
+        }
+        
+        .active-filters {
+          color: #059669;
+          font-weight: 600;
+          font-size: 14px;
+          padding: 4px 8px;
+          background: rgba(5, 150, 105, 0.1);
+          border-radius: 4px;
+          display: inline-block;
+        }
+        
+        .no-filters {
+          color: #64748b;
+          font-size: 14px;
+        }
+        
+        .filter-count {
+          font-size: 12px;
+          opacity: 0.8;
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+          .group-title {
+            padding: 10px 12px;
+            font-size: 14px;
+            margin-bottom: 12px;
+          }
+          
+          .filters-container {
+            gap: 12px;
+          }
+          
+          .filter-status {
+            padding: 12px;
+            margin: 15px 0;
+          }
         }
       `}</style>
     </div>
