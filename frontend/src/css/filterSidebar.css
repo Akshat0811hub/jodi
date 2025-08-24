@@ -1,4 +1,4 @@
-/* Modern FilterSidebar.css - Premium UI with Perfect Scrolling - FIXED */
+/* Modern FilterSidebar.css - Premium UI with PERFECT SCROLLING - COMPLETELY FIXED */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
@@ -19,11 +19,11 @@
   --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
   --glass-hover: rgba(255, 255, 255, 0.35);
   
-  /* Modern Shadows */
-  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.1);
-  --shadow-medium: 0 8px 30px rgba(0, 0, 0, 0.15);
-  --shadow-strong: 0 15px 50px rgba(0, 0, 0, 0.25);
-  --shadow-glow: 0 0 20px rgba(102, 126, 234, 0.3);
+  /* Modern Shadows - OPTIMIZED FOR PERFORMANCE */
+  --shadow-soft: 0 4px 15px rgba(0, 0, 0, 0.08);
+  --shadow-medium: 0 6px 20px rgba(0, 0, 0, 0.12);
+  --shadow-strong: 0 8px 25px rgba(0, 0, 0, 0.16);
+  --shadow-glow: 0 0 15px rgba(102, 126, 234, 0.25);
   
   /* Typography & Colors */
   --text-primary: #1a202c;
@@ -41,13 +41,13 @@
   --border-radius-xl: 20px;
   --border-radius-full: 50px;
   
-  /* Animation Variables */
-  --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-normal: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Animation Variables - OPTIMIZED FOR SMOOTH SCROLLING */
+  --transition-fast: all 0.15s ease;
+  --transition-normal: all 0.2s ease;
+  --transition-slow: all 0.3s ease;
 }
 
-/* PERFECT SCROLL FOUNDATION FOR FILTER SIDEBAR - FIXED */
+/* PERFECT SCROLL FOUNDATION FOR FILTER SIDEBAR - COMPLETELY FIXED */
 .filter-sidebar {
   background: var(--glass-bg);
   backdrop-filter: blur(20px) saturate(180%);
@@ -62,7 +62,7 @@
   min-height: auto;
   transition: var(--transition-normal);
   margin: 20px auto;
-  /* REMOVED: position: relative; overflow: visible; */
+  position: relative;
 }
 
 /* Premium Header Design - FIXED */
@@ -83,10 +83,10 @@
   50% { opacity: 0.8; transform: scaleX(1.05); }
 }
 
-/* Smooth Hover Effects - FIXED */
+/* GENTLE HOVER EFFECTS FOR BETTER SCROLLING */
 .filter-sidebar:hover {
-  transform: translateY(-2px); /* REDUCED from translateY(-3px) scale(1.02) */
-  box-shadow: 0 15px 40px rgba(31, 38, 135, 0.4); /* REDUCED shadow intensity */
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-medium);
   border-color: rgba(255, 255, 255, 0.3);
   background: var(--glass-hover);
 }
@@ -99,6 +99,7 @@
   margin-bottom: 35px;
   padding-bottom: 25px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  position: relative;
 }
 
 .filter-header::after {
@@ -143,7 +144,7 @@
   50% { transform: translateY(-3px); }
 }
 
-/* Ultra Modern Clear Button */
+/* Ultra Modern Clear Button - OPTIMIZED */
 .clear-btn {
   font-size: 13px;
   font-weight: 700;
@@ -155,7 +156,7 @@
   cursor: pointer;
   transition: var(--transition-normal);
   text-decoration: none;
-  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+  box-shadow: var(--shadow-soft);
   overflow: hidden;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -164,6 +165,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
+  position: relative;
 }
 
 .clear-btn::before {
@@ -192,28 +194,28 @@
   opacity: 1;
 }
 
+/* GENTLE BUTTON HOVER FOR SMOOTH SCROLLING */
 .clear-btn:hover {
-  transform: translateY(-2px) scale(1.05); /* REDUCED from translateY(-3px) scale(1.08) */
-  box-shadow: 0 10px 30px rgba(255, 107, 107, 0.5); /* REDUCED shadow */
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-medium);
 }
 
 .clear-btn:active {
-  transform: translateY(-1px) scale(1.02); /* REDUCED transform */
+  transform: translateY(0);
 }
 
 .clear-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
-  box-shadow: 0 3px 10px rgba(255, 107, 107, 0.2);
+  box-shadow: var(--shadow-soft);
 }
 
-/* Enhanced Filter Groups with Modern Animations - FIXED */
+/* Enhanced Filter Groups with Modern Animations - OPTIMIZED */
 .filter-group {
   margin-bottom: 25px;
-  animation: slideInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+  animation: slideInUp 0.6s ease backwards;
   transition: var(--transition-normal);
-  /* REMOVED: position: relative; */
 }
 
 .filter-group:nth-child(odd) {
@@ -221,17 +223,17 @@
 }
 
 .filter-group:nth-child(even) {
-  animation-delay: 0.2s;
+  animation-delay: 0.15s;
 }
 
 .filter-group:nth-child(3n) {
-  animation-delay: 0.3s;
+  animation-delay: 0.2s;
 }
 
 @keyframes slideInUp {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -239,9 +241,9 @@
   }
 }
 
-/* Interactive Group Hover - FIXED */
+/* GENTLE GROUP HOVER FOR BETTER SCROLLING */
 .filter-group:hover {
-  transform: translateX(5px); /* REDUCED from translateX(8px) */
+  transform: translateX(3px);
 }
 
 /* Group Section Headers */
@@ -286,7 +288,7 @@
   padding-left: 25px;
   cursor: pointer;
   transition: var(--transition-normal);
-  /* REMOVED: position: relative; */
+  position: relative;
 }
 
 .filter-label::before {
@@ -323,7 +325,7 @@
   width: calc(100% - 25px);
 }
 
-/* Ultra Modern Input Fields */
+/* Ultra Modern Input Fields - OPTIMIZED */
 .filter-select,
 .filter-input {
   width: 100%;
@@ -340,16 +342,15 @@
   box-shadow: var(--shadow-soft);
 }
 
-/* Focus States with Modern Glow Effects - FIXED */
+/* GENTLE FOCUS STATES FOR SMOOTH SCROLLING */
 .filter-select:focus,
 .filter-input:focus {
   outline: none;
   border-color: transparent;
   background: rgba(255, 255, 255, 1);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2), 
-              0 6px 20px rgba(102, 126, 234, 0.1), /* REDUCED shadow */
-              var(--shadow-glow);
-  transform: translateY(-1px); /* REDUCED from translateY(-2px) scale(1.02) */
+              var(--shadow-medium);
+  transform: translateY(-1px);
 }
 
 /* Placeholder Styling */
@@ -362,7 +363,6 @@
 
 .filter-input:focus::placeholder {
   opacity: 0.5;
-  transform: translateY(-1px); /* REDUCED from translateY(-2px) */
 }
 
 /* Premium Select Dropdown Styling */
@@ -378,12 +378,11 @@
   appearance: none;
 }
 
-/* Enhanced Hover Effects - FIXED */
+/* GENTLE HOVER EFFECTS FOR SMOOTH SCROLLING */
 .filter-select:hover,
 .filter-input:hover {
   border-color: rgba(102, 126, 234, 0.4);
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.15); /* REDUCED shadow */
-  transform: translateY(-1px); /* REDUCED from translateY(-1px) */
+  box-shadow: var(--shadow-medium);
   background: white;
 }
 
@@ -401,7 +400,7 @@
   background: linear-gradient(90deg, rgba(102, 126, 234, 0.1), white);
 }
 
-/* Ultra Premium Submit Button - FIXED */
+/* Ultra Premium Submit Button - OPTIMIZED FOR SCROLLING */
 .submit-btn {
   width: 100%;
   padding: 18px 28px;
@@ -415,7 +414,7 @@
   cursor: pointer;
   margin-top: 30px;
   transition: var(--transition-normal);
-  box-shadow: 0 6px 25px rgba(102, 126, 234, 0.3); /* REDUCED shadow */
+  box-shadow: var(--shadow-medium);
   letter-spacing: 0.8px;
   text-transform: uppercase;
   overflow: hidden;
@@ -424,7 +423,7 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  /* REMOVED: position: relative; */
+  position: relative;
 }
 
 .submit-btn::before {
@@ -458,14 +457,14 @@
   opacity: 1;
 }
 
+/* GENTLE SUBMIT BUTTON HOVER FOR BETTER SCROLLING */
 .submit-btn:hover {
-  transform: translateY(-2px) scale(1.02); /* REDUCED from translateY(-4px) scale(1.03) */
-  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.5), /* REDUCED shadow */
-              0 0 20px rgba(102, 126, 234, 0.2); /* REDUCED glow */
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-strong);
 }
 
 .submit-btn:active {
-  transform: translateY(-1px) scale(1.01);
+  transform: translateY(-1px);
 }
 
 /* Loading State for Submit Button */
@@ -480,27 +479,27 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; transform: translateY(-2px) scale(1.02); } /* REDUCED */
-  50% { opacity: 0.8; transform: translateY(-1px) scale(1.01); } /* REDUCED */
+  0%, 100% { opacity: 1; transform: translateY(-2px); }
+  50% { opacity: 0.8; transform: translateY(-1px); }
 }
 
-/* Dynamic Filter Colors Based on Type */
+/* Dynamic Filter Colors Based on Type - OPTIMIZED */
 .filter-group:nth-child(4n+1) .filter-input:focus,
 .filter-group:nth-child(4n+1) .filter-select:focus {
   box-shadow: 0 0 0 3px rgba(240, 147, 251, 0.2), 
-              0 6px 20px rgba(240, 147, 251, 0.1); /* REDUCED */
+              var(--shadow-medium);
 }
 
 .filter-group:nth-child(4n+2) .filter-input:focus,
 .filter-group:nth-child(4n+2) .filter-select:focus {
   box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.2), 
-              0 6px 20px rgba(79, 172, 254, 0.1); /* REDUCED */
+              var(--shadow-medium);
 }
 
 .filter-group:nth-child(4n+3) .filter-input:focus,
 .filter-group:nth-child(4n+3) .filter-select:focus {
   box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2), 
-              0 6px 20px rgba(255, 215, 0, 0.1); /* REDUCED */
+              var(--shadow-medium);
 }
 
 /* Modern Group Section Styling */
@@ -517,7 +516,7 @@
   align-items: center;
   gap: 10px;
   overflow: hidden;
-  /* REMOVED: position: relative; */
+  position: relative;
 }
 
 .filter-group-header::before {
@@ -634,7 +633,7 @@
   font-size: 16px;
 }
 
-/* Advanced Responsive Design */
+/* RESPONSIVE DESIGN - MOBILE FIRST WITH SCROLL OPTIMIZATION */
 @media (max-width: 1024px) {
   .filter-sidebar {
     max-width: 100%;
@@ -694,21 +693,26 @@
     font-size: 14px;
   }
   
-  /* MOBILE SCROLL FIXES */
+  /* MOBILE SCROLL OPTIMIZATION - REMOVE AGGRESSIVE TRANSFORMS */
   .filter-sidebar:hover {
-    transform: translateY(-1px); /* REDUCED transform on mobile */
+    transform: none !important;
   }
   
   .filter-group:hover {
-    transform: translateX(3px); /* REDUCED transform on mobile */
+    transform: translateX(2px) !important;
   }
   
   .submit-btn:hover {
-    transform: translateY(-1px) scale(1.01); /* REDUCED transform on mobile */
+    transform: translateY(-1px) !important;
   }
   
   .clear-btn:hover {
-    transform: translateY(-1px) scale(1.03); /* REDUCED transform on mobile */
+    transform: translateY(-1px) !important;
+  }
+  
+  .filter-select:hover,
+  .filter-input:hover {
+    transform: none !important;
   }
 }
 
@@ -749,14 +753,16 @@
     padding: 10px 12px;
   }
   
-  /* REMOVE ALL TRANSFORMS ON SMALL MOBILE */
+  /* REMOVE ALL TRANSFORMS ON SMALL MOBILE FOR PERFECT SCROLLING */
   .filter-sidebar:hover,
   .filter-group:hover,
   .submit-btn:hover,
   .clear-btn:hover,
   .filter-select:hover,
-  .filter-input:hover {
-    transform: none;
+  .filter-input:hover,
+  .filter-select:focus,
+  .filter-input:focus {
+    transform: none !important;
   }
 }
 
@@ -798,16 +804,16 @@
 
 /* Performance Optimizations */
 .filter-group:hover {
-  will-change: transform;
+  will-change: auto;
 }
 
 .filter-select:focus,
 .filter-input:focus {
-  will-change: transform, box-shadow;
+  will-change: auto;
 }
 
 .submit-btn:hover {
-  will-change: transform, box-shadow;
+  will-change: auto;
 }
 
 /* Dark Mode Support */
@@ -851,7 +857,7 @@
   .filter-input:hover,
   .filter-select:focus,
   .filter-input:focus {
-    transform: none;
+    transform: none !important;
   }
 }
 
@@ -894,16 +900,6 @@
   animation: spin 1s linear infinite;
 }
 
-/* Floating Animation for Hover States - REDUCED */
-@keyframes gentleFloat {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-1px); } /* REDUCED from -2px */
-}
-
-.filter-sidebar:hover .filter-title::before {
-  animation: gentleFloat 2s ease-in-out infinite;
-}
-
 /* Success State for Filters */
 .filter-group.has-value {
   background: linear-gradient(90deg, rgba(16, 185, 129, 0.05), transparent);
@@ -919,13 +915,56 @@
   background: linear-gradient(90deg, #10b981, #34d399);
 }
 
-/* EMERGENCY SCROLL FIX FOR FILTER SIDEBAR */
+/* FINAL SCROLL OPTIMIZATION FOR FILTER SIDEBAR */
 .filter-sidebar {
   scroll-padding-top: 0;
   overflow-anchor: none;
+  touch-action: pan-y;
 }
 
 /* iOS smooth scrolling for filter sidebar */
 .filter-sidebar {
   -webkit-overflow-scrolling: touch;
+}
+
+/* Touch device optimization - COMPLETE TRANSFORM REMOVAL */
+@media (hover: none) and (pointer: coarse) {
+  .filter-sidebar:hover,
+  .filter-group:hover,
+  .submit-btn:hover,
+  .clear-btn:hover,
+  .filter-select:hover,
+  .filter-input:hover,
+  .filter-select:focus,
+  .filter-input:focus {
+    transform: none !important;
+    box-shadow: var(--shadow-soft) !important;
+  }
+}
+
+/* Additional mobile scroll fixes */
+@media (max-width: 768px) {
+  /* Ensure no elements interfere with scrolling */
+  .filter-sidebar * {
+    pointer-events: auto;
+  }
+  
+  /* Remove any remaining problematic transforms */
+  .filter-sidebar,
+  .filter-group,
+  .submit-btn,
+  .clear-btn,
+  .filter-select,
+  .filter-input {
+    transform: none !important;
+  }
+  
+  .filter-sidebar:hover,
+  .filter-group:hover,
+  .submit-btn:hover,
+  .clear-btn:hover,
+  .filter-select:hover,
+  .filter-input:hover {
+    transform: none !important;
+  }
 }
