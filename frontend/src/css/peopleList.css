@@ -202,7 +202,7 @@ body {
   min-width: 120px;
   transition: var(--transition-normal);
   position: relative;
-  overflow: hidden;
+  
 }
 
 .stat-card::before {
@@ -246,7 +246,7 @@ body {
 /* Ultra Modern Table Design - FIXED */
 .table-wrapper {
   border-radius: var(--border-radius-lg);
-  overflow: hidden;
+  
   box-shadow: var(--shadow-xl);
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
@@ -526,7 +526,7 @@ body {
   border-radius: var(--border-radius-md);
   border-left: 4px solid transparent;
   transition: var(--transition-normal);
-  overflow: hidden;
+  
   position: relative;
 }
 
@@ -600,7 +600,7 @@ body {
   letter-spacing: 0.5px;
   box-shadow: var(--shadow-md);
   backdrop-filter: blur(10px);
-  overflow: hidden;
+  
   position: relative;
 }
 
@@ -744,7 +744,7 @@ body {
   cursor: pointer;
   transition: var(--transition-normal);
   border: 2px solid transparent;
-  overflow: hidden;
+  
   position: relative;
 }
 
@@ -881,7 +881,7 @@ body {
   backdrop-filter: blur(20px);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-xl);
-  overflow: hidden;
+  
 }
 
 .table-skeleton {
@@ -955,7 +955,7 @@ body {
   animation: slideInRight 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(15px);
   border-radius: var(--border-radius-lg);
-  overflow: hidden;
+  
   box-shadow: var(--shadow-xl);
 }
 
@@ -1199,7 +1199,7 @@ body {
   justify-content: center;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  overflow: hidden;
+  
   position: relative;
 }
 
@@ -1248,7 +1248,7 @@ body {
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   border-radius: var(--border-radius-md);
   border: 2px dashed #dee2e6;
-  overflow: hidden;
+  
 }
 
 .image-skeleton {
@@ -1537,7 +1537,7 @@ html, body {
 
 /* Prevent any scroll anchoring issues */
 * {
-  overflow-anchor: none;
+  
 }
 
 /* iOS smooth scrolling optimization */
