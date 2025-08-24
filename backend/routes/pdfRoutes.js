@@ -1,4 +1,4 @@
-// routes/pdfRoutes.js - ENHANCED VERSION with better error handling
+// routes/pdfRoutes.js - FIXED VERSION with photo issues resolved
 const express = require("express");
 const PDFDocument = require("pdfkit");
 const Person = require("../models/personModel");
@@ -96,7 +96,20 @@ const addStyledSectionHeader = (doc, title) => {
   doc.fillColor(colors.text).moveDown(1.2);
 };
 
-// 🔧 FALLBACK: Download image with multiple methods
+// 🔧 FIXED: Helper function to get Supabase image URL
+const getSupabaseImageUrl = (fileName) => {
+  if (!fileName) return null;
+  
+  // Handle both string and object inputs
+  const actualFileName = typeof fileName === 'object' ? fileName.fileName : fileName;
+  
+  if (!actualFileName) return null;
+
+  const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(actualFileName);
+  return data.publicUrl;
+};
+
+// 🔧 FIXED: Download image with better error handling
 const downloadImageFromUrl = async (imageUrl) => {
   try {
     console.log("📥 Attempting to download image:", imageUrl);
@@ -183,15 +196,18 @@ const downloadImageFromUrl = async (imageUrl) => {
 // Add photo to PDF
 const addSinglePhoto = async (doc, imageUrl, x, y, width, height, photoNumber) => {
   try {
-    if (!imageUrl || typeof imageUrl !== "string" || !imageUrl.trim()) {
+    if (!imageUrl || (!imageUrl.trim && !imageUrl.url)) {
       console.log(`❌ Invalid image URL for photo ${photoNumber}`);
       return false;
     }
 
+    // Handle both string URLs and object URLs
+    const actualUrl = typeof imageUrl === 'string' ? imageUrl : imageUrl.url || imageUrl;
+    
     console.log(`\n📸 Processing photo ${photoNumber}:`);
-    console.log(`   URL: ${imageUrl.substring(0, 80)}...`);
+    console.log(`   URL: ${actualUrl.substring(0, 80)}...`);
 
-    const imageBuffer = await downloadImageFromUrl(imageUrl.trim());
+    const imageBuffer = await downloadImageFromUrl(actualUrl.trim());
 
     if (!imageBuffer || imageBuffer.length === 0) {
       console.log(`❌ Failed to download photo ${photoNumber}`);
@@ -283,46 +299,70 @@ const addPhotoPlaceholder = (doc, x, y, width, height, photoNumber, reason = "No
   }
 };
 
-// Photos section
+// 🔧 COMPLETELY REWRITTEN: Photos section with better logic
 const addPhotosSection = async (doc, person) => {
   try {
     console.log("\n📸 =================================");
     console.log("📸 Starting photos section...");
     console.log("📸 Person:", person.name);
-    console.log("📸 Available fields:", Object.keys(person));
+    console.log("📸 Raw person data:", {
+      profilePicture: person.profilePicture,
+      photos: person.photos,
+      photoUrls: person.photoUrls
+    });
     console.log("📸 =================================\n");
 
-    // Collect all photo URLs
+    // 🔧 FIXED: Collect all photo URLs with proper handling
     const allPhotoUrls = [];
 
-    // Check profilePicture
-    if (person.profilePicture && typeof person.profilePicture === "string" && person.profilePicture.trim()) {
-      allPhotoUrls.push(person.profilePicture.trim());
-      console.log("📸 Added profile picture");
+    // Method 1: Check profilePicture (string)
+    if (person.profilePicture) {
+      if (typeof person.profilePicture === "string" && person.profilePicture.trim()) {
+        // If it's a filename, convert to URL
+        const url = person.profilePicture.includes('http') 
+          ? person.profilePicture.trim() 
+          : getSupabaseImageUrl(person.profilePicture.trim());
+        if (url) {
+          allPhotoUrls.push(url);
+          console.log("📸 Added profile picture:", url);
+        }
+      }
     }
 
-    // Check photos array
+    // Method 2: Check photos array (could be strings or objects)
     if (person.photos && Array.isArray(person.photos)) {
-      person.photos.forEach((photoUrl, index) => {
-        if (photoUrl && typeof photoUrl === "string" && photoUrl.trim()) {
-          allPhotoUrls.push(photoUrl.trim());
-          console.log(`📸 Added photo ${index + 1} from photos array`);
+      person.photos.forEach((photo, index) => {
+        let url = null;
+        
+        if (typeof photo === "string" && photo.trim()) {
+          // String filename - convert to URL
+          url = photo.includes('http') ? photo.trim() : getSupabaseImageUrl(photo.trim());
+        } else if (typeof photo === "object" && photo !== null) {
+          // Object with url property
+          url = photo.url || (photo.fileName ? getSupabaseImageUrl(photo.fileName) : null);
+        }
+        
+        if (url) {
+          allPhotoUrls.push(url);
+          console.log(`📸 Added photo ${index + 1} from photos array:`, url);
         }
       });
     }
 
-    // Check photoUrls array
+    // Method 3: Check photoUrls array (should be URLs)
     if (person.photoUrls && Array.isArray(person.photoUrls)) {
       person.photoUrls.forEach((photoUrl, index) => {
         if (photoUrl && typeof photoUrl === "string" && photoUrl.trim()) {
           allPhotoUrls.push(photoUrl.trim());
-          console.log(`📸 Added photo ${index + 1} from photoUrls array`);
+          console.log(`📸 Added photo ${index + 1} from photoUrls array:`, photoUrl);
         }
       });
     }
 
+    // Remove duplicates and limit to 4
     const uniquePhotoUrls = [...new Set(allPhotoUrls)].slice(0, 4);
     console.log(`📸 Final photos to process: ${uniquePhotoUrls.length}`);
+    console.log(`📸 URLs:`, uniquePhotoUrls);
 
     // Add new page
     doc.addPage();
@@ -510,9 +550,9 @@ router.get("/person/:id/pdf", async (req, res) => {
       return res.status(400).json({ message: "Invalid person ID format" });
     }
 
-    // Find person
+    // 🔧 FIXED: Find person without .lean() to preserve Mongoose methods
     console.log("🔍 Finding person in database...");
-    const person = await Person.findById(id).lean().exec();
+    const person = await Person.findById(id).exec();
 
     if (!person) {
       console.error("❌ Person not found with ID:", id);
@@ -520,10 +560,14 @@ router.get("/person/:id/pdf", async (req, res) => {
     }
 
     console.log("✅ Person found:", person.name);
+    
+    // 🔧 FIXED: Convert to plain object but preserve original data structure
+    const personData = person.toObject();
+    
     console.log("📸 Person photo fields:", {
-      profilePicture: person.profilePicture ? "✅" : "❌",
-      photos: person.photos ? `Array(${person.photos.length})` : "❌",
-      photoUrls: person.photoUrls ? `Array(${person.photoUrls.length})` : "❌"
+      profilePicture: personData.profilePicture ? "✅" : "❌",
+      photos: personData.photos ? `Array(${personData.photos.length})` : "❌",
+      photoUrls: personData.photoUrls ? `Array(${personData.photoUrls.length})` : "❌"
     });
 
     // Set response headers
@@ -549,64 +593,64 @@ router.get("/person/:id/pdf", async (req, res) => {
     doc.pipe(res);
 
     // Add content
-    addHeader(doc, person);
+    addHeader(doc, personData);
 
     // Personal Details
     addStyledSectionHeader(doc, "👤 PERSONAL DETAILS");
-    addStyledField(doc, "Full Name", person.name);
-    addStyledField(doc, "Age", person.age);
-    addStyledField(doc, "Gender", person.gender);
-    addStyledField(doc, "Religion", person.religion);
-    addStyledField(doc, "Caste", person.caste);
-    addStyledField(doc, "Marital Status", person.maritalStatus);
-    addStyledField(doc, "State", person.state);
-    addStyledField(doc, "Phone Number", person.phoneNumber);
-    addStyledField(doc, "Area", person.area);
-    addStyledField(doc, "Date of Birth", formatDate(person.dob));
-    addStyledField(doc, "Native Place", person.nativePlace);
-    addStyledField(doc, "Birth Place & Time", person.birthPlaceTime);
-    addStyledField(doc, "Gotra", person.gotra);
-    addStyledField(doc, "Height", person.height);
-    addStyledField(doc, "Complexion", person.complexion);
+    addStyledField(doc, "Full Name", personData.name);
+    addStyledField(doc, "Age", personData.age);
+    addStyledField(doc, "Gender", personData.gender);
+    addStyledField(doc, "Religion", personData.religion);
+    addStyledField(doc, "Caste", personData.caste);
+    addStyledField(doc, "Marital Status", personData.maritalStatus);
+    addStyledField(doc, "State", personData.state);
+    addStyledField(doc, "Phone Number", personData.phoneNumber);
+    addStyledField(doc, "Area", personData.area);
+    addStyledField(doc, "Date of Birth", formatDate(personData.dob));
+    addStyledField(doc, "Native Place", personData.nativePlace);
+    addStyledField(doc, "Birth Place & Time", personData.birthPlaceTime);
+    addStyledField(doc, "Gotra", personData.gotra);
+    addStyledField(doc, "Height", personData.height);
+    addStyledField(doc, "Complexion", personData.complexion);
 
     // Lifestyle
     addStyledSectionHeader(doc, "🎯 LIFESTYLE & HABITS");
-    addStyledField(doc, "Eating Habits", person.eatingHabits);
-    addStyledField(doc, "Drinking Habits", person.drinkingHabits);
-    addStyledField(doc, "Smoking Habits", person.smokingHabits);
-    addStyledField(doc, "Any Disability", person.disability);
-    addStyledField(doc, "NRI Status", person.nri ? "Yes" : "No");
-    addStyledField(doc, "Vehicle Owned", person.vehicle ? "Yes" : "No");
-    addStyledField(doc, "Horoscope Available", person.horoscope ? "Yes" : "No");
+    addStyledField(doc, "Eating Habits", personData.eatingHabits);
+    addStyledField(doc, "Drinking Habits", personData.drinkingHabits);
+    addStyledField(doc, "Smoking Habits", personData.smokingHabits);
+    addStyledField(doc, "Any Disability", personData.disability);
+    addStyledField(doc, "NRI Status", personData.nri ? "Yes" : "No");
+    addStyledField(doc, "Vehicle Owned", personData.vehicle ? "Yes" : "No");
+    addStyledField(doc, "Horoscope Available", personData.horoscope ? "Yes" : "No");
 
     // Family Details
     addStyledSectionHeader(doc, "👨‍👩‍👧‍👦 FAMILY DETAILS");
-    addStyledField(doc, "Father's Name", person.fatherName);
-    addStyledField(doc, "Father's Occupation", person.fatherOccupation);
-    addStyledField(doc, "Father's Office Details", person.fatherOffice);
-    addStyledField(doc, "Mother's Name", person.motherName);
-    addStyledField(doc, "Mother's Occupation", person.motherOccupation);
-    addStyledField(doc, "Residence Type", person.residence);
-    addStyledField(doc, "Other Properties", person.otherProperty);
+    addStyledField(doc, "Father's Name", personData.fatherName);
+    addStyledField(doc, "Father's Occupation", personData.fatherOccupation);
+    addStyledField(doc, "Father's Office Details", personData.fatherOffice);
+    addStyledField(doc, "Mother's Name", personData.motherName);
+    addStyledField(doc, "Mother's Occupation", personData.motherOccupation);
+    addStyledField(doc, "Residence Type", personData.residence);
+    addStyledField(doc, "Other Properties", personData.otherProperty);
 
     // Education
     addStyledSectionHeader(doc, "🎓 EDUCATION");
-    addStyledField(doc, "Education", person.education);
-    addStyledField(doc, "Higher Qualification", person.higherQualification);
-    addStyledField(doc, "Graduation", person.graduation);
-    addStyledField(doc, "Schooling", person.schooling);
+    addStyledField(doc, "Education", personData.education);
+    addStyledField(doc, "Higher Qualification", personData.higherQualification);
+    addStyledField(doc, "Graduation", personData.graduation);
+    addStyledField(doc, "Schooling", personData.schooling);
 
     // Income & Occupation
     addStyledSectionHeader(doc, "💼 INCOME & OCCUPATION");
-    addStyledField(doc, "Income", person.income);
-    addStyledField(doc, "Personal Income", person.personalIncome);
-    addStyledField(doc, "Family Income", person.familyIncome);
-    addStyledField(doc, "Occupation", person.occupation);
+    addStyledField(doc, "Income", personData.income);
+    addStyledField(doc, "Personal Income", personData.personalIncome);
+    addStyledField(doc, "Family Income", personData.familyIncome);
+    addStyledField(doc, "Occupation", personData.occupation);
 
     // Siblings
-    if (person.siblings && person.siblings.length > 0) {
+    if (personData.siblings && personData.siblings.length > 0) {
       addStyledSectionHeader(doc, "👫 SIBLINGS");
-      person.siblings.forEach((sibling, index) => {
+      personData.siblings.forEach((sibling, index) => {
         doc
           .fontSize(13)
           .font("Helvetica-Bold")
@@ -623,8 +667,8 @@ router.get("/person/:id/pdf", async (req, res) => {
       });
     }
 
-    // Photos section
-    await addPhotosSection(doc, person);
+    // 🔧 FIXED: Photos section with original data
+    await addPhotosSection(doc, personData);
 
     // Important notice
     addImportantNote(doc);
@@ -665,7 +709,7 @@ router.get("/person/:id/pdf", async (req, res) => {
   }
 });
 
-// 🔧 DEBUG ROUTE
+// 🔧 DEBUG ROUTE - Enhanced for photo debugging
 router.get("/person/:id/debug", async (req, res) => {
   try {
     const { id } = req.params;
@@ -690,23 +734,31 @@ router.get("/person/:id/debug", async (req, res) => {
       });
     }
 
-    // Analyze photos
+    // 🔧 ENHANCED: Detailed photo analysis
     const photoAnalysis = {
       profilePicture: {
         exists: !!person.profilePicture,
         value: person.profilePicture,
+        type: typeof person.profilePicture,
         isUrl: person.profilePicture ? person.profilePicture.includes('http') : false,
-        isSupabase: person.profilePicture ? person.profilePicture.includes('supabase.co') : false
+        isSupabase: person.profilePicture ? person.profilePicture.includes('supabase.co') : false,
+        generatedUrl: person.profilePicture ? getSupabaseImageUrl(person.profilePicture) : null
       },
       photos: {
         exists: !!person.photos,
         isArray: Array.isArray(person.photos),
         count: person.photos ? person.photos.length : 0,
         values: person.photos || [],
-        urlAnalysis: person.photos ? person.photos.map(photo => ({
+        urlAnalysis: person.photos ? person.photos.map((photo, index) => ({
+          index,
           value: photo,
-          isUrl: photo ? photo.includes('http') : false,
-          isSupabase: photo ? photo.includes('supabase.co') : false
+          type: typeof photo,
+          isUrl: typeof photo === 'string' ? photo.includes('http') : false,
+          isSupabase: typeof photo === 'string' ? photo.includes('supabase.co') : false,
+          hasUrlProperty: typeof photo === 'object' ? !!photo.url : false,
+          hasFileNameProperty: typeof photo === 'object' ? !!photo.fileName : false,
+          generatedUrl: typeof photo === 'string' ? getSupabaseImageUrl(photo) : 
+                       (typeof photo === 'object' && photo.fileName ? getSupabaseImageUrl(photo.fileName) : null)
         })) : []
       },
       photoUrls: {
@@ -716,6 +768,18 @@ router.get("/person/:id/debug", async (req, res) => {
         values: person.photoUrls || []
       }
     };
+
+    // Test URL accessibility
+    if (photoAnalysis.profilePicture.generatedUrl) {
+      try {
+        const testResponse = await fetch(photoAnalysis.profilePicture.generatedUrl, { method: 'HEAD' });
+        photoAnalysis.profilePicture.urlAccessible = testResponse.ok;
+        photoAnalysis.profilePicture.httpStatus = testResponse.status;
+      } catch (e) {
+        photoAnalysis.profilePicture.urlAccessible = false;
+        photoAnalysis.profilePicture.httpError = e.message;
+      }
+    }
 
     res.json({
       success: true,
@@ -727,6 +791,14 @@ router.get("/person/:id/debug", async (req, res) => {
         axios: !!axios,
         supabase: !!supabase,
         supabaseUrl: supabase ? 'Connected' : 'Not available'
+      },
+      recommendations: {
+        dataStructure: person.photos && person.photos.length > 0 && typeof person.photos[0] === 'object' 
+          ? "⚠️ Photos are stored as objects, this might cause PDF issues"
+          : "✅ Photos data structure looks correct",
+        urlGeneration: photoAnalysis.profilePicture.generatedUrl 
+          ? "✅ URL generation working" 
+          : "❌ URL generation failed"
       },
       timestamp: new Date().toISOString()
     });
@@ -819,6 +891,6 @@ router.get("/health", (req, res) => {
   });
 });
 
-console.log("✅ PDF routes loaded with enhanced error handling!");
+console.log("✅ PDF routes loaded with enhanced photo handling!");
 
 module.exports = router;

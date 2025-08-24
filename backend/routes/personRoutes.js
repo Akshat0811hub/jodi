@@ -1,4 +1,4 @@
-// routes/personRoutes.js
+// routes/personRoutes.js - FIXED VERSION
 const express = require("express");
 const Person = require("../models/personModel");
 const multer = require("multer");
@@ -41,13 +41,6 @@ const initializeSupabaseBucket = async () => {
       );
       console.log("✅ Please create bucket manually in Supabase dashboard");
       return true;
-
-      if (createError) {
-        console.error("❌ Error creating bucket:", createError);
-        return false;
-      }
-
-      console.log("✅ Bucket created successfully:", BUCKET_NAME);
     } else {
       console.log("✅ Bucket already exists:", BUCKET_NAME);
     }
@@ -139,6 +132,22 @@ const getSupabaseImageUrl = (fileName) => {
   const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(fileName);
 
   return data.publicUrl;
+};
+
+// 🔧 FIXED: Helper function to format person data for response
+const formatPersonWithUrls = (person) => {
+  const personObj = person.toObject ? person.toObject() : person;
+  
+  return {
+    ...personObj,
+    // Keep original photos array as strings (filenames) for PDF compatibility
+    photos: personObj.photos || [],
+    // Add photoUrls array with full URLs for frontend display
+    photoUrls: personObj.photos ? personObj.photos.map(getSupabaseImageUrl).filter(Boolean) : [],
+    // Keep profilePicture as filename, add profilePictureUrl for display
+    profilePicture: personObj.profilePicture || null,
+    profilePictureUrl: personObj.profilePicture ? getSupabaseImageUrl(personObj.profilePicture) : null
+  };
 };
 
 // ✅ CRITICAL FIX: Statistics route MUST come BEFORE /:id route
@@ -240,21 +249,10 @@ router.get("/", async (req, res) => {
 
     console.log("🔍 Applied filters:", filters);
 
-    const people = await Person.find(filters).sort({ createdAt: -1 }).lean(); // Use lean() for better performance
+    const people = await Person.find(filters).sort({ createdAt: -1 }).lean();
 
-    // Add Supabase URLs to photos
-    const peopleWithUrls = people.map((person) => ({
-      ...person,
-      photos: person.photos
-        ? person.photos.map((photo) => ({
-            fileName: photo,
-            url: getSupabaseImageUrl(photo),
-          }))
-        : [],
-      profilePictureUrl: person.profilePicture
-        ? getSupabaseImageUrl(person.profilePicture)
-        : null,
-    }));
+    // 🔧 FIXED: Format people with proper URL structure
+    const peopleWithUrls = people.map(formatPersonWithUrls);
 
     console.log(`✅ Found ${people.length} people`);
 
@@ -281,19 +279,8 @@ router.get("/:id", async (req, res) => {
       });
     }
 
-    // Add Supabase URLs to photos
-    const personWithUrls = {
-      ...person.toObject(),
-      photos: person.photos
-        ? person.photos.map((photo) => ({
-            fileName: photo,
-            url: getSupabaseImageUrl(photo),
-          }))
-        : [],
-      profilePictureUrl: person.profilePicture
-        ? getSupabaseImageUrl(person.profilePicture)
-        : null,
-    };
+    // 🔧 FIXED: Format person with proper URL structure
+    const personWithUrls = formatPersonWithUrls(person);
 
     console.log("✅ Person found:", person.name);
     res.status(200).json(personWithUrls);
@@ -339,6 +326,7 @@ router.post("/", upload.array("photos", 5), async (req, res) => {
         }
       }
 
+      // 🔧 FIXED: Store only filenames in database (not objects)
       personData.photos = uploadedFiles;
       personData.profilePicture = uploadedFiles[0]; // Use first photo as profile picture
       console.log("📸 Uploaded photos to Supabase:", personData.photos);
@@ -356,24 +344,14 @@ router.post("/", upload.array("photos", 5), async (req, res) => {
     const person = new Person(personData);
     await person.save();
 
-    // Add URLs for response
-    const personWithUrls = {
-      ...person.toObject(),
-      photos: person.photos
-        ? person.photos.map((photo) => ({
-            fileName: photo,
-            url: getSupabaseImageUrl(photo),
-          }))
-        : [],
-      profilePictureUrl: person.profilePicture
-        ? getSupabaseImageUrl(person.profilePicture)
-        : null,
-    };
+    // 🔧 FIXED: Format response with proper URL structure
+    const personWithUrls = formatPersonWithUrls(person);
 
     console.log("✅ Person created successfully:", person.name);
     res.status(201).json({
       message: "Person created successfully",
       person: personWithUrls,
+      photosUploaded: uploadedFiles.length,
     });
   } catch (error) {
     console.error("❌ Error creating person:", error);
@@ -453,19 +431,8 @@ router.put("/:id", upload.array("photos", 5), async (req, res) => {
       });
     }
 
-    // Add URLs for response
-    const personWithUrls = {
-      ...person.toObject(),
-      photos: person.photos
-        ? person.photos.map((photo) => ({
-            fileName: photo,
-            url: getSupabaseImageUrl(photo),
-          }))
-        : [],
-      profilePictureUrl: person.profilePicture
-        ? getSupabaseImageUrl(person.profilePicture)
-        : null,
-    };
+    // 🔧 FIXED: Format response with proper URL structure
+    const personWithUrls = formatPersonWithUrls(person);
 
     console.log("✅ Person updated successfully:", person.name);
     res.status(200).json({
@@ -559,19 +526,8 @@ router.delete("/:id/photo/:filename", async (req, res) => {
     // Delete the actual file from Supabase
     await deleteFromSupabase(filename);
 
-    // Add URLs for response
-    const personWithUrls = {
-      ...person.toObject(),
-      photos: person.photos
-        ? person.photos.map((photo) => ({
-            fileName: photo,
-            url: getSupabaseImageUrl(photo),
-          }))
-        : [],
-      profilePictureUrl: person.profilePicture
-        ? getSupabaseImageUrl(person.profilePicture)
-        : null,
-    };
+    // 🔧 FIXED: Format response with proper URL structure
+    const personWithUrls = formatPersonWithUrls(person);
 
     console.log("✅ Photo deleted successfully from Supabase");
     res.status(200).json({
