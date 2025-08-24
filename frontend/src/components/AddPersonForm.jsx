@@ -539,7 +539,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
               <select
                 name="vehicle"
                 value={formData.vehicle}
-                onChange={{ handleChange }}
+                onChange={ handleChange }
                 disabled={isSubmitting}
               >
                 <option value="">Own Vehicle?</option>
