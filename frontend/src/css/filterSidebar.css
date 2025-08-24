@@ -917,9 +917,9 @@
 
 /* FINAL SCROLL OPTIMIZATION FOR FILTER SIDEBAR */
 .filter-sidebar {
-  scroll-padding-top: 0;
-  overflow-anchor: none;
-  touch-action: pan-y;
+  max-height: 90vh; /* or any height you want */
+  overflow-y: auto; /* enables vertical scrolling */
+  overflow-x: hidden; /* prevent sideways scroll */
 }
 
 /* iOS smooth scrolling for filter sidebar */

@@ -1528,23 +1528,6 @@ body {
   }
 }
 
-/* FINAL SCROLL OPTIMIZATION */
-html, body {
-  scroll-padding-top: 0;
-  scroll-behavior: smooth;
-  touch-action: pan-y;
-}
-
-/* Prevent any scroll anchoring issues */
-* {
-  
-}
-
-/* iOS smooth scrolling optimization */
-body {
-  -webkit-overflow-scrolling: touch;
-}
-
 /* Remove any remaining transforms that might interfere with scrolling */
 @media (max-width: 768px) {
   .people-container:hover,
