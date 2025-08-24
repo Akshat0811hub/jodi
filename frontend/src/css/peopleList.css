@@ -1,4 +1,4 @@
-/* Modern PeopleList.css - Premium UI with Perfect Scrolling */
+/* Modern PeopleList.css - Premium UI with Perfect Scrolling - FIXED */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
@@ -46,7 +46,7 @@
   --transition-slow: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* PERFECT SCROLL FOUNDATION */
+/* PERFECT SCROLL FOUNDATION - FIXED */
 * {
   margin: 0;
   padding: 0;
@@ -55,9 +55,8 @@
 
 html {
   scroll-behavior: smooth;
-  overflow-x: hidden; /* Only hide horizontal */
-  overflow-y: auto;   /* Allow vertical scroll */
   height: 100%;
+  /* REMOVED: overflow-x: hidden; overflow-y: auto; */
 }
 
 body {
@@ -67,12 +66,13 @@ body {
   background-size: 400% 400%;
   animation: gradientShift 15s ease infinite;
   min-height: 100vh;
-  overflow-x: hidden; /* Only hide horizontal */
-  overflow-y: auto;   /* Allow vertical scroll */
+  /* REMOVED: overflow-x: hidden; overflow-y: auto; */
   line-height: 1.6;
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  padding: 0;
 }
 
 @keyframes gradientShift {
@@ -102,15 +102,15 @@ body {
   background: var(--secondary-gradient);
 }
 
-/* App Wrapper with Perfect Layout */
+/* App Wrapper with Perfect Layout - FIXED */
 .app-wrapper {
   min-height: 100vh;
   width: 100%;
-  position: relative;
   padding: 20px 0;
+  /* REMOVED: position: relative; */
 }
 
-/* Ultra Modern Container */
+/* Ultra Modern Container - FIXED */
 .people-container {
   max-width: 1400px;
   margin: 0 auto;
@@ -120,10 +120,9 @@ body {
   border: 1px solid var(--glass-border);
   border-radius: var(--border-radius-xl);
   box-shadow: var(--glass-shadow);
-  position: relative;
   min-height: auto;
-  overflow: visible;
   transition: var(--transition-slow);
+  /* REMOVED: position: relative; overflow: visible; */
 }
 
 .people-container::before {
@@ -165,7 +164,6 @@ body {
   background-clip: text;
   margin: 0;
   text-align: center;
-  position: relative;
   letter-spacing: -0.02em;
 }
 
@@ -203,7 +201,6 @@ body {
   text-align: center;
   min-width: 120px;
   transition: var(--transition-normal);
-  position: relative;
   overflow: hidden;
 }
 
@@ -244,14 +241,14 @@ body {
   font-weight: 600;
 }
 
-/* Ultra Modern Table Design */
+/* Ultra Modern Table Design - FIXED */
 .table-wrapper {
-  position: relative;
   border-radius: var(--border-radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-xl);
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
+  /* REMOVED: position: relative; */
 }
 
 .people-table {
@@ -264,7 +261,6 @@ body {
 
 .people-table thead {
   background: var(--dark-gradient);
-  position: relative;
 }
 
 .people-table th {
@@ -276,7 +272,6 @@ body {
   letter-spacing: 1.2px;
   color: white;
   border: none;
-  position: relative;
   white-space: nowrap;
 }
 
@@ -298,11 +293,10 @@ body {
   border-radius: 0 var(--border-radius-lg) 0 0;
 }
 
-/* Modern Table Rows */
+/* Modern Table Rows - FIXED */
 .people-row {
   cursor: pointer;
   transition: var(--transition-normal);
-  position: relative;
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(10px);
 }
@@ -329,8 +323,8 @@ body {
     rgba(118, 75, 162, 0.05) 50%,
     rgba(240, 147, 251, 0.1) 100%
   );
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
-  transform: scale(1.02);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.15); /* REDUCED shadow */
+  transform: scale(1.01); /* REDUCED from 1.02 */
 }
 
 .people-row.expanded {
@@ -374,7 +368,6 @@ body {
   font-weight: 700;
   font-size: 16px;
   box-shadow: var(--shadow-md);
-  position: relative;
   flex-shrink: 0;
 }
 
@@ -428,7 +421,7 @@ body {
   font-size: 14px;
 }
 
-/* Premium Expanded Content */
+/* Premium Expanded Content - FIXED */
 .expanded-row td {
   background: linear-gradient(135deg, 
     rgba(255, 255, 255, 0.95) 0%, 
@@ -438,11 +431,10 @@ body {
   border-top: 3px solid transparent;
   border-image: var(--primary-gradient) 1;
   padding: 40px 30px;
-  position: relative;
+  /* REMOVED: position: relative; */
 }
 
 .expanded-content {
-  position: relative;
   animation: expandIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -467,7 +459,6 @@ body {
 
 /* Premium Photo Display */
 .photo-section {
-  position: relative;
   display: inline-block;
 }
 
@@ -481,7 +472,6 @@ body {
   padding: 4px;
   box-shadow: var(--shadow-xl);
   transition: var(--transition-normal);
-  position: relative;
 }
 
 .expanded-photo:hover {
@@ -530,7 +520,6 @@ body {
   border-radius: var(--border-radius-md);
   border-left: 4px solid transparent;
   transition: var(--transition-normal);
-  position: relative;
   overflow: hidden;
 }
 
@@ -597,7 +586,6 @@ body {
   font-size: 14px;
   cursor: pointer;
   transition: var(--transition-normal);
-  position: relative;
   min-width: 160px;
   justify-content: center;
   text-transform: uppercase;
@@ -677,7 +665,6 @@ body {
   border-radius: var(--border-radius-lg);
   border: 1px solid rgba(255, 255, 255, 0.3);
   box-shadow: var(--shadow-lg);
-  position: relative;
 }
 
 .field-selection::before {
@@ -760,7 +747,6 @@ body {
   cursor: pointer;
   transition: var(--transition-normal);
   border: 2px solid transparent;
-  position: relative;
   overflow: hidden;
 }
 
@@ -797,7 +783,6 @@ body {
   border: 2px solid #ddd;
   border-radius: 6px;
   margin-right: 15px;
-  position: relative;
   transition: var(--transition-normal);
   flex-shrink: 0;
   background: white;
@@ -961,7 +946,7 @@ body {
   margin: 0 auto;
 }
 
-/* Premium Notifications */
+/* Premium Notifications - FIXED */
 .premium-notification {
   position: fixed;
   top: 20px;
@@ -1044,13 +1029,13 @@ body {
   transform: scale(1.1);
 }
 
-/* Loading Overlay */
+/* Loading Overlay - FIXED */
 .loading-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(8px);
   display: flex;
@@ -1116,7 +1101,6 @@ body {
 .edit-form-header {
   text-align: center;
   margin-bottom: 30px;
-  position: relative;
 }
 
 .edit-title {
@@ -1147,7 +1131,6 @@ body {
 .form-group {
   display: flex;
   flex-direction: column;
-  position: relative;
 }
 
 .form-label {
@@ -1178,7 +1161,6 @@ body {
   font-weight: 500;
   transition: var(--transition-normal);
   color: var(--text-primary);
-  position: relative;
 }
 
 .form-input:focus {
@@ -1218,7 +1200,6 @@ body {
   justify-content: center;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  position: relative;
   overflow: hidden;
 }
 
@@ -1267,14 +1248,12 @@ body {
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   border-radius: var(--border-radius-md);
   border: 2px dashed #dee2e6;
-  position: relative;
   overflow: hidden;
 }
 
 .image-skeleton {
   width: 100%;
   height: 100%;
-  position: relative;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
   animation: skeleton-loading 1.5s infinite;
@@ -1423,6 +1402,15 @@ body {
   .edit-action-btn {
     min-width: 200px;
   }
+  
+  /* MOBILE SCROLL FIXES */
+  .people-row:hover {
+    transform: none; /* Remove transform on mobile */
+  }
+  
+  .stat-card:hover {
+    transform: translateY(-2px); /* Reduce transform on mobile */
+  }
 }
 
 @media (max-width: 480px) {
@@ -1483,10 +1471,6 @@ body {
   will-change: transform;
 }
 
-.people-row:hover {
-  will-change: transform;
-}
-
 /* Dark mode support (optional) */
 @media (prefers-color-scheme: dark) {
   :root {
@@ -1504,6 +1488,10 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+  
+  .people-row:hover {
+    transform: none;
   }
 }
 
@@ -1529,4 +1517,20 @@ body {
   .people-row:hover {
     background: #f0f0f0;
   }
+}
+
+/* EMERGENCY SCROLL FIX */
+html, body {
+  scroll-padding-top: 0;
+  scroll-behavior: smooth;
+}
+
+/* Prevent scroll anchoring issues */
+* {
+  overflow-anchor: none;
+}
+
+/* iOS smooth scrolling */
+body {
+  -webkit-overflow-scrolling: touch;
 }

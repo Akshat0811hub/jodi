@@ -1,4 +1,4 @@
-/* Modern FilterSidebar.css - Premium UI with Perfect Scrolling */
+/* Modern FilterSidebar.css - Premium UI with Perfect Scrolling - FIXED */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
@@ -47,7 +47,7 @@
   --transition-slow: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* PERFECT SCROLL FOUNDATION FOR FILTER SIDEBAR */
+/* PERFECT SCROLL FOUNDATION FOR FILTER SIDEBAR - FIXED */
 .filter-sidebar {
   background: var(--glass-bg);
   backdrop-filter: blur(20px) saturate(180%);
@@ -57,16 +57,15 @@
   border-radius: var(--border-radius-xl);
   box-shadow: var(--glass-shadow);
   font-family: 'Inter', 'Poppins', sans-serif;
-  position: relative;
   width: 100%;
   max-width: 400px;
-  min-height: auto; /* Changed from fit-content for better responsiveness */
+  min-height: auto;
   transition: var(--transition-normal);
-  overflow: visible; /* Ensure no hidden overflow */
-  margin: 20px auto; /* Proper margins */
+  margin: 20px auto;
+  /* REMOVED: position: relative; overflow: visible; */
 }
 
-/* Premium Header Design */
+/* Premium Header Design - FIXED */
 .filter-sidebar::before {
   content: '';
   position: absolute;
@@ -84,10 +83,10 @@
   50% { opacity: 0.8; transform: scaleX(1.05); }
 }
 
-/* Smooth Hover Effects */
+/* Smooth Hover Effects - FIXED */
 .filter-sidebar:hover {
-  transform: translateY(-3px) scale(1.02); /* Reduced transform for smoother effect */
-  box-shadow: 0 20px 60px rgba(31, 38, 135, 0.5);
+  transform: translateY(-2px); /* REDUCED from translateY(-3px) scale(1.02) */
+  box-shadow: 0 15px 40px rgba(31, 38, 135, 0.4); /* REDUCED shadow intensity */
   border-color: rgba(255, 255, 255, 0.3);
   background: var(--glass-hover);
 }
@@ -100,7 +99,6 @@
   margin-bottom: 35px;
   padding-bottom: 25px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-  position: relative;
 }
 
 .filter-header::after {
@@ -131,7 +129,6 @@
   align-items: center;
   gap: 12px;
   letter-spacing: -0.02em;
-  position: relative;
 }
 
 .filter-title::before {
@@ -159,7 +156,6 @@
   transition: var(--transition-normal);
   text-decoration: none;
   box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
-  position: relative;
   overflow: hidden;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -197,12 +193,12 @@
 }
 
 .clear-btn:hover {
-  transform: translateY(-3px) scale(1.08);
-  box-shadow: 0 12px 35px rgba(255, 107, 107, 0.6);
+  transform: translateY(-2px) scale(1.05); /* REDUCED from translateY(-3px) scale(1.08) */
+  box-shadow: 0 10px 30px rgba(255, 107, 107, 0.5); /* REDUCED shadow */
 }
 
 .clear-btn:active {
-  transform: translateY(-1px) scale(1.05);
+  transform: translateY(-1px) scale(1.02); /* REDUCED transform */
 }
 
 .clear-btn:disabled {
@@ -212,12 +208,12 @@
   box-shadow: 0 3px 10px rgba(255, 107, 107, 0.2);
 }
 
-/* Enhanced Filter Groups with Modern Animations */
+/* Enhanced Filter Groups with Modern Animations - FIXED */
 .filter-group {
   margin-bottom: 25px;
-  position: relative;
   animation: slideInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) backwards;
   transition: var(--transition-normal);
+  /* REMOVED: position: relative; */
 }
 
 .filter-group:nth-child(odd) {
@@ -243,9 +239,9 @@
   }
 }
 
-/* Interactive Group Hover */
+/* Interactive Group Hover - FIXED */
 .filter-group:hover {
-  transform: translateX(8px);
+  transform: translateX(5px); /* REDUCED from translateX(8px) */
 }
 
 /* Group Section Headers */
@@ -287,10 +283,10 @@
   color: var(--text-primary);
   text-transform: capitalize;
   letter-spacing: 0.5px;
-  position: relative;
   padding-left: 25px;
   cursor: pointer;
   transition: var(--transition-normal);
+  /* REMOVED: position: relative; */
 }
 
 .filter-label::before {
@@ -341,20 +337,19 @@
   backdrop-filter: blur(10px);
   color: var(--text-primary);
   transition: var(--transition-normal);
-  position: relative;
   box-shadow: var(--shadow-soft);
 }
 
-/* Focus States with Modern Glow Effects */
+/* Focus States with Modern Glow Effects - FIXED */
 .filter-select:focus,
 .filter-input:focus {
   outline: none;
   border-color: transparent;
   background: rgba(255, 255, 255, 1);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2), 
-              0 8px 25px rgba(102, 126, 234, 0.15),
+              0 6px 20px rgba(102, 126, 234, 0.1), /* REDUCED shadow */
               var(--shadow-glow);
-  transform: translateY(-2px) scale(1.02);
+  transform: translateY(-1px); /* REDUCED from translateY(-2px) scale(1.02) */
 }
 
 /* Placeholder Styling */
@@ -367,7 +362,7 @@
 
 .filter-input:focus::placeholder {
   opacity: 0.5;
-  transform: translateY(-2px);
+  transform: translateY(-1px); /* REDUCED from translateY(-2px) */
 }
 
 /* Premium Select Dropdown Styling */
@@ -383,12 +378,12 @@
   appearance: none;
 }
 
-/* Enhanced Hover Effects */
+/* Enhanced Hover Effects - FIXED */
 .filter-select:hover,
 .filter-input:hover {
   border-color: rgba(102, 126, 234, 0.4);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.2);
-  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.15); /* REDUCED shadow */
+  transform: translateY(-1px); /* REDUCED from translateY(-1px) */
   background: white;
 }
 
@@ -406,7 +401,7 @@
   background: linear-gradient(90deg, rgba(102, 126, 234, 0.1), white);
 }
 
-/* Ultra Premium Submit Button */
+/* Ultra Premium Submit Button - FIXED */
 .submit-btn {
   width: 100%;
   padding: 18px 28px;
@@ -420,8 +415,7 @@
   cursor: pointer;
   margin-top: 30px;
   transition: var(--transition-normal);
-  position: relative;
-  box-shadow: 0 8px 30px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 6px 25px rgba(102, 126, 234, 0.3); /* REDUCED shadow */
   letter-spacing: 0.8px;
   text-transform: uppercase;
   overflow: hidden;
@@ -430,6 +424,7 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
+  /* REMOVED: position: relative; */
 }
 
 .submit-btn::before {
@@ -464,13 +459,13 @@
 }
 
 .submit-btn:hover {
-  transform: translateY(-4px) scale(1.03);
-  box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6),
-              0 0 30px rgba(102, 126, 234, 0.3);
+  transform: translateY(-2px) scale(1.02); /* REDUCED from translateY(-4px) scale(1.03) */
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.5), /* REDUCED shadow */
+              0 0 20px rgba(102, 126, 234, 0.2); /* REDUCED glow */
 }
 
 .submit-btn:active {
-  transform: translateY(-2px) scale(1.01);
+  transform: translateY(-1px) scale(1.01);
 }
 
 /* Loading State for Submit Button */
@@ -485,27 +480,27 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; transform: translateY(-4px) scale(1.03); }
-  50% { opacity: 0.8; transform: translateY(-2px) scale(1.01); }
+  0%, 100% { opacity: 1; transform: translateY(-2px) scale(1.02); } /* REDUCED */
+  50% { opacity: 0.8; transform: translateY(-1px) scale(1.01); } /* REDUCED */
 }
 
 /* Dynamic Filter Colors Based on Type */
 .filter-group:nth-child(4n+1) .filter-input:focus,
 .filter-group:nth-child(4n+1) .filter-select:focus {
   box-shadow: 0 0 0 3px rgba(240, 147, 251, 0.2), 
-              0 8px 25px rgba(240, 147, 251, 0.15);
+              0 6px 20px rgba(240, 147, 251, 0.1); /* REDUCED */
 }
 
 .filter-group:nth-child(4n+2) .filter-input:focus,
 .filter-group:nth-child(4n+2) .filter-select:focus {
   box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.2), 
-              0 8px 25px rgba(79, 172, 254, 0.15);
+              0 6px 20px rgba(79, 172, 254, 0.1); /* REDUCED */
 }
 
 .filter-group:nth-child(4n+3) .filter-input:focus,
 .filter-group:nth-child(4n+3) .filter-select:focus {
   box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2), 
-              0 8px 25px rgba(255, 215, 0, 0.15);
+              0 6px 20px rgba(255, 215, 0, 0.1); /* REDUCED */
 }
 
 /* Modern Group Section Styling */
@@ -521,8 +516,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  position: relative;
   overflow: hidden;
+  /* REMOVED: position: relative; */
 }
 
 .filter-group-header::before {
@@ -698,6 +693,23 @@
     padding: 14px 18px;
     font-size: 14px;
   }
+  
+  /* MOBILE SCROLL FIXES */
+  .filter-sidebar:hover {
+    transform: translateY(-1px); /* REDUCED transform on mobile */
+  }
+  
+  .filter-group:hover {
+    transform: translateX(3px); /* REDUCED transform on mobile */
+  }
+  
+  .submit-btn:hover {
+    transform: translateY(-1px) scale(1.01); /* REDUCED transform on mobile */
+  }
+  
+  .clear-btn:hover {
+    transform: translateY(-1px) scale(1.03); /* REDUCED transform on mobile */
+  }
 }
 
 @media (max-width: 480px) {
@@ -735,6 +747,16 @@
   .filter-group-header {
     font-size: 16px;
     padding: 10px 12px;
+  }
+  
+  /* REMOVE ALL TRANSFORMS ON SMALL MOBILE */
+  .filter-sidebar:hover,
+  .filter-group:hover,
+  .submit-btn:hover,
+  .clear-btn:hover,
+  .filter-select:hover,
+  .filter-input:hover {
+    transform: none;
   }
 }
 
@@ -819,6 +841,18 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+  
+  /* Remove all transforms when reduced motion is preferred */
+  .filter-sidebar:hover,
+  .filter-group:hover,
+  .submit-btn:hover,
+  .clear-btn:hover,
+  .filter-select:hover,
+  .filter-input:hover,
+  .filter-select:focus,
+  .filter-input:focus {
+    transform: none;
+  }
 }
 
 /* High Contrast Mode */
@@ -860,10 +894,10 @@
   animation: spin 1s linear infinite;
 }
 
-/* Floating Animation for Hover States */
+/* Floating Animation for Hover States - REDUCED */
 @keyframes gentleFloat {
   0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-2px); }
+  50% { transform: translateY(-1px); } /* REDUCED from -2px */
 }
 
 .filter-sidebar:hover .filter-title::before {
@@ -883,4 +917,15 @@
 .filter-group.has-value .filter-label::after {
   width: calc(100% - 25px);
   background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+/* EMERGENCY SCROLL FIX FOR FILTER SIDEBAR */
+.filter-sidebar {
+  scroll-padding-top: 0;
+  overflow-anchor: none;
+}
+
+/* iOS smooth scrolling for filter sidebar */
+.filter-sidebar {
+  -webkit-overflow-scrolling: touch;
 }
