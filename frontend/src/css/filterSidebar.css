@@ -26,7 +26,7 @@
   box-shadow: var(--shadow-soft);
   font-family: 'Inter', sans-serif;
   position: relative;
-  overflow: hidden;
+
   min-height: fit-content;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -89,7 +89,7 @@
   text-decoration: none;
   box-shadow: 0 4px 15px rgba(255, 154, 158, 0.4);
   position: relative;
-  overflow: hidden;
+
 }
 
 .clear-btn::before {
@@ -241,7 +241,7 @@
   margin-top: 25px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  overflow: hidden;
+
   box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
   letter-spacing: 0.02em;
 }
