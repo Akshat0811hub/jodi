@@ -1,4 +1,4 @@
-// src/components/AddPersonFormModal.jsx - SUPABASE ENHANCED VERSION WITH BUDGET (FIXED)
+// src/components/AddPersonFormModal.jsx - FIXED ENUM VALIDATION ISSUE
 import React, { useState } from "react";
 import api from "../api";
 import "../css/addPerson.css";
@@ -18,9 +18,9 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
     height: "",
     complexion: "",
     horoscope: "",
-    eatingHabits: "", // Reset to empty
-    drinkingHabits: "", // Reset to empty
-    smokingHabits: "", // Reset to empty
+    eatingHabits: "", // Now uses dropdown
+    drinkingHabits: "", // Now uses dropdown
+    smokingHabits: "", // Now uses dropdown
     disability: "",
     nri: "",
     vehicle: "",
@@ -476,36 +476,53 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
             </div>
           </div>
 
+          {/* FIXED: Changed text inputs to dropdown selects */}
           <div className="form-row">
             <div className="form-group">
-              <input
+              <select
                 name="eatingHabits"
-                placeholder="Eating Habits (Veg/Non-Veg)"
                 value={formData.eatingHabits}
                 onChange={handleChange}
                 disabled={isSubmitting}
-              />
+              >
+                <option value="">Eating Habits</option>
+                <option value="Vegetarian">Vegetarian</option>
+                <option value="Non-Vegetarian">Non-Vegetarian</option>
+                <option value="Vegan">Vegan</option>
+                <option value="Jain">Jain</option>
+                <option value="Eggetarian">Eggetarian</option>
+              </select>
             </div>
             <div className="form-group">
-              <input
+              <select
                 name="drinkingHabits"
-                placeholder="Drinking Habits"
                 value={formData.drinkingHabits}
                 onChange={handleChange}
                 disabled={isSubmitting}
-              />
+              >
+                <option value="">Drinking Habits</option>
+                <option value="Never">Never</option>
+                <option value="Occasionally">Occasionally</option>
+                <option value="Socially">Socially</option>
+                <option value="Regular">Regular</option>
+              </select>
             </div>
           </div>
 
           <div className="form-row">
             <div className="form-group">
-              <input
+              <select
                 name="smokingHabits"
-                placeholder="Smoking Habits"
                 value={formData.smokingHabits}
                 onChange={handleChange}
                 disabled={isSubmitting}
-              />
+              >
+                <option value="">Smoking Habits</option>
+                <option value="Never">Never</option>
+                <option value="Occasionally">Occasionally</option>
+                <option value="Regular">Regular</option>
+                <option value="Quit">Quit</option>
+              </select>
             </div>
             <div className="form-group">
               <input
