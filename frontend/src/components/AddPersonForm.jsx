@@ -1,4 +1,4 @@
-// src/components/AddPersonFormModal.jsx - SUPABASE ENHANCED VERSION WITH BUDGET
+// src/components/AddPersonFormModal.jsx - SUPABASE ENHANCED VERSION WITH BUDGET (FIXED)
 import React, { useState } from "react";
 import api from "../api";
 import "../css/addPerson.css";
@@ -183,6 +183,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
         setError("Each photo must be less than 5MB");
         return;
       }
+      
       console.log(
         "📤 Form data being sent:",
         Object.fromEntries(
@@ -193,17 +194,10 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
       // Create FormData
       const data = new FormData();
 
+      // FIXED: Send all form data as strings, no boolean conversion
       Object.keys(formData).forEach((key) => {
         const value = formData[key];
-        // Convert boolean strings to actual booleans
-        if (key === "horoscope" || key === "nri" || key === "vehicle") {
-          data.append(
-            key,
-            value === "true" ? true : value === "false" ? false : ""
-          );
-        } else {
-          data.append(key, value || "");
-        }
+        data.append(key, value || "");
       });
 
       if (siblings.length > 0) {
@@ -473,10 +467,11 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 name="horoscope"
                 value={formData.horoscope}
                 onChange={handleChange}
+                disabled={isSubmitting}
               >
                 <option value="">Believe in Horoscopes?</option>
-                <option value="true">Yes</option>
-                <option value="false">No</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
               </select>
             </div>
           </div>
@@ -532,20 +527,20 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 disabled={isSubmitting}
               >
                 <option value="">NRI Status</option>
-                <option value="true">Yes</option>
-                <option value="false">No</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
               </select>
             </div>
             <div className="form-group">
               <select
                 name="vehicle"
                 value={formData.vehicle}
-                onChange={ handleChange }
+                onChange={handleChange}
                 disabled={isSubmitting}
               >
                 <option value="">Own Vehicle?</option>
-                <option value="true">Yes</option>
-                <option value="false">No</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
               </select>
             </div>
           </div>
