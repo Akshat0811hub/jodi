@@ -18,9 +18,9 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
     height: "",
     complexion: "",
     horoscope: "",
-    eatingHabits: "",
-    drinkingHabits: "",
-    smokingHabits: "",
+    eatingHabits: "", // Reset to empty
+    drinkingHabits: "", // Reset to empty
+    smokingHabits: "", // Reset to empty
     disability: "",
     nri: "",
     vehicle: "",
