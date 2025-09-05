@@ -1,4 +1,4 @@
-// src/components/FilterSidebar.jsx - FIXED WITH PROPER SCROLLING
+// src/components/FilterSidebar.jsx - FIXED WITH PROPER SCROLLING & BUDGET FILTER
 import React, { useState } from "react";
 import "../css/filterSidebar.css";
 import "../css/global.css";
@@ -79,6 +79,13 @@ const FilterSidebar = ({ onFilter }) => {
       ]
     },
     {
+      id: "financial",
+      title: "Financial Details",
+      filters: [
+        { key: "budget", label: "Marriage Budget", type: "input", placeholder: "e.g., ₹5,00,000" },
+      ]
+    },
+    {
       id: "other",
       title: "Other Details",
       filters: [
@@ -143,6 +150,7 @@ const FilterSidebar = ({ onFilter }) => {
                 {group.id === 'personal' && '👤'}
                 {group.id === 'physical' && '📏'}
                 {group.id === 'lifestyle' && '🎯'}
+                {group.id === 'financial' && '💰'}
                 {group.id === 'other' && '📋'}
               </span>
               <span className="group-text">{group.title}</span>

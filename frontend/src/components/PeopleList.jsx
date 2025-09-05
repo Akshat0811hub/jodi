@@ -17,7 +17,8 @@ const availableFields = [
   "phoneNumber",
   "area",
   "dob",
-  "nativePlace"
+  "nativePlace",
+  "budget" // Added budget field
 ];
 
 const fieldLabels = {
@@ -32,6 +33,7 @@ const fieldLabels = {
   dob: "Date of Birth",
   nativePlace: "Native Place",
   phoneNumber: "Phone Number",
+  budget: "Budget" // Added budget label
 };
 
 // Premium notification component
@@ -328,6 +330,18 @@ const PeopleList = ({ filters }) => {
     });
   };
 
+  // Format budget for display
+  const formatBudget = (budget) => {
+    if (!budget) return "-";
+    // If the budget is already formatted with currency symbol, return as is
+    if (budget.includes("₹") || budget.includes("$")) return budget;
+    // If it's just a number, add currency symbol
+    if (!isNaN(budget)) {
+      return `₹${budget}`;
+    }
+    return budget;
+  };
+
   // Select/Deselect all fields functionality
   const handleSelectAllFields = () => {
     setSelectedFields([...availableFields]);
@@ -469,6 +483,8 @@ const PeopleList = ({ filters }) => {
                                         <span className="detail-value">
                                           {field === "dob"
                                             ? formatDate(person[field])
+                                            : field === "budget"
+                                            ? formatBudget(person[field])
                                             : (person[field] || "-")}
                                         </span>
                                       </div>

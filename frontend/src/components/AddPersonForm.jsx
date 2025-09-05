@@ -1,4 +1,4 @@
-// src/components/AddPersonFormModal.jsx - SUPABASE ENHANCED VERSION
+// src/components/AddPersonFormModal.jsx - SUPABASE ENHANCED VERSION WITH BUDGET
 import React, { useState } from "react";
 import api from "../api";
 import "../css/addPerson.css";
@@ -24,6 +24,7 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
     disability: "",
     nri: "",
     vehicle: "",
+    budget: "", // Added budget field
     // Family Details
     fatherName: "",
     fatherOccupation: "",
@@ -546,6 +547,19 @@ const AddPersonForm = ({ onClose, onPersonAdded }) => {
                 <option value="true">Yes</option>
                 <option value="false">No</option>
               </select>
+            </div>
+          </div>
+
+          {/* Budget Section */}
+          <div className="form-row">
+            <div className="form-group">
+              <input
+                name="budget"
+                placeholder="Budget for Marriage (e.g., ₹5,00,000)"
+                value={formData.budget}
+                onChange={handleChange}
+                disabled={isSubmitting}
+              />
             </div>
           </div>
 
